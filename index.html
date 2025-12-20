@@ -3,44 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Analyst Portfolio</title>
+    <title>Nikhil | Data Analyst Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
     <div id="loader">
-        <div class="terminal-text">
-            <p>> npm install data-science-toolkit...</p>
-            <p class="delayed">> loading NumPy, Pandas, Matplotlib...</p>
-            <p class="delayed-2">> fetching insights from database...</p>
-            <p class="progress-bar">[##########----------] 50%</p>
+        <div class="terminal">
+            <p class="line"><span class="user">visitor@nikhil:~$</span> npm install nikhil-portfolio</p>
+            <p class="line secondary">Installing dependencies...</p>
+            <p class="line secondary">... numpy @1.24.3</p>
+            <p class="line secondary">... pandas @2.0.2</p>
+            <p class="line secondary">... matplotlib @3.7.1</p>
+            <div class="progress-container">
+                <div class="progress-bar" id="bar"></div>
+            </div>
+            <p class="line status" id="load-status">0% complete</p>
         </div>
     </div>
 
-    <div id="main-content" class="hidden">
-        <div id="floating-symbols"></div>
+    <main id="main-content" class="hidden">
+        <div id="floating-area"></div>
 
         <nav>
-            <div class="logo">DA_PortFolio</div>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">Skills</a></li>
-                <li><a href="#">Projects</a></li>
-            </ul>
+            <div class="logo">NIKHIL_<span>DATA</span></div>
+            <div class="nav-links">
+                <a href="#about">About</a>
+                <a href="#projects">Projects</a>
+                <a href="#contact">Contact</a>
+            </div>
         </nav>
 
         <section class="hero">
-            <h1>Hi, I'm <span class="highlight">Data Analyst</span></h1>
-            <p>Turning messy data into beautiful insights using Python & Math.</p>
-            <div class="skills-icons">
-                <i class="fab fa-python" title="Python"></i>
-                <i class="fas fa-table" title="Pandas"></i>
-                <i class="fas fa-chart-line" title="Matplotlib"></i>
-                <i class="fab fa-js" title="JavaScript"></i>
+            <h1 class="reveal-text">Hi, I'm <span class="green-text">Nikhil.</span></h1>
+            <p class="sub-text">Converting complex data into <span class="highlight">actionable insights</span>.</p>
+            <div class="skill-tags">
+                <span>#Python</span> <span>#NumPy</span> <span>#Pandas</span> <span>#DataViz</span>
             </div>
         </section>
-    </div>
+    </main>
 
     <script src="script.js"></script>
 </body>

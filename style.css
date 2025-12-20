@@ -1,58 +1,101 @@
-/* General Styles */
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', Courier, monospace; }
-body { background-color: #0b0e14; color: #fff; overflow-x: hidden; }
+:root {
+    --bg-color: #0d0d0d;
+    --terminal-green: #00ff41;
+    --dim-green: rgba(0, 255, 65, 0.6);
+    --text-font: 'JetBrains Mono', monospace;
+}
 
-/* Loader Screen */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: var(--bg-color);
+    color: white;
+    font-family: var(--text-font);
+    overflow-x: hidden;
+}
+
+/* Loader Styles */
 #loader {
-    height: 100vh;
+    position: fixed;
+    inset: 0;
+    background: black;
     display: flex;
-    align-items: center;
     justify-content: center;
-    background: #000;
-    color: #00ff00;
+    align-items: center;
+    z-index: 1000;
 }
-.terminal-text p {
-    margin-bottom: 10px;
-    white-space: nowrap;
+
+.terminal {
+    width: 80%;
+    max-width: 600px;
+}
+
+.line { margin-bottom: 8px; font-size: 1.1rem; }
+.user { color: var(--terminal-green); }
+.secondary { color: #888; font-size: 0.9rem; }
+
+.progress-container {
+    width: 100%;
+    height: 10px;
+    background: #222;
+    margin: 20px 0;
+    border-radius: 5px;
     overflow: hidden;
-    border-right: 2px solid #00ff00;
-    animation: typing 1.5s steps(40, end), blink .75s step-end infinite;
 }
 
-@keyframes typing { from { width: 0 } to { width: 100% } }
-@keyframes blink { from, to { border-color: transparent } 50% { border-color: #00ff00 } }
+.progress-bar {
+    width: 0%;
+    height: 100%;
+    background: var(--terminal-green);
+    box-shadow: 0 0 15px var(--terminal-green);
+    transition: width 0.1s linear;
+}
 
-/* Floating Symbols */
-#floating-symbols {
+/* Floating Elements Area */
+#floating-area {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     z-index: -1;
     pointer-events: none;
 }
-.symbol {
+
+.floating-icon {
     position: absolute;
-    color: rgba(0, 255, 170, 0.2);
-    font-size: 2rem;
-    animation: float 10s linear infinite;
+    fill: var(--terminal-green);
+    opacity: 0.2;
+    transition: transform 0.1s ease-out; /* Smooth mouse movement */
 }
 
-@keyframes float {
-    0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-    50% { opacity: 1; }
-    100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+/* UI/UX Main Content */
+.hidden { display: none; }
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    padding: 30px 10%;
+    animation: fadeIn 2s ease;
 }
 
-/* Hero Section */
+.logo { font-weight: 700; font-size: 1.5rem; }
+.logo span { color: var(--terminal-green); }
+
 .hero {
-    height: 100vh;
+    height: 80vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
 }
-.highlight { color: #00ffaa; text-shadow: 0 0 10px #00ffaa; }
-.skills-icons i { font-size: 3rem; margin: 20px; color: #555; transition: 0.3s; }
-.skills-icons i:hover { color: #00ffaa; transform: scale(1.2); }
 
-.hidden { display: none; }
+.green-text { color: var(--terminal-green); text-shadow: 0 0 20px var(--dim-green); }
+
+.skill-tags span {
+    margin: 5px;
+    padding: 5px 15px;
+    border: 1px solid var(--terminal-green);
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
