@@ -1,1 +1,47 @@
-tu kutta hai samjh me aaya hai na tere
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analyst Portfolio</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="loader">
+        <div class="terminal-text">
+            <p>> npm install data-science-toolkit...</p>
+            <p class="delayed">> loading NumPy, Pandas, Matplotlib...</p>
+            <p class="delayed-2">> fetching insights from database...</p>
+            <p class="progress-bar">[##########----------] 50%</p>
+        </div>
+    </div>
+
+    <div id="main-content" class="hidden">
+        <div id="floating-symbols"></div>
+
+        <nav>
+            <div class="logo">DA_PortFolio</div>
+            <ul>
+                <li><a href="#">Home</a></li>
+                <li><a href="#">Skills</a></li>
+                <li><a href="#">Projects</a></li>
+            </ul>
+        </nav>
+
+        <section class="hero">
+            <h1>Hi, I'm <span class="highlight">Data Analyst</span></h1>
+            <p>Turning messy data into beautiful insights using Python & Math.</p>
+            <div class="skills-icons">
+                <i class="fab fa-python" title="Python"></i>
+                <i class="fas fa-table" title="Pandas"></i>
+                <i class="fas fa-chart-line" title="Matplotlib"></i>
+                <i class="fab fa-js" title="JavaScript"></i>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
