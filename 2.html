@@ -4,12 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro UI - Text Editor</title>
+    <title>Notes App - Pro Formatting</title>
 
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600&family=Comic+Neue:wght@300;400;700&family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Patrick+Hand&family=Playpen+Sans:wght@300;400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap"
         rel="stylesheet">
 
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -32,9 +33,17 @@
             --tooltip-bg: #ffffff;
             --tooltip-text: #000000;
 
-            /* Magic Elements */
-            --code-bg: #1e1e1e;
-            --code-border: #333;
+            /* Formatting Colors */
+            --color-red: #ef4444;
+            --color-blue: #3b82f6;
+            --color-green: #10b981;
+            --color-yellow: #f59e0b;
+            --color-purple: #8b5cf6;
+            --color-pink: #ec4899;
+            --color-orange: #f97316;
+            --color-gray: #6b7280;
+            --color-black: #000000;
+            --color-white: #ffffff;
         }
 
         /* Light Mode */
@@ -46,14 +55,12 @@
             --text-secondary: #667085;
             --border-color: #eaecf0;
             --accent-color: #000000;
-            --hover-bg: #e4e7ec;
+            --hover-bg: #f2f4f7;
             --grid-color: #e4e7ec;
 
+            /* Tooltip Specific */
             --tooltip-bg: #000000;
             --tooltip-text: #ffffff;
-
-            --code-bg: #f4f4f5;
-            --code-border: #e4e4e7;
         }
 
         * {
@@ -76,7 +83,7 @@
             background-size: 24px 24px;
         }
 
-        /* --- Sidebar & Tooltips --- */
+        /* --- 1. Sidebar --- */
         .sidebar {
             width: 68px;
             height: 94vh;
@@ -104,6 +111,7 @@
             cursor: pointer;
         }
 
+        /* Tool Group */
         .tool-group {
             display: flex;
             flex-direction: column;
@@ -119,6 +127,7 @@
             margin: 20px 0;
         }
 
+        /* Tool Buttons */
         .tool-btn {
             position: relative;
             width: 42px;
@@ -144,6 +153,7 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
+        /* Tooltip Styling */
         .tool-btn[data-tooltip]::after {
             content: attr(data-tooltip);
             position: absolute;
@@ -191,6 +201,7 @@
             transform: translateY(-50%) translateX(8px);
         }
 
+        /* Bottom Actions */
         .bottom-actions {
             margin-top: auto;
             display: flex;
@@ -199,7 +210,7 @@
             align-items: center;
         }
 
-        /* --- Top Bar --- */
+        /* --- 2. Top Bar --- */
         .top-bar-wrapper {
             position: absolute;
             top: 3vh;
@@ -223,201 +234,351 @@
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
         }
 
-        /* --- FONT MENU STYLES --- */
-        .font-menu-container {
-            position: relative;
+        /* Chips */
+        .chips {
             display: flex;
-            align-items: center;
+            gap: 6px;
         }
 
-        .font-trigger {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: transparent;
-            color: var(--text-primary);
-            font-size: 15px;
-            font-weight: 500;
-            padding: 8px 12px;
+        .chip {
+            padding: 8px 16px;
             border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
             cursor: pointer;
             transition: 0.2s;
-            border: 1px solid transparent;
-            min-width: 140px;
-            justify-content: space-between;
         }
 
-        .font-trigger:hover {
+        .chip:hover {
             background-color: var(--hover-bg);
+            color: var(--text-primary);
         }
 
-        .font-trigger i {
-            color: var(--text-secondary);
+        .chip.active {
+            background-color: var(--text-primary);
+            color: var(--bg-canvas);
         }
 
-        .font-dropdown {
-            position: absolute;
-            top: 50px;
-            left: 0;
-            width: 200px;
+        /* Top Bar Actions */
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            padding-left: 20px;
+            border-left: 1px solid var(--border-color);
+            align-items: center;
+        }
+
+        /* Font Selector Button - Enhanced */
+        .font-selector-btn {
+            min-width: 180px;
+            height: 40px;
+            border-radius: 10px;
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 6px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
             display: flex;
-            flex-direction: column;
-            gap: 2px;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.2s ease;
-            z-index: 300;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
         }
 
-        .font-dropdown.open {
-            opacity: 1;
-            visibility: visible;
+        .font-selector-btn:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .font-selector-btn:active {
             transform: translateY(0);
         }
 
-        .font-item {
-            padding: 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            color: var(--text-secondary);
+        .font-selector-btn i {
             font-size: 16px;
-            transition: 0.2s;
+            transition: transform 0.3s ease;
+        }
+
+        .font-selector-btn.active i {
+            transform: rotate(180deg);
+        }
+
+        /* Font Dropdown Menu - Enhanced */
+        .font-dropdown {
+            position: absolute;
+            top: 110%;
+            right: 0;
+            width: 220px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 8px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1000;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .font-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        .font-option {
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            margin: 4px 0;
+            font-weight: 500;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            border: 1px solid transparent;
         }
 
-        .font-item:hover {
+        .font-option:hover {
             background-color: var(--hover-bg);
-            color: var(--text-primary);
+            border-color: var(--border-color);
+            transform: translateX(4px);
         }
 
-        .font-item.selected {
+        .font-option.active {
             background-color: var(--accent-color);
-            color: #fff;
+            color: white;
+            border-color: var(--accent-color);
         }
 
-        .f-fredoka {
+        .font-option.active .check-icon {
+            opacity: 1;
+        }
+
+        .check-icon {
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 16px;
+        }
+
+        /* Font Preview Styling */
+        .font-option[data-font="Fredoka"] {
             font-family: 'Fredoka', sans-serif;
         }
 
-        .f-kalam {
+        .font-option[data-font="Kalam"] {
             font-family: 'Kalam', cursive;
         }
 
-        .f-playpen {
+        .font-option[data-font="Playpen Sans"] {
             font-family: 'Playpen Sans', cursive;
         }
 
-        .f-patrick {
+        .font-option[data-font="Patrick Hand"] {
             font-family: 'Patrick Hand', cursive;
         }
 
-        .f-baloo {
+        .font-option[data-font="Baloo 2"] {
             font-family: 'Baloo 2', cursive;
         }
 
-        .f-comicsans {
-            font-family: 'Comic Sans MS', 'Comic Sans', cursive;
-        }
-
-        .f-comicneue {
+        .font-option[data-font="Comic Neue"] {
             font-family: 'Comic Neue', cursive;
         }
 
-        .header-actions {
-            display: flex;
-            gap: 8px;
-            padding-left: 20px;
-            border-left: 1px solid var(--border-color);
+        .font-option[data-font="Comic Sans MS"] {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
         }
 
+        /* Font preview in button */
+        .current-font-preview {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            text-align: left;
+        }
+
+        /* Other action buttons */
         .action-btn {
             background: transparent;
             border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--text-primary);
             font-size: 18px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .action-btn:hover {
             background-color: var(--hover-bg);
+            transform: translateY(-1px);
         }
 
-        /* --- MAIN EDITOR CANVAS --- */
+        /* --- 3. Main Workspace (Writing Canvas) --- */
         .workspace {
             flex: 1;
-            margin-left: 10px;
-            height: 100%;
             display: flex;
-            align-items: flex-start;
-            justify-content: center;
+            flex-direction: column;
+            margin-left: 0px;
+            height: 100vh;
+            padding: 90px 20px 10px 20px;
+        }
+
+        .writing-canvas {
+            flex: 1;
+            border-radius: 16px;
+            padding: 24px;
             overflow-y: auto;
-        }
-
-        #editor-canvas {
-            margin-top: 100px;
-            margin-bottom: 10px;
-            width: 1420px;
-            min-height: 90vh;
-            color: var(--text-primary);
-            font-size: 24px;
-            line-height: 1.6;
             outline: none;
-            border: none;
-            white-space: pre-wrap;
+            font-size: 18px;
+            line-height: 1.6;
+            transition: all 0.3s ease;
             font-family: 'Fredoka', sans-serif;
+            min-height: 400px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
         }
 
-        #editor-canvas:empty:before {
-            content: "Type @color.red, #head, or $code to start magic...";
+        .writing-canvas:empty:before {
+            content: "Start writing here... Use formatting shortcuts like @color.red:, @bold:, #head:, etc. ✨";
             color: var(--text-secondary);
-            opacity: 0.5;
-            pointer-events: none;
+            font-style: italic;
+            opacity: 0.6;
         }
 
-        /* Styles for Magic Triggers */
-        .magic-head {
-            font-size: 2.2em;
-            font-weight: 700;
-            margin: 15px 0;
-            line-height: 1.2;
+        /* --- Formatting Styles --- */
+        .text-red {
+            color: var(--color-red);
         }
 
-        .magic-subhead {
-            font-size: 1.6em;
-            font-weight: 600;
-            margin: 10px 0;
-            opacity: 0.9;
+        .text-blue {
+            color: var(--color-blue);
+        }
+
+        .text-green {
+            color: var(--color-green);
+        }
+
+        .text-yellow {
+            color: var(--color-yellow);
+        }
+
+        .text-purple {
+            color: var(--color-purple);
+        }
+
+        .text-pink {
+            color: var(--color-pink);
+        }
+
+        .text-orange {
+            color: var(--color-orange);
+        }
+
+        .text-gray {
+            color: var(--color-gray);
+        }
+
+        .text-black {
+            color: var(--color-black);
+        }
+
+        .text-white {
+            color: var(--color-white);
+        }
+
+        .text-bold {
+            font-weight: bold;
+        }
+
+        .text-italic {
+            font-style: italic;
+        }
+
+        .text-underline {
+            text-decoration: underline;
+        }
+
+        .text-strike {
+            text-decoration: line-through;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .heading-main {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+        }
+
+        .heading-sub {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0 8px 0;
         }
 
         .code-block {
-            background: var(--code-bg);
-            border: 1px solid var(--code-border);
-            padding: 15px;
-            border-radius: 8px;
             font-family: 'Courier New', monospace;
-            font-size: 16px;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
             margin: 10px 0;
             white-space: pre-wrap;
-            display: block;
-            width: 100%;
-            color: var(--text-primary);
+            word-break: break-all;
         }
 
+        /* --- Formatting Indicator --- */
+        .formatting-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .formatting-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- 4. Focus & Restore --- */
         .sidebar.hidden {
             transform: translateX(-180%);
         }
@@ -452,50 +613,138 @@
         .restore-pill:hover {
             transform: translateX(-50%) scale(1.05);
         }
+
+        /* Scrollbar Styling */
+        .font-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .font-dropdown::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+
+        .font-dropdown::-webkit-scrollbar-thumb {
+            background: var(--text-secondary);
+            border-radius: 3px;
+        }
+
+        .font-dropdown::-webkit-scrollbar-thumb:hover {
+            background: var(--text-primary);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .workspace {
+                margin-left: 0;
+                padding: 100px 20px 20px 20px;
+            }
+
+            .sidebar.hidden+.workspace {
+                margin-left: 0;
+            }
+
+            .font-selector-btn {
+                min-width: 150px;
+            }
+        }
     </style>
 </head>
 
 <body>
 
     <nav class="sidebar" id="sidebar">
-        <div class="logo">Ui.</div>
+        <div class="logo">Notes</div>
+
+        <!-- Added Buttons as requested -->
         <div class="tool-group">
-            <div class="tool-btn" data-tooltip="Move (V)"><i class="ph ph-cursor"></i></div>
-            <div class="tool-btn active" data-tooltip="Text (T)"><i class="ph ph-text-t"></i></div>
-            <div class="tool-btn" data-tooltip="Shape (R)"><i class="ph ph-square"></i></div>
-        </div>
-        <div class="divider"></div>
-        <div class="bottom-actions">
-            <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme"><i class="ph ph-moon" id="themeIcon"></i>
+            <div class="tool-btn" id="exportBtn" data-tooltip="Export">
+                <i class="ph ph-export"></i>
             </div>
-            <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode"><i class="ph ph-corners-out"></i></div>
+            <div class="tool-btn" id="deleteBtn" data-tooltip="Delete">
+                <i class="ph ph-trash"></i>
+            </div>
+            <div class="tool-btn" id="bulletsBtn" data-tooltip="Bullets">
+                <i class="ph ph-list-bullets"></i>
+            </div>
+            <div class="tool-btn" id="lineBreakBtn" data-tooltip="Line Break">
+                <i class="ph ph-line-break"></i>
+            </div>
+            <div class="tool-btn" id="chipsBtn" data-tooltip="Insert Chip">
+                <i class="ph ph-tag"></i>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Existing buttons -->
+        <div class="tool-group">
+            <div class="tool-btn" data-tooltip="Assets">
+                <i class="ph ph-diamonds-four"></i>
+            </div>
+            <div class="tool-btn" data-tooltip="Layers">
+                <i class="ph ph-stack"></i>
+            </div>
+        </div>
+
+        <div class="bottom-actions">
+            <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
+                <i class="ph ph-moon" id="themeIcon"></i>
+            </div>
+
+            <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode">
+                <i class="ph ph-corners-out"></i>
+            </div>
         </div>
     </nav>
 
     <div class="top-bar-wrapper" id="topBar">
         <header class="glass-header">
-            <div class="font-menu-container">
-                <div class="font-trigger" id="fontTrigger">
-                    <span id="currentFontName">Fredoka</span>
-                    <i class="ph ph-caret-down"></i>
-                </div>
-                <div class="font-dropdown" id="fontDropdown">
-                    <div class="font-item f-fredoka selected" data-name="Fredoka" data-font="'Fredoka', sans-serif">
-                        Fredoka</div>
-                    <div class="font-item f-kalam" data-name="Kalam" data-font="'Kalam', cursive">Kalam</div>
-                    <div class="font-item f-playpen" data-name="Playpen Sans" data-font="'Playpen Sans', cursive">
-                        Playpen Sans</div>
-                    <div class="font-item f-patrick" data-name="Patrick Hand" data-font="'Patrick Hand', cursive">
-                        Patrick Hand</div>
-                    <div class="font-item f-baloo" data-name="Baloo 2" data-font="'Baloo 2', cursive">Baloo 2</div>
-                    <div class="font-item f-comicsans" data-name="Comic Sans MS"
-                        data-font="'Comic Sans MS', 'Comic Sans', cursive">Comic Sans MS</div>
-                    <div class="font-item f-comicneue" data-name="Comic Neue" data-font="'Comic Neue', cursive">Comic
-                        Neue</div>
-                </div>
+            <div class="chips">
+                <div class="chip active">All Notes</div>
+                <div class="chip">Recent</div>
+                <div class="chip">Favorites</div>
             </div>
 
             <div class="header-actions">
+                <!-- Font Selector -->
+                <div class="font-selector-wrapper">
+                    <button class="font-selector-btn" id="fontSelectorBtn">
+                        <span class="current-font-preview" id="currentFont">Fredoka</span>
+                        <i class="ph ph-caret-down" id="fontCaret"></i>
+                    </button>
+                    <div class="font-dropdown" id="fontDropdown">
+                        <div class="font-option active" data-font="Fredoka">
+                            <span>Fredoka</span>
+                            <i class="ph ph-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Kalam">
+                            <span>Kalam</span>
+                            <i class="ph ph-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Playpen Sans">
+                            <span>Playpen Sans</span>
+                            <i class="ph ph-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Patrick Hand">
+                            <span>Patrick Hand</span>
+                            <i class="ph ph-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Baloo 2">
+                            <span>Baloo 2</span>
+                            <i class="ph ph-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Comic Neue">
+                            <span>Comic Neue</span>
+                            <i class="ph ph-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Comic Sans MS">
+                            <span>Comic Sans MS</span>
+                            <i class="ph ph-check check-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
                 <button class="action-btn" title="Add"><i class="ph ph-plus"></i></button>
                 <button class="action-btn" title="Pin"><i class="ph ph-push-pin"></i></button>
                 <button class="action-btn" title="Share"><i class="ph ph-share-network"></i></button>
@@ -504,8 +753,29 @@
     </div>
 
     <main class="workspace">
-        <div id="editor-canvas" contenteditable="true" spellcheck="false"></div>
+        <div class="writing-canvas" id="writingCanvas" contenteditable="true">
+            Welcome to Advanced Notes App! 🎨
+
+            Try these formatting shortcuts:
+
+            #head: Welcome to Notes App
+            #subHead.blue.center: Advanced Formatting Guide
+
+            @color.red: This text will be red
+            @bold: This is bold text
+            @normal: Back to normal text
+
+            @align.center: This line will be centered
+            $code: This is a code block
+            console.log("Hello World");
+
+            @setFont.Kalam: This text in Kalam font
+
+            Learn all shortcuts from the formatting guide!
+        </div>
     </main>
+
+    <div class="formatting-indicator" id="formattingIndicator"></div>
 
     <div class="restore-pill" id="restoreBtn">
         <i class="ph ph-corners-in"></i>
@@ -513,8 +783,7 @@
     </div>
 
     <script>
-        // --- UI & LOGIC ---
-
+        // --- ELEMENTS ---
         const sidebar = document.getElementById('sidebar');
         const topBar = document.getElementById('topBar');
         const focusBtn = document.getElementById('focusBtn');
@@ -522,56 +791,84 @@
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
         const html = document.documentElement;
-
-        const fontTrigger = document.getElementById('fontTrigger');
+        const writingCanvas = document.getElementById('writingCanvas');
+        const fontSelectorBtn = document.getElementById('fontSelectorBtn');
         const fontDropdown = document.getElementById('fontDropdown');
-        const currentFontName = document.getElementById('currentFontName');
-        const fontItems = document.querySelectorAll('.font-item');
-        const editor = document.getElementById('editor-canvas');
+        const currentFontSpan = document.getElementById('currentFont');
+        const fontOptions = document.querySelectorAll('.font-option');
+        const formattingIndicator = document.getElementById('formattingIndicator');
 
-        // 1. FONT MENU LOGIC
-        fontTrigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            fontDropdown.classList.toggle('open');
-        });
-        document.addEventListener('click', (e) => {
-            if (!fontTrigger.contains(e.target) && !fontDropdown.contains(e.target)) {
-                fontDropdown.classList.remove('open');
+        // --- NEW ADDED BUTTONS ---
+        const exportBtn = document.getElementById('exportBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const bulletsBtn = document.getElementById('bulletsBtn');
+        const lineBreakBtn = document.getElementById('lineBreakBtn');
+        const chipsBtn = document.getElementById('chipsBtn');
+
+        // --- FORMATTING SHORTCUTS CONFIG ---
+        const formattingConfig = {
+            colors: {
+                'red': 'text-red',
+                'blue': 'text-blue',
+                'green': 'text-green',
+                'yellow': 'text-yellow',
+                'purple': 'text-purple',
+                'pink': 'text-pink',
+                'orange': 'text-orange',
+                'gray': 'text-gray',
+                'black': 'text-black',
+                'white': 'text-white'
+            },
+            styles: {
+                'bold': 'text-bold',
+                'italic': 'text-italic',
+                'underline': 'text-underline',
+                'strike': 'text-strike',
+                'normal': '' // Reset formatting
+            },
+            alignments: {
+                'left': 'text-left',
+                'center': 'text-center',
+                'right': 'text-right'
+            },
+            fonts: {
+                'Fredoka': "'Fredoka', sans-serif",
+                'Kalam': "'Kalam', cursive",
+                'Playpen Sans': "'Playpen Sans', cursive",
+                'Patrick Hand': "'Patrick Hand', cursive",
+                'Baloo 2': "'Baloo 2', cursive",
+                'Comic Neue': "'Comic Neue', cursive",
+                'Comic Sans MS': "'Comic Sans MS', cursive, sans-serif"
             }
-        });
+        };
 
-        fontItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const fontName = item.getAttribute('data-name');
-                const fontStack = item.getAttribute('data-font');
-
-                // Logic: Insert span with font at cursor
-                const span = document.createElement('span');
-                span.style.fontFamily = fontStack;
-                span.textContent = '\u200B'; // zero width space
-                insertNodeAtCursor(span);
-
-                // Also update UI for clarity
-                currentFontName.innerText = fontName;
-                fontItems.forEach(i => i.classList.remove('selected'));
-                item.classList.add('selected');
-                fontDropdown.classList.remove('open');
+        // --- TOOL SELECTION ---
+        const tools = document.querySelectorAll('.tool-group .tool-btn');
+        tools.forEach(tool => {
+            tool.addEventListener('click', () => {
+                if (!tool.id) {
+                    tools.forEach(t => { if (!t.id) t.classList.remove('active'); });
+                    tool.classList.add('active');
+                }
             });
         });
 
-        // 2. THEME LOGIC
+        // --- THEME TOGGLE ---
         themeToggle.addEventListener('click', () => {
             const currentTheme = html.getAttribute('data-theme');
+
             if (currentTheme === 'dark') {
                 html.setAttribute('data-theme', 'light');
-                themeIcon.classList.replace('ph-moon', 'ph-sun');
+                themeIcon.classList.remove('ph-moon');
+                themeIcon.classList.add('ph-sun');
             } else {
                 html.setAttribute('data-theme', 'dark');
-                themeIcon.classList.replace('ph-sun', 'ph-moon');
+                themeIcon.classList.remove('ph-sun');
+                themeIcon.classList.add('ph-moon');
             }
         });
 
-        // 3. FOCUS MODE
+        // --- FOCUS MODE ---
         function toggleFocus() {
             const isHidden = sidebar.classList.contains('hidden');
             if (!isHidden) {
@@ -586,181 +883,321 @@
                 if (document.fullscreenElement) document.exitFullscreen();
             }
         }
+
         focusBtn.addEventListener('click', toggleFocus);
         restoreBtn.addEventListener('click', toggleFocus);
+
+        // --- ESCAPE KEY FAILSAFE ---
         document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement && sidebar.classList.contains('hidden')) toggleFocus();
+            if (!document.fullscreenElement && sidebar.classList.contains('hidden')) {
+                toggleFocus();
+            }
         });
 
-        // ==========================================
-        //  MAGIC TRIGGER LOGIC (The Core Feature)
-        // ==========================================
+        // --- FONT SELECTOR LOGIC ---
+        fontSelectorBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fontSelectorBtn.classList.toggle('active');
+            fontDropdown.classList.toggle('active');
+        });
 
-        function insertNodeAtCursor(node) {
-            const sel = window.getSelection();
-            if (sel.rangeCount) {
-                const range = sel.getRangeAt(0);
-                range.deleteContents();
-                range.insertNode(node);
-                range.setStart(node, 1);
-                range.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(range);
+        document.addEventListener('click', (e) => {
+            if (!fontSelectorBtn.contains(e.target) && !fontDropdown.contains(e.target)) {
+                fontSelectorBtn.classList.remove('active');
+                fontDropdown.classList.remove('active');
             }
-        }
+        });
 
-        function formatCurrentBlock(tag, classes = [], styles = {}) {
-            const sel = window.getSelection();
-            if (!sel.rangeCount) return;
-            let node = sel.anchorNode;
-            while (node && node.parentNode !== editor && node.nodeName !== 'DIV' && node.nodeName !== 'P' && node.nodeName !== 'H1' && node.nodeName !== 'H2') {
-                node = node.parentNode;
-            }
-            if (node && node !== editor) {
-                const newEl = document.createElement(tag);
-                newEl.innerHTML = node.innerHTML;
-                classes.forEach(c => newEl.classList.add(c));
-                for (const [key, value] of Object.entries(styles)) {
-                    newEl.style[key] = value;
-                }
-                node.replaceWith(newEl);
-                // Set caret to end
-                const range = document.createRange();
-                range.selectNodeContents(newEl);
-                range.collapse(false);
-                sel.removeAllRanges();
-                sel.addRange(range);
-            } else {
-                document.execCommand('formatBlock', false, tag);
-            }
-        }
+        fontOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const selectedFont = option.getAttribute('data-font');
 
-        function deleteTriggerText(node, length) {
-            const text = node.textContent;
-            node.textContent = text.slice(0, -length);
-        }
+                fontOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
 
-        editor.addEventListener('keyup', (e) => {
-            if (e.key === ' ') {
-                handleTrigger();
-            }
-            if (e.key === 'Enter') {
-                // Reset styles on new line
+                currentFontSpan.style.opacity = '0.5';
                 setTimeout(() => {
-                    document.execCommand('foreColor', false, 'var(--text-primary)');
-                    document.execCommand('removeFormat');
-                }, 0);
+                    currentFontSpan.textContent = selectedFont;
+                    currentFontSpan.style.opacity = '1';
+                }, 150);
+
+                applyFontToSelection(selectedFont);
+
+                setTimeout(() => {
+                    fontSelectorBtn.classList.remove('active');
+                    fontDropdown.classList.remove('active');
+                }, 300);
+            });
+        });
+
+        function applyFontToSelection(fontName) {
+            const selection = window.getSelection();
+
+            if (selection.toString().length > 0) {
+                const range = selection.getRangeAt(0);
+                const span = document.createElement('span');
+                span.style.fontFamily = formattingConfig.fonts[fontName] || "'Fredoka', sans-serif";
+
+                range.surroundContents(span);
+                selection.removeAllRanges();
+
+                showFormattingIndicator(`Font changed to ${fontName}`);
+            } else {
+                writingCanvas.style.fontFamily = formattingConfig.fonts[fontName] || "'Fredoka', sans-serif";
+                showFormattingIndicator(`Document font set to ${fontName}`);
+            }
+        }
+
+        // --- NEW BUTTONS FUNCTIONALITY ---
+        exportBtn.addEventListener('click', () => {
+            showFormattingIndicator('Exporting notes...');
+            setTimeout(() => {
+                const content = writingCanvas.innerHTML;
+                const blob = new Blob([content], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'notes-export.html';
+                a.click();
+                URL.revokeObjectURL(url);
+            }, 500);
+        });
+
+        deleteBtn.addEventListener('click', () => {
+            if (confirm('Clear all notes?')) {
+                writingCanvas.innerHTML = '';
+                writingCanvas.focus();
+                showFormattingIndicator('All notes cleared');
             }
         });
 
-        function handleTrigger() {
-            const sel = window.getSelection();
-            if (!sel.rangeCount) return;
-            const focusNode = sel.focusNode;
-            const text = focusNode.textContent;
-
-            // 1. COLORS: @color.red
-            const colorMatch = text.match(/@color\.([a-zA-Z]+)\s$/);
-            if (colorMatch) {
-                deleteTriggerText(focusNode, colorMatch[0].length);
-                const span = document.createElement('span');
-                span.style.color = colorMatch[1];
-                span.textContent = '\u200B';
-                insertNodeAtCursor(span);
-                return;
+        bulletsBtn.addEventListener('click', () => {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const bullet = document.createElement('div');
+                bullet.innerHTML = '• ';
+                range.insertNode(bullet);
+                range.setStartAfter(bullet);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                showFormattingIndicator('Bullet inserted');
             }
+        });
 
-            // 2. ALIGN: @align.center
-            const alignMatch = text.match(/@align\.(left|center|right)\s$/);
-            if (alignMatch) {
-                deleteTriggerText(focusNode, alignMatch[0].length);
-                formatCurrentBlock('div', [], { textAlign: alignMatch[1] });
-                return;
+        lineBreakBtn.addEventListener('click', () => {
+            const br = document.createElement('br');
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                range.insertNode(br);
+                range.setStartAfter(br);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                showFormattingIndicator('Line break inserted');
             }
+        });
 
-            // 3. STYLES: @bold, @italic...
-            const styleMap = {
-                '@bold': 'fontWeight:bold', '@italic': 'fontStyle:italic',
-                '@underline': 'textDecoration:underline', '@strike': 'textDecoration:line-through',
-                '@normal': 'all:unset'
-            };
-            for (const [trigger, style] of Object.entries(styleMap)) {
-                if (text.endsWith(trigger + ' ')) {
-                    deleteTriggerText(focusNode, trigger.length + 1);
+        chipsBtn.addEventListener('click', () => {
+            const chipText = prompt('Enter chip text:', 'New Chip');
+            if (chipText) {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const chip = document.createElement('span');
+                    chip.className = 'chip';
+                    chip.style.cssText = `
+                        display: inline-block;
+                        background: var(--accent-color);
+                        color: white;
+                        padding: 2px 8px;
+                        border-radius: 12px;
+                        font-size: 12px;
+                        margin: 0 4px;
+                    `;
+                    chip.textContent = chipText;
+                    range.insertNode(chip);
+                    range.setStartAfter(chip);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    showFormattingIndicator('Chip inserted');
+                }
+            }
+        });
+
+        // --- FORMATTING SHORTCUTS PARSER ---
+        let currentFormattingState = {
+            bold: false,
+            italic: false,
+            underline: false,
+            strike: false,
+            color: null,
+            font: null
+        };
+
+        function showFormattingIndicator(message) {
+            formattingIndicator.textContent = message;
+            formattingIndicator.classList.add('show');
+
+            setTimeout(() => {
+                formattingIndicator.classList.remove('show');
+            }, 2000);
+        }
+
+        function applyFormattingToSelection(className, isBlock = false) {
+            const selection = window.getSelection();
+
+            if (selection.toString().length > 0) {
+                const range = selection.getRangeAt(0);
+
+                if (isBlock) {
+                    const div = document.createElement('div');
+                    div.className = className;
+                    range.surroundContents(div);
+                } else {
                     const span = document.createElement('span');
-                    if (trigger === '@normal') {
-                        span.style.all = 'unset';
-                        span.style.color = 'var(--text-primary)';
-                    } else {
-                        const [p, v] = style.split(':');
-                        span.style[p] = v;
-                    }
-                    span.textContent = '\u200B';
-                    insertNodeAtCursor(span);
-                    return;
+                    span.className = className;
+                    range.surroundContents(span);
+                }
+
+                selection.removeAllRanges();
+            }
+        }
+
+        function parseFormattingShortcuts(text) {
+            // Color formatting: @color.red:
+            for (const [color, className] of Object.entries(formattingConfig.colors)) {
+                const regex = new RegExp(`@color\\.${color}:\\s*(.*?)(?=\\n|$)`, 'g');
+                if (regex.test(text)) {
+                    return { type: 'color', className, color };
                 }
             }
 
-            // 4. FONT: @setFont.Name
-            const fontMatch = text.match(/@setFont\.([a-zA-Z\s]+)\s$/);
-            if (fontMatch) {
-                const fName = fontMatch[1];
-                deleteTriggerText(focusNode, fontMatch[0].length);
-                const span = document.createElement('span');
-                const fontMap = {
-                    'Kalam': "'Kalam', cursive", 'Fredoka': "'Fredoka', sans-serif",
-                    'Playpen': "'Playpen Sans', cursive", 'Comic': "'Comic Sans MS', cursive",
-                    'Patrick': "'Patrick Hand', cursive", 'Baloo': "'Baloo 2', cursive"
-                };
-                span.style.fontFamily = fontMap[fName] || fName;
-                span.textContent = '\u200B';
-                insertNodeAtCursor(span);
-                return;
+            // Style formatting: @bold:, @italic:, etc.
+            for (const [style, className] of Object.entries(formattingConfig.styles)) {
+                const regex = new RegExp(`@${style}:\\s*(.*?)(?=\\n|$)`, 'g');
+                if (regex.test(text)) {
+                    return { type: 'style', className, style };
+                }
             }
 
-            // 5. HEADINGS (Mix): #head.red.center
-            const headMatch = text.match(/(#head|#subHead)([\.a-zA-Z]*)\s$/);
-            if (headMatch) {
-                deleteTriggerText(focusNode, headMatch[0].length);
-                const type = headMatch[1];
-                const mods = headMatch[2].split('.').filter(Boolean);
+            // Alignment formatting: @align.center:
+            for (const [align, className] of Object.entries(formattingConfig.alignments)) {
+                const regex = new RegExp(`@align\\.${align}:\\s*(.*?)(?=\\n|$)`, 'g');
+                if (regex.test(text)) {
+                    return { type: 'alignment', className, align };
+                }
+            }
 
-                const tag = type === '#head' ? 'h1' : 'h2';
-                const cls = type === '#head' ? 'magic-head' : 'magic-subhead';
-                let styles = {};
+            // Headings: #head:, #subHead:, etc.
+            const headingRegex = /#(head|subHead)(?:\.(\w+))*(?:\.(\w+))*(?:\.(\w+))*:\s*(.*?)(?=\n|$)/g;
+            const headingMatch = headingRegex.exec(text);
+            if (headingMatch) {
+                const type = headingMatch[1];
+                const modifiers = headingMatch.slice(2, 5).filter(m => m);
+                const content = headingMatch[5];
 
-                mods.forEach(mod => {
-                    if (['left', 'center', 'right'].includes(mod)) styles.textAlign = mod;
-                    else styles.color = mod;
+                let className = type === 'head' ? 'heading-main' : 'heading-sub';
+                modifiers.forEach(mod => {
+                    if (formattingConfig.colors[mod]) {
+                        className += ` text-${mod}`;
+                    } else if (formattingConfig.alignments[mod]) {
+                        className += ` text-${mod}`;
+                    }
                 });
 
-                formatCurrentBlock(tag, [cls], styles);
-                return;
+                return { type: 'heading', className, content, headingType: type };
             }
 
-            // 6. CODE: $code
-            if (text.endsWith('$code ')) {
-                deleteTriggerText(focusNode, 6);
-                const codeDiv = document.createElement('div');
-                codeDiv.className = 'code-block';
-                codeDiv.textContent = '\u200B';
-
-                const range = sel.getRangeAt(0);
-                range.insertNode(codeDiv);
-
-                const br = document.createElement('br'); // Exit logic
-                range.collapse(false);
-                range.insertNode(br);
-
-                range.selectNodeContents(codeDiv);
-                range.collapse(false);
-                sel.removeAllRanges();
-                sel.addRange(range);
-                return;
+            // Code blocks: $code:
+            const codeRegex = /\$code:\s*(.*?)(?=\n|$)/gs;
+            const codeMatch = codeRegex.exec(text);
+            if (codeMatch) {
+                return { type: 'code', className: 'code-block', content: codeMatch[1] };
             }
+
+            // Font changing: @setFont.FontName:
+            for (const [fontName, fontFamily] of Object.entries(formattingConfig.fonts)) {
+                const regex = new RegExp(`@setFont\\.${fontName.replace(/\s+/g, '\\\\s+')}:\\s*(.*?)(?=\\n|$)`, 'g');
+                if (regex.test(text)) {
+                    return { type: 'font', fontName, fontFamily };
+                }
+            }
+
+            return null;
         }
 
-        window.onload = () => editor.focus();
+        function processFormatting() {
+            const text = writingCanvas.textContent;
+            const lines = text.split('\n');
+
+            lines.forEach((line, index) => {
+                const formatting = parseFormattingShortcuts(line);
+                if (formatting) {
+                    // Remove the shortcut from display
+                    const fullText = writingCanvas.innerHTML;
+                    let newText = fullText;
+
+                    switch (formatting.type) {
+                        case 'color':
+                        case 'style':
+                        case 'alignment':
+                            const regex1 = new RegExp(`(@[^\\s]+:\\s*)`);
+                            newText = newText.replace(regex1, `<span class="${formatting.className}">`);
+                            break;
+
+                        case 'heading':
+                            const headingRegex = new RegExp(`(#${formatting.headingType}[^:]*:\\s*)`);
+                            newText = newText.replace(headingRegex, `<div class="${formatting.className}">`);
+                            break;
+
+                        case 'code':
+                            newText = newText.replace(/\$code:\s*/, `<div class="code-block">`);
+                            break;
+
+                        case 'font':
+                            const fontRegex = new RegExp(`(@setFont\\.[^:]*:\\s*)`);
+                            newText = newText.replace(fontRegex, `<span style="font-family: ${formatting.fontFamily}">`);
+                            break;
+                    }
+
+                    writingCanvas.innerHTML = newText;
+                    showFormattingIndicator(`Applied ${formatting.type} formatting`);
+                }
+            });
+        }
+
+        // Real-time formatting processing
+        let formatTimeout;
+        writingCanvas.addEventListener('input', () => {
+            clearTimeout(formatTimeout);
+            formatTimeout = setTimeout(processFormatting, 500);
+        });
+
+        writingCanvas.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                setTimeout(processFormatting, 10);
+            }
+        });
+
+        // Initialize
+        writingCanvas.focus();
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
+                e.preventDefault();
+                fontSelectorBtn.click();
+            }
+
+            if (e.key === 'Escape' && fontDropdown.classList.contains('active')) {
+                fontSelectorBtn.classList.remove('active');
+                fontDropdown.classList.remove('active');
+            }
+        });
 
     </script>
 </body>
