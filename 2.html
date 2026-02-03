@@ -32,7 +32,7 @@
             /* Tooltip Specific */
             --tooltip-bg: #ffffff;
             --tooltip-text: #000000;
-
+            
             /* Formatting Colors */
             --color-red: #ef4444;
             --color-blue: #3b82f6;
@@ -465,86 +465,40 @@
         }
 
         /* --- Formatting Styles --- */
-        .text-red {
-            color: var(--color-red);
-        }
-
-        .text-blue {
-            color: var(--color-blue);
-        }
-
-        .text-green {
-            color: var(--color-green);
-        }
-
-        .text-yellow {
-            color: var(--color-yellow);
-        }
-
-        .text-purple {
-            color: var(--color-purple);
-        }
-
-        .text-pink {
-            color: var(--color-pink);
-        }
-
-        .text-orange {
-            color: var(--color-orange);
-        }
-
-        .text-gray {
-            color: var(--color-gray);
-        }
-
-        .text-black {
-            color: var(--color-black);
-        }
-
-        .text-white {
-            color: var(--color-white);
-        }
-
-        .text-bold {
-            font-weight: bold;
-        }
-
-        .text-italic {
-            font-style: italic;
-        }
-
-        .text-underline {
-            text-decoration: underline;
-        }
-
-        .text-strike {
-            text-decoration: line-through;
-        }
-
-        .text-left {
-            text-align: left;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
+        .text-red { color: var(--color-red); }
+        .text-blue { color: var(--color-blue); }
+        .text-green { color: var(--color-green); }
+        .text-yellow { color: var(--color-yellow); }
+        .text-purple { color: var(--color-purple); }
+        .text-pink { color: var(--color-pink); }
+        .text-orange { color: var(--color-orange); }
+        .text-gray { color: var(--color-gray); }
+        .text-black { color: var(--color-black); }
+        .text-white { color: var(--color-white); }
+        
+        .text-bold { font-weight: bold; }
+        .text-italic { font-style: italic; }
+        .text-underline { text-decoration: underline; }
+        .text-strike { text-decoration: line-through; }
+        
+        .text-left { text-align: left; }
+        .text-center { text-align: center; display: block; }
+        .text-right { text-align: right; display: block; }
+        
         .heading-main {
             font-size: 32px;
             font-weight: bold;
             margin: 20px 0 10px 0;
+            display: block;
         }
-
+        
         .heading-sub {
             font-size: 24px;
             font-weight: bold;
             margin: 15px 0 8px 0;
+            display: block;
         }
-
+        
         .code-block {
             font-family: 'Courier New', monospace;
             background: rgba(0, 0, 0, 0.1);
@@ -554,6 +508,7 @@
             margin: 10px 0;
             white-space: pre-wrap;
             word-break: break-all;
+            display: block;
         }
 
         /* --- Formatting Indicator --- */
@@ -576,6 +531,91 @@
         .formatting-indicator.show {
             opacity: 1;
             transform: translateY(0);
+        }
+
+        /* --- Dropdown Menus --- */
+        .dropdown-menu {
+            position: absolute;
+            left: 80px;
+            top: 0;
+            background: var(--bg-glass);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 8px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-10px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1000;
+            min-width: 200px;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0) scale(1);
+        }
+
+        .dropdown-item {
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            margin: 4px 0;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid transparent;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--hover-bg);
+            border-color: var(--border-color);
+        }
+
+        .dropdown-item i {
+            font-size: 18px;
+        }
+
+        /* Chip Styles */
+        .chip-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 0 4px;
+        }
+
+        .chip-red { background-color: #ef4444; color: white; }
+        .chip-blue { background-color: #3b82f6; color: white; }
+        .chip-green { background-color: #10b981; color: white; }
+        .chip-yellow { background-color: #f59e0b; color: black; }
+        .chip-purple { background-color: #8b5cf6; color: white; }
+        .chip-pink { background-color: #ec4899; color: white; }
+
+        /* Bullet List */
+        .bullet-list {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+
+        .bullet-list li {
+            margin: 5px 0;
+            position: relative;
+            padding-left: 10px;
+        }
+
+        .bullet-list li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
         }
 
         /* --- 4. Focus & Restore --- */
@@ -615,21 +655,25 @@
         }
 
         /* Scrollbar Styling */
-        .font-dropdown::-webkit-scrollbar {
+        .font-dropdown::-webkit-scrollbar,
+        .dropdown-menu::-webkit-scrollbar {
             width: 6px;
         }
 
-        .font-dropdown::-webkit-scrollbar-track {
+        .font-dropdown::-webkit-scrollbar-track,
+        .dropdown-menu::-webkit-scrollbar-track {
             background: transparent;
             border-radius: 3px;
         }
 
-        .font-dropdown::-webkit-scrollbar-thumb {
+        .font-dropdown::-webkit-scrollbar-thumb,
+        .dropdown-menu::-webkit-scrollbar-thumb {
             background: var(--text-secondary);
             border-radius: 3px;
         }
 
-        .font-dropdown::-webkit-scrollbar-thumb:hover {
+        .font-dropdown::-webkit-scrollbar-thumb:hover,
+        .dropdown-menu::-webkit-scrollbar-thumb:hover {
             background: var(--text-primary);
         }
 
@@ -672,6 +716,53 @@
             </div>
             <div class="tool-btn" id="chipsBtn" data-tooltip="Insert Chip">
                 <i class="ph ph-tag"></i>
+            </div>
+        </div>
+
+        <!-- Dropdown Menus -->
+        <div class="dropdown-menu" id="bulletsMenu">
+            <div class="dropdown-item" data-type="bullet">
+                <i class="ph ph-circle"></i>
+                <span>• Bullet List</span>
+            </div>
+            <div class="dropdown-item" data-type="numbered">
+                <i class="ph ph-list-numbers"></i>
+                <span>1. Numbered List</span>
+            </div>
+            <div class="dropdown-item" data-type="checklist">
+                <i class="ph ph-check-square"></i>
+                <span>☐ Checklist</span>
+            </div>
+            <div class="dropdown-item" data-type="dash">
+                <i class="ph ph-minus"></i>
+                <span>- Dash List</span>
+            </div>
+        </div>
+
+        <div class="dropdown-menu" id="chipsMenu">
+            <div class="dropdown-item" data-chip="red">
+                <i class="ph ph-circle" style="color: #ef4444"></i>
+                <span>Important</span>
+            </div>
+            <div class="dropdown-item" data-chip="blue">
+                <i class="ph ph-circle" style="color: #3b82f6"></i>
+                <span>Note</span>
+            </div>
+            <div class="dropdown-item" data-chip="green">
+                <i class="ph ph-circle" style="color: #10b981"></i>
+                <span>Success</span>
+            </div>
+            <div class="dropdown-item" data-chip="yellow">
+                <i class="ph ph-circle" style="color: #f59e0b"></i>
+                <span>Warning</span>
+            </div>
+            <div class="dropdown-item" data-chip="purple">
+                <i class="ph ph-circle" style="color: #8b5cf6"></i>
+                <span>Idea</span>
+            </div>
+            <div class="dropdown-item" data-chip="pink">
+                <i class="ph ph-circle" style="color: #ec4899"></i>
+                <span>Reminder</span>
             </div>
         </div>
 
@@ -754,24 +845,24 @@
 
     <main class="workspace">
         <div class="writing-canvas" id="writingCanvas" contenteditable="true">
-            Welcome to Advanced Notes App! 🎨
+Welcome to Advanced Notes App! 🎨
 
-            Try these formatting shortcuts:
+Try these formatting shortcuts:
 
-            #head: Welcome to Notes App
-            #subHead.blue.center: Advanced Formatting Guide
+#head: Welcome to Notes App
+#subHead.blue.center: Advanced Formatting Guide
 
-            @color.red: This text will be red
-            @bold: This is bold text
-            @normal: Back to normal text
+@color.red: This text will be red
+@bold: This is bold text
+@normal: Back to normal text
 
-            @align.center: This line will be centered
-            $code: This is a code block
-            console.log("Hello World");
+@align.center: This line will be centered
+$code: This is a code block
+console.log("Hello World");
 
-            @setFont.Kalam: This text in Kalam font
+@setFont.Kalam: This text in Kalam font
 
-            Learn all shortcuts from the formatting guide!
+Learn all shortcuts from the formatting guide!
         </div>
     </main>
 
@@ -805,6 +896,10 @@
         const lineBreakBtn = document.getElementById('lineBreakBtn');
         const chipsBtn = document.getElementById('chipsBtn');
 
+        // --- DROPDOWN MENUS ---
+        const bulletsMenu = document.getElementById('bulletsMenu');
+        const chipsMenu = document.getElementById('chipsMenu');
+
         // --- FORMATTING SHORTCUTS CONFIG ---
         const formattingConfig = {
             colors: {
@@ -824,7 +919,7 @@
                 'italic': 'text-italic',
                 'underline': 'text-underline',
                 'strike': 'text-strike',
-                'normal': '' // Reset formatting
+                'normal': 'format-reset'
             },
             alignments: {
                 'left': 'text-left',
@@ -932,15 +1027,14 @@
 
         function applyFontToSelection(fontName) {
             const selection = window.getSelection();
-
             if (selection.toString().length > 0) {
                 const range = selection.getRangeAt(0);
                 const span = document.createElement('span');
                 span.style.fontFamily = formattingConfig.fonts[fontName] || "'Fredoka', sans-serif";
-
+                
                 range.surroundContents(span);
                 selection.removeAllRanges();
-
+                
                 showFormattingIndicator(`Font changed to ${fontName}`);
             } else {
                 writingCanvas.style.fontFamily = formattingConfig.fonts[fontName] || "'Fredoka', sans-serif";
@@ -948,7 +1042,161 @@
             }
         }
 
-        // --- NEW BUTTONS FUNCTIONALITY ---
+        // --- DROPDOWN MANAGEMENT ---
+        let activeDropdown = null;
+
+        function closeAllDropdowns() {
+            bulletsMenu.classList.remove('active');
+            chipsMenu.classList.remove('active');
+            activeDropdown = null;
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!bulletsBtn.contains(e.target) && !bulletsMenu.contains(e.target) &&
+                !chipsBtn.contains(e.target) && !chipsMenu.contains(e.target)) {
+                closeAllDropdowns();
+            }
+        });
+
+        // --- BULLETS BUTTON ---
+        bulletsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (activeDropdown === 'bullets') {
+                closeAllDropdowns();
+            } else {
+                closeAllDropdowns();
+                bulletsMenu.classList.add('active');
+                activeDropdown = 'bullets';
+                
+                // Position the menu
+                const rect = bulletsBtn.getBoundingClientRect();
+                bulletsMenu.style.top = `${rect.top}px`;
+            }
+        });
+
+        // Bullet menu items
+        document.querySelectorAll('#bulletsMenu .dropdown-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const type = item.getAttribute('data-type');
+                insertBulletList(type);
+                closeAllDropdowns();
+            });
+        });
+
+        function insertBulletList(type) {
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            
+            let bulletChar = '•';
+            let wrapperTag = 'ul';
+            let itemTag = 'li';
+            
+            switch(type) {
+                case 'numbered':
+                    bulletChar = '1.';
+                    wrapperTag = 'ol';
+                    break;
+                case 'checklist':
+                    bulletChar = '☐';
+                    break;
+                case 'dash':
+                    bulletChar = '-';
+                    break;
+            }
+            
+            const list = document.createElement(wrapperTag);
+            list.className = 'bullet-list';
+            
+            const listItem = document.createElement(itemTag);
+            listItem.textContent = 'List item';
+            list.appendChild(listItem);
+            
+            range.insertNode(list);
+            range.setStart(listItem, 0);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            showFormattingIndicator(`${type} list inserted`);
+        }
+
+        // --- CHIPS BUTTON ---
+        chipsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (activeDropdown === 'chips') {
+                closeAllDropdowns();
+            } else {
+                closeAllDropdowns();
+                chipsMenu.classList.add('active');
+                activeDropdown = 'chips';
+                
+                // Position the menu
+                const rect = chipsBtn.getBoundingClientRect();
+                chipsMenu.style.top = `${rect.top}px`;
+            }
+        });
+
+        // Chip menu items
+        document.querySelectorAll('#chipsMenu .dropdown-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const chipType = item.getAttribute('data-chip');
+                insertChip(chipType);
+                closeAllDropdowns();
+            });
+        });
+
+        function insertChip(type) {
+            const chipTexts = {
+                'red': 'Important',
+                'blue': 'Note',
+                'green': 'Success',
+                'yellow': 'Warning',
+                'purple': 'Idea',
+                'pink': 'Reminder'
+            };
+            
+            const chip = document.createElement('span');
+            chip.className = `chip-tag chip-${type}`;
+            chip.textContent = chipTexts[type];
+            chip.contentEditable = 'false';
+            
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                range.insertNode(chip);
+                
+                // Add space after chip
+                const space = document.createTextNode(' ');
+                range.insertNode(space);
+                
+                range.setStartAfter(space);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                showFormattingIndicator(`${chipTexts[type]} chip inserted`);
+            }
+        }
+
+        // --- LINE BREAK BUTTON ---
+        lineBreakBtn.addEventListener('click', () => {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const br = document.createElement('br');
+                range.insertNode(br);
+                
+                // Move cursor after the line break
+                range.setStartAfter(br);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                showFormattingIndicator('Line break inserted');
+            }
+        });
+
+        // --- EXPORT BUTTON ---
         exportBtn.addEventListener('click', () => {
             showFormattingIndicator('Exporting notes...');
             setTimeout(() => {
@@ -963,6 +1211,7 @@
             }, 500);
         });
 
+        // --- DELETE BUTTON ---
         deleteBtn.addEventListener('click', () => {
             if (confirm('Clear all notes?')) {
                 writingCanvas.innerHTML = '';
@@ -971,216 +1220,137 @@
             }
         });
 
-        bulletsBtn.addEventListener('click', () => {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const bullet = document.createElement('div');
-                bullet.innerHTML = '• ';
-                range.insertNode(bullet);
-                range.setStartAfter(bullet);
-                range.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(range);
-                showFormattingIndicator('Bullet inserted');
-            }
-        });
-
-        lineBreakBtn.addEventListener('click', () => {
-            const br = document.createElement('br');
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                range.insertNode(br);
-                range.setStartAfter(br);
-                range.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(range);
-                showFormattingIndicator('Line break inserted');
-            }
-        });
-
-        chipsBtn.addEventListener('click', () => {
-            const chipText = prompt('Enter chip text:', 'New Chip');
-            if (chipText) {
-                const selection = window.getSelection();
-                if (selection.rangeCount > 0) {
-                    const range = selection.getRangeAt(0);
-                    const chip = document.createElement('span');
-                    chip.className = 'chip';
-                    chip.style.cssText = `
-                        display: inline-block;
-                        background: var(--accent-color);
-                        color: white;
-                        padding: 2px 8px;
-                        border-radius: 12px;
-                        font-size: 12px;
-                        margin: 0 4px;
-                    `;
-                    chip.textContent = chipText;
-                    range.insertNode(chip);
-                    range.setStartAfter(chip);
-                    range.collapse(true);
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                    showFormattingIndicator('Chip inserted');
-                }
-            }
-        });
-
-        // --- FORMATTING SHORTCUTS PARSER ---
-        let currentFormattingState = {
-            bold: false,
-            italic: false,
-            underline: false,
-            strike: false,
-            color: null,
-            font: null
-        };
-
+        // --- FORMATTING SHORTCUTS ---
         function showFormattingIndicator(message) {
             formattingIndicator.textContent = message;
             formattingIndicator.classList.add('show');
-
+            
             setTimeout(() => {
                 formattingIndicator.classList.remove('show');
             }, 2000);
         }
 
-        function applyFormattingToSelection(className, isBlock = false) {
-            const selection = window.getSelection();
-
-            if (selection.toString().length > 0) {
-                const range = selection.getRangeAt(0);
-
-                if (isBlock) {
-                    const div = document.createElement('div');
-                    div.className = className;
-                    range.surroundContents(div);
-                } else {
-                    const span = document.createElement('span');
-                    span.className = className;
-                    range.surroundContents(span);
-                }
-
-                selection.removeAllRanges();
-            }
-        }
-
-        function parseFormattingShortcuts(text) {
-            // Color formatting: @color.red:
+        // Formatting shortcuts processor
+        function processFormattingShortcuts(text) {
+            let processed = false;
+            let newText = text;
+            
+            // Process colors: @color.red:
             for (const [color, className] of Object.entries(formattingConfig.colors)) {
-                const regex = new RegExp(`@color\\.${color}:\\s*(.*?)(?=\\n|$)`, 'g');
-                if (regex.test(text)) {
-                    return { type: 'color', className, color };
+                const regex = new RegExp(`@color\\.${color}:(.*?)(?=\\n|$)`, 'gi');
+                if (regex.test(newText)) {
+                    newText = newText.replace(regex, `<span class="${className}">$1</span>`);
+                    processed = true;
                 }
             }
-
-            // Style formatting: @bold:, @italic:, etc.
+            
+            // Process styles: @bold:, @italic:, etc.
             for (const [style, className] of Object.entries(formattingConfig.styles)) {
-                const regex = new RegExp(`@${style}:\\s*(.*?)(?=\\n|$)`, 'g');
-                if (regex.test(text)) {
-                    return { type: 'style', className, style };
+                const regex = new RegExp(`@${style}:(.*?)(?=\\n|$)`, 'gi');
+                if (regex.test(newText)) {
+                    if (style === 'normal') {
+                        newText = newText.replace(regex, `$1`);
+                    } else {
+                        newText = newText.replace(regex, `<span class="${className}">$1</span>`);
+                    }
+                    processed = true;
                 }
             }
-
-            // Alignment formatting: @align.center:
+            
+            // Process alignments: @align.center:
             for (const [align, className] of Object.entries(formattingConfig.alignments)) {
-                const regex = new RegExp(`@align\\.${align}:\\s*(.*?)(?=\\n|$)`, 'g');
-                if (regex.test(text)) {
-                    return { type: 'alignment', className, align };
+                const regex = new RegExp(`@align\\.${align}:(.*?)(?=\\n|$)`, 'gi');
+                if (regex.test(newText)) {
+                    newText = newText.replace(regex, `<div class="${className}">$1</div>`);
+                    processed = true;
                 }
             }
-
-            // Headings: #head:, #subHead:, etc.
-            const headingRegex = /#(head|subHead)(?:\.(\w+))*(?:\.(\w+))*(?:\.(\w+))*:\s*(.*?)(?=\n|$)/g;
-            const headingMatch = headingRegex.exec(text);
-            if (headingMatch) {
-                const type = headingMatch[1];
-                const modifiers = headingMatch.slice(2, 5).filter(m => m);
-                const content = headingMatch[5];
-
+            
+            // Process headings: #head:, #subHead:, etc.
+            const headingRegex = /#(head|subHead)(?:\.(\w+))?(?:\.(\w+))?:(.*?)(?=\n|$)/gi;
+            newText = newText.replace(headingRegex, (match, type, mod1, mod2, content) => {
                 let className = type === 'head' ? 'heading-main' : 'heading-sub';
-                modifiers.forEach(mod => {
-                    if (formattingConfig.colors[mod]) {
-                        className += ` text-${mod}`;
-                    } else if (formattingConfig.alignments[mod]) {
-                        className += ` text-${mod}`;
-                    }
-                });
-
-                return { type: 'heading', className, content, headingType: type };
-            }
-
-            // Code blocks: $code:
-            const codeRegex = /\$code:\s*(.*?)(?=\n|$)/gs;
-            const codeMatch = codeRegex.exec(text);
-            if (codeMatch) {
-                return { type: 'code', className: 'code-block', content: codeMatch[1] };
-            }
-
-            // Font changing: @setFont.FontName:
-            for (const [fontName, fontFamily] of Object.entries(formattingConfig.fonts)) {
-                const regex = new RegExp(`@setFont\\.${fontName.replace(/\s+/g, '\\\\s+')}:\\s*(.*?)(?=\\n|$)`, 'g');
-                if (regex.test(text)) {
-                    return { type: 'font', fontName, fontFamily };
-                }
-            }
-
-            return null;
-        }
-
-        function processFormatting() {
-            const text = writingCanvas.textContent;
-            const lines = text.split('\n');
-
-            lines.forEach((line, index) => {
-                const formatting = parseFormattingShortcuts(line);
-                if (formatting) {
-                    // Remove the shortcut from display
-                    const fullText = writingCanvas.innerHTML;
-                    let newText = fullText;
-
-                    switch (formatting.type) {
-                        case 'color':
-                        case 'style':
-                        case 'alignment':
-                            const regex1 = new RegExp(`(@[^\\s]+:\\s*)`);
-                            newText = newText.replace(regex1, `<span class="${formatting.className}">`);
-                            break;
-
-                        case 'heading':
-                            const headingRegex = new RegExp(`(#${formatting.headingType}[^:]*:\\s*)`);
-                            newText = newText.replace(headingRegex, `<div class="${formatting.className}">`);
-                            break;
-
-                        case 'code':
-                            newText = newText.replace(/\$code:\s*/, `<div class="code-block">`);
-                            break;
-
-                        case 'font':
-                            const fontRegex = new RegExp(`(@setFont\\.[^:]*:\\s*)`);
-                            newText = newText.replace(fontRegex, `<span style="font-family: ${formatting.fontFamily}">`);
-                            break;
-                    }
-
-                    writingCanvas.innerHTML = newText;
-                    showFormattingIndicator(`Applied ${formatting.type} formatting`);
-                }
+                if (mod1 && formattingConfig.colors[mod1]) className += ` text-${mod1}`;
+                if (mod2 && formattingConfig.alignments[mod2]) className += ` text-${mod2}`;
+                return `<div class="${className}">${content}</div>`;
             });
+            
+            // Process code blocks: $code:
+            const codeRegex = /\$code:(.*?)(?=\n|$)/gis;
+            newText = newText.replace(codeRegex, '<div class="code-block">$1</div>');
+            
+            // Process fonts: @setFont.FontName:
+            for (const [fontName, fontFamily] of Object.entries(formattingConfig.fonts)) {
+                const regex = new RegExp(`@setFont\\.${fontName.replace(/\s+/g, '\\s+')}:(.*?)(?=\\n|$)`, 'gi');
+                if (regex.test(newText)) {
+                    newText = newText.replace(regex, `<span style="font-family: ${fontFamily}">$1</span>`);
+                    processed = true;
+                }
+            }
+            
+            return { processed, newText };
         }
 
-        // Real-time formatting processing
-        let formatTimeout;
-        writingCanvas.addEventListener('input', () => {
-            clearTimeout(formatTimeout);
-            formatTimeout = setTimeout(processFormatting, 500);
-        });
+        // Real-time formatting
+        let lastText = '';
+        let processing = false;
 
-        writingCanvas.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                setTimeout(processFormatting, 10);
+        writingCanvas.addEventListener('input', () => {
+            if (processing) return;
+            
+            const currentText = writingCanvas.innerHTML;
+            if (currentText === lastText) return;
+            
+            const { processed, newText } = processFormattingShortcuts(currentText);
+            
+            if (processed) {
+                processing = true;
+                
+                // Save cursor position
+                const selection = window.getSelection();
+                let cursorPosition = 0;
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const preCaretRange = range.cloneRange();
+                    preCaretRange.selectNodeContents(writingCanvas);
+                    preCaretRange.setEnd(range.endContainer, range.endOffset);
+                    cursorPosition = preCaretRange.toString().length;
+                }
+                
+                // Update content
+                writingCanvas.innerHTML = newText;
+                lastText = newText;
+                
+                // Restore cursor position
+                const nodeStack = [writingCanvas];
+                let node;
+                let charIndex = 0;
+                
+                while (node = nodeStack.pop()) {
+                    if (node.nodeType === 3) {
+                        const nextCharIndex = charIndex + node.length;
+                        if (cursorPosition >= charIndex && cursorPosition <= nextCharIndex) {
+                            const range = document.createRange();
+                            range.setStart(node, cursorPosition - charIndex);
+                            range.collapse(true);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            break;
+                        }
+                        charIndex = nextCharIndex;
+                    } else {
+                        let i = node.childNodes.length;
+                        while (i--) {
+                            nodeStack.push(node.childNodes[i]);
+                        }
+                    }
+                }
+                
+                processing = false;
+                showFormattingIndicator('Formatting applied');
             }
+            
+            lastText = currentText;
         });
 
         // Initialize
@@ -1193,9 +1363,12 @@
                 fontSelectorBtn.click();
             }
 
-            if (e.key === 'Escape' && fontDropdown.classList.contains('active')) {
-                fontSelectorBtn.classList.remove('active');
-                fontDropdown.classList.remove('active');
+            if (e.key === 'Escape') {
+                if (fontDropdown.classList.contains('active')) {
+                    fontSelectorBtn.classList.remove('active');
+                    fontDropdown.classList.remove('active');
+                }
+                closeAllDropdowns();
             }
         });
 
