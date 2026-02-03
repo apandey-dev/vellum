@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro UI - Notes App Edition</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&family=Fira+Code:wght@300;400;500&display=swap"
+        rel="stylesheet">
+
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        /* --- CSS VARIABLES --- */
+        :root {
+            --bg-canvas: #09090b;
+            --bg-panel: #141415;
+            --bg-glass: rgba(20, 20, 21, 0.85);
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --border-color: #2a2a2a;
+            --accent-color: #3b82f6;
+            --hover-bg: #27272a;
+            --grid-color: #1f1f22;
+            --tooltip-bg: #ffffff;
+            --tooltip-text: #000000;
+        }
+
+        [data-theme="light"] {
+            --bg-canvas: #f2f4f7;
+            --bg-panel: #ffffff;
+            --bg-glass: rgba(255, 255, 255, 0.9);
+            --text-primary: #101828;
+            --text-secondary: #667085;
+            --border-color: #eaecf0;
+            --accent-color: #000000;
+            --hover-bg: #f2f4f7;
+            --grid-color: #e4e7ec;
+            --tooltip-bg: #000000;
+            --tooltip-text: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: 'Fredoka', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            transition: background-color 0.4s, color 0.4s;
+            background-image: radial-gradient(var(--grid-color) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 68px;
+            height: 94vh;
+            margin: 3vh 0 3vh 20px;
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 0;
+            z-index: 100;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .logo {
+            font-weight: 600;
+            font-size: 20px;
+            letter-spacing: -1px;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+
+        .tool-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .divider {
+            width: 24px;
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 20px 0;
+        }
+
+        .tool-btn {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tool-btn:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .tool-btn.active {
+            background-color: var(--accent-color);
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .tool-btn[data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%) translateX(10px);
+            background-color: var(--tooltip-bg);
+            color: var(--tooltip-text);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 200;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(18px);
+        }
+
+        .bottom-actions {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* --- Top Bar --- */
+        .top-bar-wrapper {
+            position: absolute;
+            top: 3vh;
+            left: 108px;
+            right: 20px;
+            z-index: 40;
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .glass-header {
+            height: 64px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .font-selector-btn {
+            min-width: 180px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            cursor: pointer;
+        }
+
+        .font-dropdown {
+            position: absolute;
+            top: 110%;
+            right: 0;
+            width: 220px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 8px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s;
+            z-index: 1000;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .font-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .font-option {
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 2px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .font-option:hover {
+            background: var(--hover-bg);
+        }
+
+        /* --- Workspace --- */
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-left: 88px;
+            height: 100vh;
+            padding: 100px 40px 40px 40px;
+        }
+
+        .writing-canvas {
+            flex: 1;
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 60px;
+            overflow-y: auto;
+            font-size: 18px;
+            line-height: 1.6;
+            transition: all 0.3s ease;
+            font-family: 'Fredoka', sans-serif;
+            position: relative;
+        }
+
+        /* --- CUSTOM EDITOR STYLES --- */
+        .editor-heading {
+            display: block;
+            font-size: 2.5em;
+            font-weight: 700;
+            margin: 0.5em 0;
+            line-height: 1.2;
+        }
+
+        .editor-subheading {
+            display: block;
+            font-size: 1.8em;
+            font-weight: 600;
+            margin: 0.4em 0;
+            color: var(--text-secondary);
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Fira Code', monospace;
+            margin: 15px 0;
+            position: relative;
+            display: block;
+            border-left: 4px solid var(--accent-color);
+            white-space: pre-wrap;
+        }
+
+        [contenteditable]:focus {
+            outline: none;
+        }
+
+        .restore-pill {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: var(--text-primary);
+            color: var(--bg-canvas);
+            padding: 12px 24px;
+            border-radius: 100px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            cursor: pointer;
+            z-index: 200;
+            transition: 0.5s;
+        }
+
+        .restore-pill.visible {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* --- Sidebar & Topbar Hidden States --- */
+        .sidebar.hidden {
+            transform: translateX(-150%);
+        }
+
+        .top-bar-wrapper.hidden {
+            transform: translateY(-200%);
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="logo">Ui.</div>
+        <div class="tool-group">
+            <div class="tool-btn active" data-tooltip="Editor Mode">
+                <i class="ph ph-note-pencil"></i>
+            </div>
+            <div class="tool-btn" data-tooltip="Search Shortcuts">
+                <i class="ph ph-command"></i>
+            </div>
+            <div class="tool-btn" data-tooltip="Cloud Sync">
+                <i class="ph ph-cloud-arrow-up"></i>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="tool-group">
+            <div class="tool-btn" data-tooltip="Collections">
+                <i class="ph ph-folders"></i>
+            </div>
+            <div class="tool-btn" data-tooltip="Trash">
+                <i class="ph ph-trash"></i>
+            </div>
+        </div>
+
+        <div class="bottom-actions">
+            <div class="tool-btn" id="themeToggle" data-tooltip="Theme">
+                <i class="ph ph-moon" id="themeIcon"></i>
+            </div>
+            <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode">
+                <i class="ph ph-corners-out"></i>
+            </div>
+        </div>
+    </nav>
+
+    <div class="top-bar-wrapper" id="topBar">
+        <header class="glass-header">
+            <div style="font-weight: 500; color: var(--text-secondary);">
+                Draft / <span style="color: var(--text-primary);">Personal Notes</span>
+            </div>
+
+            <div class="header-actions">
+                <div class="font-selector-wrapper" style="position: relative;">
+                    <button class="font-selector-btn" id="fontSelectorBtn">
+                        <span id="currentFont">Fredoka</span>
+                        <i class="ph ph-caret-down"></i>
+                    </button>
+                    <div class="font-dropdown" id="fontDropdown">
+                        <div class="font-option" data-font="Fredoka">Fredoka</div>
+                        <div class="font-option" data-font="Kalam">Kalam</div>
+                        <div class="font-option" data-font="Playpen Sans">Playpen Sans</div>
+                        <div class="font-option" data-font="Patrick Hand">Patrick Hand</div>
+                        <div class="font-option" data-font="Baloo 2">Baloo 2</div>
+                        <div class="font-option" data-font="Comic Neue">Comic Neue</div>
+                    </div>
+                </div>
+                <button class="tool-btn" style="background: var(--bg-panel); border: 1px solid var(--border-color);"><i
+                        class="ph ph-export"></i></button>
+            </div>
+        </header>
+    </div>
+
+    <main class="workspace">
+        <div class="writing-canvas" id="writingCanvas" contenteditable="true">
+            <div>Welcome to <b>Pro Notes</b>! 🚀</div>
+            <div>Try typing these triggers:</div>
+            <div>- <b>#head.blue.center:</b> My Title</div>
+            <div>- <b>@color.red:</b> This text is red</div>
+            <div>- <b>$code:</b> to start a code block</div>
+            <div>- <b>@normal:</b> to reset all sticky styles</div>
+        </div>
+    </main>
+
+    <div class="restore-pill" id="restoreBtn">
+        <i class="ph ph-corners-in"></i>
+        <span>Exit Zen Mode</span>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('writingCanvas');
+        const html = document.documentElement;
+
+        // --- Editor State ---
+        let currentSettings = {
+            font: "'Fredoka', sans-serif",
+            color: 'inherit',
+            bold: false,
+            italic: false,
+            underline: false,
+            strike: false
+        };
+
+        // --- Shortcut Logic ---
+        canvas.addEventListener('input', (e) => {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+
+            const range = selection.getRangeAt(0);
+            const textNode = range.startContainer;
+            const content = textNode.textContent || "";
+
+            // Trigger check for ":"
+            if (content.includes(':')) {
+                const triggerMatch = content.match(/(@\w+(?:\.\w+)*|#\w+(?:\.\w+)*|\$code):/);
+
+                if (triggerMatch) {
+                    const fullTrigger = triggerMatch[0];
+                    const command = triggerMatch[1];
+
+                    // Remove trigger from UI
+                    textNode.textContent = content.replace(fullTrigger, "");
+
+                    processCommand(command);
+                }
+            }
+        });
+
+        function processCommand(cmd) {
+            const parts = cmd.toLowerCase().split('.');
+            const main = parts[0];
+
+            // 1. Heading Styles (#head, #subHead)
+            if (main === '#head' || main === '#subhead') {
+                const tag = main === '#head' ? 'span' : 'span';
+                const className = main === '#head' ? 'editor-heading' : 'editor-subheading';
+
+                let styleStr = "";
+                if (parts.includes('center')) styleStr += "text-align: center;";
+                if (parts.includes('right')) styleStr += "text-align: right;";
+
+                // Color detection in heading
+                const colors = ['red', 'blue', 'green', 'orange', 'purple', 'yellow'];
+                const foundColor = parts.find(p => colors.includes(p));
+                if (foundColor) styleStr += `color: ${foundColor};`;
+
+                applyBlockStyle(className, styleStr);
+            }
+
+            // 2. Sticky Styles (@color, @setFont, @bold, etc)
+            else if (main === '@color') {
+                currentSettings.color = parts[1] || 'inherit';
+                updateCursorStyle();
+            }
+            else if (main === '@setfont') {
+                currentSettings.font = getFontFamily(parts[1]);
+                updateCursorStyle();
+            }
+            else if (main === '@bold') { currentSettings.bold = true; updateCursorStyle(); }
+            else if (main === '@italic') { currentSettings.italic = true; updateCursorStyle(); }
+            else if (main === '@underline') { currentSettings.underline = true; updateCursorStyle(); }
+            else if (main === '@normal') {
+                currentSettings = { font: "'Fredoka', sans-serif", color: 'inherit', bold: false, italic: false };
+                updateCursorStyle();
+            }
+
+            // 3. Alignment (@align)
+            else if (main === '@align') {
+                const align = parts[1] || 'left';
+                document.execCommand('justify' + align.charAt(0).toUpperCase() + align.slice(1), false, null);
+            }
+
+            // 4. Code Block ($code)
+            else if (main === '$code') {
+                const codeDiv = document.createElement('div');
+                codeDiv.className = 'code-block';
+                codeDiv.innerHTML = '// Type your code here...<br>';
+                insertAtCursor(codeDiv);
+            }
+        }
+
+        function updateCursorStyle() {
+            // Apply sticky styles to the document exec engine
+            document.execCommand('fontName', false, currentSettings.font);
+            document.execCommand('foreColor', false, currentSettings.color);
+            if (currentSettings.bold) document.execCommand('bold', false, null);
+        }
+
+        function applyBlockStyle(className, inlineStyle) {
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            const span = document.createElement('span');
+            span.className = className;
+            if (inlineStyle) span.style.cssText = inlineStyle;
+
+            // To ensure it resets on next line
+            span.innerHTML = "&#8203;"; // Zero width space
+            range.insertNode(span);
+
+            // Move cursor inside
+            range.setStart(span, 1);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        function insertAtCursor(el) {
+            const sel = window.getSelection();
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(el);
+
+            // Add a new line after block
+            const p = document.createElement('div');
+            p.innerHTML = '<br>';
+            el.after(p);
+
+            range.setStart(p, 0);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+
+        function getFontFamily(name) {
+            const map = {
+                'fredoka': 'Fredoka', 'kalam': 'Kalam', 'playpen': 'Playpen Sans',
+                'patrick': 'Patrick Hand', 'baloo': 'Baloo 2', 'comic': 'Comic Neue'
+            };
+            return map[name] || 'Fredoka';
+        }
+
+        // --- Theme & UI Logic ---
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            document.getElementById('themeIcon').className = isDark ? 'ph ph-sun' : 'ph ph-moon';
+        });
+
+        const toggleFocus = () => {
+            document.getElementById('sidebar').classList.toggle('hidden');
+            document.getElementById('topBar').classList.toggle('hidden');
+            document.getElementById('restoreBtn').classList.toggle('visible');
+        };
+
+        document.getElementById('focusBtn').addEventListener('click', toggleFocus);
+        document.getElementById('restoreBtn').addEventListener('click', toggleFocus);
+
+        // Font Selector UI
+        const fontBtn = document.getElementById('fontSelectorBtn');
+        const fontDrop = document.getElementById('fontDropdown');
+
+        fontBtn.addEventListener('click', () => fontDrop.classList.toggle('active'));
+
+        document.querySelectorAll('.font-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const f = opt.dataset.font;
+                document.getElementById('currentFont').innerText = f;
+                currentSettings.font = f;
+                updateCursorStyle();
+                fontDrop.classList.remove('active');
+            });
+        });
+
+        // Initial Focus
+        canvas.focus();
+    </script>
+</body>
+
+</html>

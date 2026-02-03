@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro UI - Sidebar Font Selector</title>
+    <title>Pro UI - Text Editor</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,10 +17,10 @@
     <style>
         /* --- CSS VARIABLES --- */
         :root {
+            /* Dark Mode (Default) */
             --bg-canvas: #09090b;
             --bg-panel: #141415;
-            --bg-glass: rgba(20, 20, 21, 0.95);
-            /* Slightly more opaque for menus */
+            --bg-glass: rgba(20, 20, 21, 0.85);
             --text-primary: #ffffff;
             --text-secondary: #888888;
             --border-color: #2a2a2a;
@@ -28,15 +28,20 @@
             --hover-bg: #27272a;
             --grid-color: #1f1f22;
 
+            /* Tooltip Specific */
             --tooltip-bg: #ffffff;
             --tooltip-text: #000000;
+
+            /* Magic Elements */
+            --code-bg: #1e1e1e;
+            --code-border: #333;
         }
 
         /* Light Mode */
         [data-theme="light"] {
             --bg-canvas: #f2f4f7;
             --bg-panel: #ffffff;
-            --bg-glass: rgba(255, 255, 255, 0.95);
+            --bg-glass: rgba(255, 255, 255, 0.9);
             --text-primary: #101828;
             --text-secondary: #667085;
             --border-color: #eaecf0;
@@ -46,6 +51,9 @@
 
             --tooltip-bg: #000000;
             --tooltip-text: #ffffff;
+
+            --code-bg: #f4f4f5;
+            --code-border: #e4e4e7;
         }
 
         * {
@@ -68,9 +76,9 @@
             background-size: 24px 24px;
         }
 
-        /* --- 1. Sidebar --- */
+        /* --- Sidebar & Tooltips --- */
         .sidebar {
-            width: 72px;
+            width: 68px;
             height: 94vh;
             margin: 3vh 0 3vh 20px;
             background-color: var(--bg-panel);
@@ -83,8 +91,6 @@
             z-index: 100;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-            /* Important: Allow dropdowns to spill out */
-            overflow: visible;
         }
 
         .logo {
@@ -101,7 +107,7 @@
         .tool-group {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
             width: 100%;
             align-items: center;
         }
@@ -113,17 +119,16 @@
             margin: 20px 0;
         }
 
-        /* Standard Tool Buttons */
         .tool-btn {
             position: relative;
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--text-secondary);
-            font-size: 22px;
+            font-size: 20px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -139,79 +144,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        /* --- SIDEBAR FONT MENU (New Feature) --- */
-        .font-wrapper {
-            position: relative;
-            /* Anchor for dropdown */
-        }
-
-        /* The Side-Popping Dropdown */
-        .side-dropdown {
-            position: absolute;
-            left: 60px;
-            /* Push to right of sidebar */
-            top: 0;
-            width: 220px;
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 6px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-
-            /* Hidden State */
-            opacity: 0;
-            visibility: hidden;
-            transform: translateX(-10px);
-            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-            z-index: 300;
-        }
-
-        .side-dropdown.open {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(10px);
-        }
-
-        /* Triangle Arrow pointing to sidebar */
-        .side-dropdown::before {
-            content: '';
-            position: absolute;
-            left: -6px;
-            top: 18px;
-            width: 10px;
-            height: 10px;
-            background: var(--bg-panel);
-            border-left: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            transform: rotate(45deg);
-        }
-
-        .font-item {
-            padding: 10px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            color: var(--text-secondary);
-            font-size: 16px;
-            transition: 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .font-item:hover {
-            background-color: var(--hover-bg);
-            color: var(--text-primary);
-        }
-
-        .font-item.selected {
-            background-color: var(--accent-color);
-            color: #ffffff;
-        }
-
-        /* Tooltip Styles */
         .tool-btn[data-tooltip]::after {
             content: attr(data-tooltip);
             position: absolute;
@@ -230,7 +162,7 @@
             visibility: hidden;
             z-index: 200;
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .tool-btn:hover::after {
@@ -239,7 +171,138 @@
             transform: translateY(-50%) translateX(18px);
         }
 
-        /* Previews */
+        .tool-btn[data-tooltip]::before {
+            content: '';
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%) translateX(6px);
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent var(--tooltip-bg) transparent transparent;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover::before {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(8px);
+        }
+
+        .bottom-actions {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* --- Top Bar --- */
+        .top-bar-wrapper {
+            position: absolute;
+            top: 3vh;
+            left: 108px;
+            right: 20px;
+            z-index: 40;
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .glass-header {
+            height: 64px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+        }
+
+        /* --- FONT MENU STYLES --- */
+        .font-menu-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .font-trigger {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid transparent;
+            min-width: 140px;
+            justify-content: space-between;
+        }
+
+        .font-trigger:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .font-trigger i {
+            color: var(--text-secondary);
+        }
+
+        .font-dropdown {
+            position: absolute;
+            top: 50px;
+            left: 0;
+            width: 200px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 6px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+            z-index: 300;
+        }
+
+        .font-dropdown.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .font-item {
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 16px;
+            transition: 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .font-item:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .font-item.selected {
+            background-color: var(--accent-color);
+            color: #fff;
+        }
+
         .f-fredoka {
             font-family: 'Fredoka', sans-serif;
         }
@@ -268,35 +331,11 @@
             font-family: 'Comic Neue', cursive;
         }
 
-        .bottom-actions {
-            margin-top: auto;
+        .header-actions {
             display: flex;
-            flex-direction: column;
-            gap: 12px;
-            align-items: center;
-        }
-
-        /* --- 2. Top Bar (Simplified) --- */
-        .top-bar-wrapper {
-            position: absolute;
-            top: 3vh;
-            right: 20px;
-            z-index: 40;
-            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        .glass-header {
-            height: 50px;
-            background: var(--bg-glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border-color);
-            border-radius: 50px;
-            display: flex;
-            align-items: center;
-            padding: 0 10px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
-            gap: 5px;
+            gap: 8px;
+            padding-left: 20px;
+            border-left: 1px solid var(--border-color);
         }
 
         .action-btn {
@@ -304,7 +343,7 @@
             border: none;
             width: 36px;
             height: 36px;
-            border-radius: 50%;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -318,10 +357,10 @@
             background-color: var(--hover-bg);
         }
 
-        /* --- 3. Main Editor --- */
+        /* --- MAIN EDITOR CANVAS --- */
         .workspace {
             flex: 1;
-            margin-left: 92px;
+            margin-left: 10px;
             height: 100%;
             display: flex;
             align-items: flex-start;
@@ -331,11 +370,11 @@
 
         #editor-canvas {
             margin-top: 100px;
-            margin-bottom: 100px;
-            width: 800px;
-            min-height: 70vh;
+            margin-bottom: 10px;
+            width: 1420px;
+            min-height: 90vh;
             color: var(--text-primary);
-            font-size: 28px;
+            font-size: 24px;
             line-height: 1.6;
             outline: none;
             border: none;
@@ -344,15 +383,43 @@
         }
 
         #editor-canvas:empty:before {
-            content: "Start typing here...";
+            content: "Type @color.red, #head, or $code to start magic...";
             color: var(--text-secondary);
             opacity: 0.5;
             pointer-events: none;
         }
 
-        /* Focus Mode */
+        /* Styles for Magic Triggers */
+        .magic-head {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 15px 0;
+            line-height: 1.2;
+        }
+
+        .magic-subhead {
+            font-size: 1.6em;
+            font-weight: 600;
+            margin: 10px 0;
+            opacity: 0.9;
+        }
+
+        .code-block {
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            display: block;
+            width: 100%;
+            color: var(--text-primary);
+        }
+
         .sidebar.hidden {
-            transform: translateX(-200%);
+            transform: translateX(-180%);
         }
 
         .top-bar-wrapper.hidden {
@@ -392,16 +459,27 @@
 
     <nav class="sidebar" id="sidebar">
         <div class="logo">Ui.</div>
-
         <div class="tool-group">
-            <div class="tool-btn" data-tooltip="Move Tool"><i class="ph ph-cursor"></i></div>
+            <div class="tool-btn" data-tooltip="Move (V)"><i class="ph ph-cursor"></i></div>
+            <div class="tool-btn active" data-tooltip="Text (T)"><i class="ph ph-text-t"></i></div>
+            <div class="tool-btn" data-tooltip="Shape (R)"><i class="ph ph-square"></i></div>
+        </div>
+        <div class="divider"></div>
+        <div class="bottom-actions">
+            <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme"><i class="ph ph-moon" id="themeIcon"></i>
+            </div>
+            <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode"><i class="ph ph-corners-out"></i></div>
+        </div>
+    </nav>
 
-            <div class="font-wrapper">
-                <div class="tool-btn" id="fontTriggerBtn" data-tooltip="Font: Fredoka">
-                    <i class="ph ph-text-aa"></i>
+    <div class="top-bar-wrapper" id="topBar">
+        <header class="glass-header">
+            <div class="font-menu-container">
+                <div class="font-trigger" id="fontTrigger">
+                    <span id="currentFontName">Fredoka</span>
+                    <i class="ph ph-caret-down"></i>
                 </div>
-
-                <div class="side-dropdown" id="fontDropdown">
+                <div class="font-dropdown" id="fontDropdown">
                     <div class="font-item f-fredoka selected" data-name="Fredoka" data-font="'Fredoka', sans-serif">
                         Fredoka</div>
                     <div class="font-item f-kalam" data-name="Kalam" data-font="'Kalam', cursive">Kalam</div>
@@ -417,23 +495,11 @@
                 </div>
             </div>
 
-            <div class="tool-btn" data-tooltip="Colors"><i class="ph ph-palette"></i></div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="bottom-actions">
-            <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme"><i class="ph ph-moon" id="themeIcon"></i>
+            <div class="header-actions">
+                <button class="action-btn" title="Add"><i class="ph ph-plus"></i></button>
+                <button class="action-btn" title="Pin"><i class="ph ph-push-pin"></i></button>
+                <button class="action-btn" title="Share"><i class="ph ph-share-network"></i></button>
             </div>
-            <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode"><i class="ph ph-corners-out"></i></div>
-        </div>
-    </nav>
-
-    <div class="top-bar-wrapper" id="topBar">
-        <header class="glass-header">
-            <button class="action-btn" title="Pin"><i class="ph ph-push-pin"></i></button>
-            <button class="action-btn" title="Share"><i class="ph ph-share-network"></i></button>
-            <button class="action-btn" title="Settings"><i class="ph ph-gear"></i></button>
         </header>
     </div>
 
@@ -447,7 +513,8 @@
     </div>
 
     <script>
-        // DOM Elements
+        // --- UI & LOGIC ---
+
         const sidebar = document.getElementById('sidebar');
         const topBar = document.getElementById('topBar');
         const focusBtn = document.getElementById('focusBtn');
@@ -456,50 +523,43 @@
         const themeIcon = document.getElementById('themeIcon');
         const html = document.documentElement;
 
-        // Font Logic Elements
-        const fontTriggerBtn = document.getElementById('fontTriggerBtn');
+        const fontTrigger = document.getElementById('fontTrigger');
         const fontDropdown = document.getElementById('fontDropdown');
+        const currentFontName = document.getElementById('currentFontName');
         const fontItems = document.querySelectorAll('.font-item');
         const editor = document.getElementById('editor-canvas');
 
-        // 1. Font Menu Toggle (Sidebar)
-        fontTriggerBtn.addEventListener('click', (e) => {
+        // 1. FONT MENU LOGIC
+        fontTrigger.addEventListener('click', (e) => {
             e.stopPropagation();
-            // Close other potential menus here if added later
             fontDropdown.classList.toggle('open');
         });
-
-        // Close menu on outside click
         document.addEventListener('click', (e) => {
-            if (!fontTriggerBtn.contains(e.target) && !fontDropdown.contains(e.target)) {
+            if (!fontTrigger.contains(e.target) && !fontDropdown.contains(e.target)) {
                 fontDropdown.classList.remove('open');
             }
         });
 
-        // 2. Font Selection Logic
         fontItems.forEach(item => {
             item.addEventListener('click', () => {
                 const fontName = item.getAttribute('data-name');
                 const fontStack = item.getAttribute('data-font');
 
-                // Apply Font
-                editor.style.fontFamily = fontStack;
+                // Logic: Insert span with font at cursor
+                const span = document.createElement('span');
+                span.style.fontFamily = fontStack;
+                span.textContent = '\u200B'; // zero width space
+                insertNodeAtCursor(span);
 
-                // Update Tooltip on Sidebar Button to show current selection
-                fontTriggerBtn.setAttribute('data-tooltip', `Font: ${fontName}`);
-
-                // Update Active State
+                // Also update UI for clarity
+                currentFontName.innerText = fontName;
                 fontItems.forEach(i => i.classList.remove('selected'));
                 item.classList.add('selected');
-
-                // Close Menu
                 fontDropdown.classList.remove('open');
-
-                editor.focus();
             });
         });
 
-        // 3. Theme Toggle
+        // 2. THEME LOGIC
         themeToggle.addEventListener('click', () => {
             const currentTheme = html.getAttribute('data-theme');
             if (currentTheme === 'dark') {
@@ -511,7 +571,7 @@
             }
         });
 
-        // 4. Focus Mode
+        // 3. FOCUS MODE
         function toggleFocus() {
             const isHidden = sidebar.classList.contains('hidden');
             if (!isHidden) {
@@ -526,15 +586,182 @@
                 if (document.fullscreenElement) document.exitFullscreen();
             }
         }
-
         focusBtn.addEventListener('click', toggleFocus);
         restoreBtn.addEventListener('click', toggleFocus);
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement && sidebar.classList.contains('hidden')) toggleFocus();
         });
 
-        // Init
+        // ==========================================
+        //  MAGIC TRIGGER LOGIC (The Core Feature)
+        // ==========================================
+
+        function insertNodeAtCursor(node) {
+            const sel = window.getSelection();
+            if (sel.rangeCount) {
+                const range = sel.getRangeAt(0);
+                range.deleteContents();
+                range.insertNode(node);
+                range.setStart(node, 1);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+        }
+
+        function formatCurrentBlock(tag, classes = [], styles = {}) {
+            const sel = window.getSelection();
+            if (!sel.rangeCount) return;
+            let node = sel.anchorNode;
+            while (node && node.parentNode !== editor && node.nodeName !== 'DIV' && node.nodeName !== 'P' && node.nodeName !== 'H1' && node.nodeName !== 'H2') {
+                node = node.parentNode;
+            }
+            if (node && node !== editor) {
+                const newEl = document.createElement(tag);
+                newEl.innerHTML = node.innerHTML;
+                classes.forEach(c => newEl.classList.add(c));
+                for (const [key, value] of Object.entries(styles)) {
+                    newEl.style[key] = value;
+                }
+                node.replaceWith(newEl);
+                // Set caret to end
+                const range = document.createRange();
+                range.selectNodeContents(newEl);
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else {
+                document.execCommand('formatBlock', false, tag);
+            }
+        }
+
+        function deleteTriggerText(node, length) {
+            const text = node.textContent;
+            node.textContent = text.slice(0, -length);
+        }
+
+        editor.addEventListener('keyup', (e) => {
+            if (e.key === ' ') {
+                handleTrigger();
+            }
+            if (e.key === 'Enter') {
+                // Reset styles on new line
+                setTimeout(() => {
+                    document.execCommand('foreColor', false, 'var(--text-primary)');
+                    document.execCommand('removeFormat');
+                }, 0);
+            }
+        });
+
+        function handleTrigger() {
+            const sel = window.getSelection();
+            if (!sel.rangeCount) return;
+            const focusNode = sel.focusNode;
+            const text = focusNode.textContent;
+
+            // 1. COLORS: @color.red
+            const colorMatch = text.match(/@color\.([a-zA-Z]+)\s$/);
+            if (colorMatch) {
+                deleteTriggerText(focusNode, colorMatch[0].length);
+                const span = document.createElement('span');
+                span.style.color = colorMatch[1];
+                span.textContent = '\u200B';
+                insertNodeAtCursor(span);
+                return;
+            }
+
+            // 2. ALIGN: @align.center
+            const alignMatch = text.match(/@align\.(left|center|right)\s$/);
+            if (alignMatch) {
+                deleteTriggerText(focusNode, alignMatch[0].length);
+                formatCurrentBlock('div', [], { textAlign: alignMatch[1] });
+                return;
+            }
+
+            // 3. STYLES: @bold, @italic...
+            const styleMap = {
+                '@bold': 'fontWeight:bold', '@italic': 'fontStyle:italic',
+                '@underline': 'textDecoration:underline', '@strike': 'textDecoration:line-through',
+                '@normal': 'all:unset'
+            };
+            for (const [trigger, style] of Object.entries(styleMap)) {
+                if (text.endsWith(trigger + ' ')) {
+                    deleteTriggerText(focusNode, trigger.length + 1);
+                    const span = document.createElement('span');
+                    if (trigger === '@normal') {
+                        span.style.all = 'unset';
+                        span.style.color = 'var(--text-primary)';
+                    } else {
+                        const [p, v] = style.split(':');
+                        span.style[p] = v;
+                    }
+                    span.textContent = '\u200B';
+                    insertNodeAtCursor(span);
+                    return;
+                }
+            }
+
+            // 4. FONT: @setFont.Name
+            const fontMatch = text.match(/@setFont\.([a-zA-Z\s]+)\s$/);
+            if (fontMatch) {
+                const fName = fontMatch[1];
+                deleteTriggerText(focusNode, fontMatch[0].length);
+                const span = document.createElement('span');
+                const fontMap = {
+                    'Kalam': "'Kalam', cursive", 'Fredoka': "'Fredoka', sans-serif",
+                    'Playpen': "'Playpen Sans', cursive", 'Comic': "'Comic Sans MS', cursive",
+                    'Patrick': "'Patrick Hand', cursive", 'Baloo': "'Baloo 2', cursive"
+                };
+                span.style.fontFamily = fontMap[fName] || fName;
+                span.textContent = '\u200B';
+                insertNodeAtCursor(span);
+                return;
+            }
+
+            // 5. HEADINGS (Mix): #head.red.center
+            const headMatch = text.match(/(#head|#subHead)([\.a-zA-Z]*)\s$/);
+            if (headMatch) {
+                deleteTriggerText(focusNode, headMatch[0].length);
+                const type = headMatch[1];
+                const mods = headMatch[2].split('.').filter(Boolean);
+
+                const tag = type === '#head' ? 'h1' : 'h2';
+                const cls = type === '#head' ? 'magic-head' : 'magic-subhead';
+                let styles = {};
+
+                mods.forEach(mod => {
+                    if (['left', 'center', 'right'].includes(mod)) styles.textAlign = mod;
+                    else styles.color = mod;
+                });
+
+                formatCurrentBlock(tag, [cls], styles);
+                return;
+            }
+
+            // 6. CODE: $code
+            if (text.endsWith('$code ')) {
+                deleteTriggerText(focusNode, 6);
+                const codeDiv = document.createElement('div');
+                codeDiv.className = 'code-block';
+                codeDiv.textContent = '\u200B';
+
+                const range = sel.getRangeAt(0);
+                range.insertNode(codeDiv);
+
+                const br = document.createElement('br'); // Exit logic
+                range.collapse(false);
+                range.insertNode(br);
+
+                range.selectNodeContents(codeDiv);
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                return;
+            }
+        }
+
         window.onload = () => editor.focus();
+
     </script>
 </body>
 
