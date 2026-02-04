@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro UI - Phosphor Edition</title>
+    <title>Notes App - Pro Formatting</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,6 +32,18 @@
             /* Tooltip Specific */
             --tooltip-bg: #ffffff;
             --tooltip-text: #000000;
+            
+            /* Formatting Colors */
+            --color-red: #ef4444;
+            --color-blue: #3b82f6;
+            --color-green: #10b981;
+            --color-yellow: #f59e0b;
+            --color-purple: #8b5cf6;
+            --color-pink: #ec4899;
+            --color-orange: #f97316;
+            --color-gray: #6b7280;
+            --color-black: #000000;
+            --color-white: #ffffff;
         }
 
         /* Light Mode */
@@ -432,25 +444,178 @@
 
         .writing-canvas {
             flex: 1;
-            /* background-color: var(--bg-panel); */
-            /* border: 1px solid var(--border-color); */
             border-radius: 16px;
-            padding: 10px;
+            padding: 24px;
             overflow-y: auto;
             outline: none;
             font-size: 18px;
             line-height: 1.6;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
             transition: all 0.3s ease;
             font-family: 'Fredoka', sans-serif;
             min-height: 400px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
         }
 
         .writing-canvas:empty:before {
-            content: "Start writing here... Select text and choose a font from the dropdown above! ✨";
+            content: "Start writing here... Use formatting shortcuts like @color.red:, @bold:, #head:, etc. ✨";
             color: var(--text-secondary);
             font-style: italic;
             opacity: 0.6;
+        }
+
+        /* --- Formatting Styles --- */
+        .text-red { color: var(--color-red); }
+        .text-blue { color: var(--color-blue); }
+        .text-green { color: var(--color-green); }
+        .text-yellow { color: var(--color-yellow); }
+        .text-purple { color: var(--color-purple); }
+        .text-pink { color: var(--color-pink); }
+        .text-orange { color: var(--color-orange); }
+        .text-gray { color: var(--color-gray); }
+        .text-black { color: var(--color-black); }
+        .text-white { color: var(--color-white); }
+        
+        .text-bold { font-weight: bold; }
+        .text-italic { font-style: italic; }
+        .text-underline { text-decoration: underline; }
+        .text-strike { text-decoration: line-through; }
+        
+        .text-left { text-align: left; }
+        .text-center { text-align: center; display: block; }
+        .text-right { text-align: right; display: block; }
+        
+        .heading-main {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            display: block;
+        }
+        
+        .heading-sub {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0 8px 0;
+            display: block;
+        }
+        
+        .code-block {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+            margin: 10px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: block;
+        }
+
+        /* --- Formatting Indicator --- */
+        .formatting-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .formatting-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- Dropdown Menus --- */
+        .dropdown-menu {
+            position: absolute;
+            left: 80px;
+            top: 0;
+            background: var(--bg-glass);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 8px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-10px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1000;
+            min-width: 200px;
+        }
+
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0) scale(1);
+        }
+
+        .dropdown-item {
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            margin: 4px 0;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid transparent;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--hover-bg);
+            border-color: var(--border-color);
+        }
+
+        .dropdown-item i {
+            font-size: 18px;
+        }
+
+        /* Chip Styles */
+        .chip-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 0 4px;
+        }
+
+        .chip-red { background-color: #ef4444; color: white; }
+        .chip-blue { background-color: #3b82f6; color: white; }
+        .chip-green { background-color: #10b981; color: white; }
+        .chip-yellow { background-color: #f59e0b; color: black; }
+        .chip-purple { background-color: #8b5cf6; color: white; }
+        .chip-pink { background-color: #ec4899; color: white; }
+
+        /* Bullet List */
+        .bullet-list {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+
+        .bullet-list li {
+            margin: 5px 0;
+            position: relative;
+            padding-left: 10px;
+        }
+
+        .bullet-list li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
         }
 
         /* --- 4. Focus & Restore --- */
@@ -490,21 +655,25 @@
         }
 
         /* Scrollbar Styling */
-        .font-dropdown::-webkit-scrollbar {
+        .font-dropdown::-webkit-scrollbar,
+        .dropdown-menu::-webkit-scrollbar {
             width: 6px;
         }
 
-        .font-dropdown::-webkit-scrollbar-track {
+        .font-dropdown::-webkit-scrollbar-track,
+        .dropdown-menu::-webkit-scrollbar-track {
             background: transparent;
             border-radius: 3px;
         }
 
-        .font-dropdown::-webkit-scrollbar-thumb {
+        .font-dropdown::-webkit-scrollbar-thumb,
+        .dropdown-menu::-webkit-scrollbar-thumb {
             background: var(--text-secondary);
             border-radius: 3px;
         }
 
-        .font-dropdown::-webkit-scrollbar-thumb:hover {
+        .font-dropdown::-webkit-scrollbar-thumb:hover,
+        .dropdown-menu::-webkit-scrollbar-thumb:hover {
             background: var(--text-primary);
         }
 
@@ -529,25 +698,77 @@
 <body>
 
     <nav class="sidebar" id="sidebar">
-        <div class="logo">Ui.</div>
+        <div class="logo">Notes</div>
 
+        <!-- Added Buttons as requested -->
         <div class="tool-group">
-            <div class="tool-btn active" data-tooltip="Move Tool (V)">
-                <i class="ph ph-cursor"></i>
+            <div class="tool-btn" id="exportBtn" data-tooltip="Export">
+                <i class="ph ph-export"></i>
             </div>
-            <div class="tool-btn" data-tooltip="Frame (F)">
-                <i class="ph ph-frame-corners"></i>
+            <div class="tool-btn" id="deleteBtn" data-tooltip="Delete">
+                <i class="ph ph-trash"></i>
             </div>
-            <div class="tool-btn" data-tooltip="Shape (R)">
-                <i class="ph ph-square"></i>
+            <div class="tool-btn" id="bulletsBtn" data-tooltip="Bullets">
+                <i class="ph ph-list-bullets"></i>
             </div>
-            <div class="tool-btn" data-tooltip="Text (T)">
-                <i class="ph ph-text-t"></i>
+            <div class="tool-btn" id="lineBreakBtn" data-tooltip="Line Break">
+                <i class="ph ph-line-break"></i>
+            </div>
+            <div class="tool-btn" id="chipsBtn" data-tooltip="Insert Chip">
+                <i class="ph ph-tag"></i>
+            </div>
+        </div>
+
+        <!-- Dropdown Menus -->
+        <div class="dropdown-menu" id="bulletsMenu">
+            <div class="dropdown-item" data-type="bullet">
+                <i class="ph ph-circle"></i>
+                <span>• Bullet List</span>
+            </div>
+            <div class="dropdown-item" data-type="numbered">
+                <i class="ph ph-list-numbers"></i>
+                <span>1. Numbered List</span>
+            </div>
+            <div class="dropdown-item" data-type="checklist">
+                <i class="ph ph-check-square"></i>
+                <span>☐ Checklist</span>
+            </div>
+            <div class="dropdown-item" data-type="dash">
+                <i class="ph ph-minus"></i>
+                <span>- Dash List</span>
+            </div>
+        </div>
+
+        <div class="dropdown-menu" id="chipsMenu">
+            <div class="dropdown-item" data-chip="red">
+                <i class="ph ph-circle" style="color: #ef4444"></i>
+                <span>Important</span>
+            </div>
+            <div class="dropdown-item" data-chip="blue">
+                <i class="ph ph-circle" style="color: #3b82f6"></i>
+                <span>Note</span>
+            </div>
+            <div class="dropdown-item" data-chip="green">
+                <i class="ph ph-circle" style="color: #10b981"></i>
+                <span>Success</span>
+            </div>
+            <div class="dropdown-item" data-chip="yellow">
+                <i class="ph ph-circle" style="color: #f59e0b"></i>
+                <span>Warning</span>
+            </div>
+            <div class="dropdown-item" data-chip="purple">
+                <i class="ph ph-circle" style="color: #8b5cf6"></i>
+                <span>Idea</span>
+            </div>
+            <div class="dropdown-item" data-chip="pink">
+                <i class="ph ph-circle" style="color: #ec4899"></i>
+                <span>Reminder</span>
             </div>
         </div>
 
         <div class="divider"></div>
 
+        <!-- Existing buttons -->
         <div class="tool-group">
             <div class="tool-btn" data-tooltip="Assets">
                 <i class="ph ph-diamonds-four"></i>
@@ -571,9 +792,9 @@
     <div class="top-bar-wrapper" id="topBar">
         <header class="glass-header">
             <div class="chips">
-                <div class="chip active">Design</div>
-                <div class="chip">Prototype</div>
-                <div class="chip">Inspect</div>
+                <div class="chip active">All Notes</div>
+                <div class="chip">Recent</div>
+                <div class="chip">Favorites</div>
             </div>
 
             <div class="header-actions">
@@ -624,25 +845,28 @@
 
     <main class="workspace">
         <div class="writing-canvas" id="writingCanvas" contenteditable="true">
-            Welcome to your writing canvas! 🎨
+Welcome to Advanced Notes App! 🎨
 
-            This is a fully functional text editor. You can:
-            • Type anything you want
-            • Select text and change fonts using the dropdown
-            • Each font has its unique character
+Try these formatting shortcuts:
 
-            Try selecting some text and choosing a different font from the menu!
+#head: Welcome to Notes App
+#subHead.blue.center: Advanced Formatting Guide
 
-            Fonts Available:
-            1. Fredoka - Modern and clean
-            2. Kalam - Handwritten style
-            3. Playpen Sans - Fun and playful
-            4. Patrick Hand - Casual handwriting
-            5. Baloo 2 - Bold and friendly
-            6. Comic Neue - Modern comic style
-            7. Comic Sans MS - Classic comic font
+@color.red: This text will be red
+@bold: This is bold text
+@normal: Back to normal text
+
+@align.center: This line will be centered
+$code: This is a code block
+console.log("Hello World");
+
+@setFont.Kalam: This text in Kalam font
+
+Learn all shortcuts from the formatting guide!
         </div>
     </main>
+
+    <div class="formatting-indicator" id="formattingIndicator"></div>
 
     <div class="restore-pill" id="restoreBtn">
         <i class="ph ph-corners-in"></i>
@@ -650,8 +874,7 @@
     </div>
 
     <script>
-        // --- LOGIC ---
-
+        // --- ELEMENTS ---
         const sidebar = document.getElementById('sidebar');
         const topBar = document.getElementById('topBar');
         const focusBtn = document.getElementById('focusBtn');
@@ -664,8 +887,57 @@
         const fontDropdown = document.getElementById('fontDropdown');
         const currentFontSpan = document.getElementById('currentFont');
         const fontOptions = document.querySelectorAll('.font-option');
+        const formattingIndicator = document.getElementById('formattingIndicator');
 
-        // 1. Tool Selection
+        // --- NEW ADDED BUTTONS ---
+        const exportBtn = document.getElementById('exportBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const bulletsBtn = document.getElementById('bulletsBtn');
+        const lineBreakBtn = document.getElementById('lineBreakBtn');
+        const chipsBtn = document.getElementById('chipsBtn');
+
+        // --- DROPDOWN MENUS ---
+        const bulletsMenu = document.getElementById('bulletsMenu');
+        const chipsMenu = document.getElementById('chipsMenu');
+
+        // --- FORMATTING SHORTCUTS CONFIG ---
+        const formattingConfig = {
+            colors: {
+                'red': 'text-red',
+                'blue': 'text-blue',
+                'green': 'text-green',
+                'yellow': 'text-yellow',
+                'purple': 'text-purple',
+                'pink': 'text-pink',
+                'orange': 'text-orange',
+                'gray': 'text-gray',
+                'black': 'text-black',
+                'white': 'text-white'
+            },
+            styles: {
+                'bold': 'text-bold',
+                'italic': 'text-italic',
+                'underline': 'text-underline',
+                'strike': 'text-strike',
+                'normal': 'format-reset'
+            },
+            alignments: {
+                'left': 'text-left',
+                'center': 'text-center',
+                'right': 'text-right'
+            },
+            fonts: {
+                'Fredoka': "'Fredoka', sans-serif",
+                'Kalam': "'Kalam', cursive",
+                'Playpen Sans': "'Playpen Sans', cursive",
+                'Patrick Hand': "'Patrick Hand', cursive",
+                'Baloo 2': "'Baloo 2', cursive",
+                'Comic Neue': "'Comic Neue', cursive",
+                'Comic Sans MS': "'Comic Sans MS', cursive, sans-serif"
+            }
+        };
+
+        // --- TOOL SELECTION ---
         const tools = document.querySelectorAll('.tool-group .tool-btn');
         tools.forEach(tool => {
             tool.addEventListener('click', () => {
@@ -676,7 +948,7 @@
             });
         });
 
-        // 2. Theme Toggle
+        // --- THEME TOGGLE ---
         themeToggle.addEventListener('click', () => {
             const currentTheme = html.getAttribute('data-theme');
 
@@ -691,7 +963,7 @@
             }
         });
 
-        // 3. Focus Mode
+        // --- FOCUS MODE ---
         function toggleFocus() {
             const isHidden = sidebar.classList.contains('hidden');
             if (!isHidden) {
@@ -710,21 +982,20 @@
         focusBtn.addEventListener('click', toggleFocus);
         restoreBtn.addEventListener('click', toggleFocus);
 
-        // Escape Key Failsafe
+        // --- ESCAPE KEY FAILSAFE ---
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement && sidebar.classList.contains('hidden')) {
                 toggleFocus();
             }
         });
 
-        // 4. Font Selector Logic
+        // --- FONT SELECTOR LOGIC ---
         fontSelectorBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             fontSelectorBtn.classList.toggle('active');
             fontDropdown.classList.toggle('active');
         });
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             if (!fontSelectorBtn.contains(e.target) && !fontDropdown.contains(e.target)) {
                 fontSelectorBtn.classList.remove('active');
@@ -732,26 +1003,21 @@
             }
         });
 
-        // Font Selection with better implementation
         fontOptions.forEach(option => {
             option.addEventListener('click', () => {
                 const selectedFont = option.getAttribute('data-font');
 
-                // Update active state in dropdown
                 fontOptions.forEach(opt => opt.classList.remove('active'));
                 option.classList.add('active');
 
-                // Update button text with smooth transition
                 currentFontSpan.style.opacity = '0.5';
                 setTimeout(() => {
                     currentFontSpan.textContent = selectedFont;
                     currentFontSpan.style.opacity = '1';
                 }, 150);
 
-                // Apply font to selected text
                 applyFontToSelection(selectedFont);
 
-                // Close dropdown with animation
                 setTimeout(() => {
                     fontSelectorBtn.classList.remove('active');
                     fontDropdown.classList.remove('active');
@@ -759,139 +1025,350 @@
             });
         });
 
-        // Better font application function
         function applyFontToSelection(fontName) {
             const selection = window.getSelection();
-
             if (selection.toString().length > 0) {
-                // Save the current selection
                 const range = selection.getRangeAt(0);
-
-                // Create a span with the new font
                 const span = document.createElement('span');
-                span.style.fontFamily = getFontFamilyCSS(fontName);
-
-                // Wrap the selected text in the span
+                span.style.fontFamily = formattingConfig.fonts[fontName] || "'Fredoka', sans-serif";
+                
                 range.surroundContents(span);
-
-                // Clear selection after applying font (optional)
                 selection.removeAllRanges();
-
-                // Add subtle animation to the changed text
-                span.style.transition = 'all 0.3s ease';
-                setTimeout(() => {
-                    span.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
-                    setTimeout(() => {
-                        span.style.backgroundColor = 'transparent';
-                    }, 500);
-                }, 50);
+                
+                showFormattingIndicator(`Font changed to ${fontName}`);
             } else {
-                // If no text selected, show a hint
-                writingCanvas.style.fontFamily = getFontFamilyCSS(fontName);
-
-                // Visual feedback
-                const originalBorder = writingCanvas.style.borderColor;
-                writingCanvas.style.borderColor = 'var(--accent-color)';
-                setTimeout(() => {
-                    writingCanvas.style.borderColor = originalBorder;
-                }, 300);
-
-                // Show tooltip for user
-                showTooltip("Select text first to apply font");
+                writingCanvas.style.fontFamily = formattingConfig.fonts[fontName] || "'Fredoka', sans-serif";
+                showFormattingIndicator(`Document font set to ${fontName}`);
             }
         }
 
-        // Helper function to get CSS font-family string
-        function getFontFamilyCSS(fontName) {
-            const fontMap = {
-                'Fredoka': "'Fredoka', sans-serif",
-                'Kalam': "'Kalam', cursive",
-                'Playpen Sans': "'Playpen Sans', cursive",
-                'Patrick Hand': "'Patrick Hand', cursive",
-                'Baloo 2': "'Baloo 2', cursive",
-                'Comic Neue': "'Comic Neue', cursive",
-                'Comic Sans MS': "'Comic Sans MS', cursive, sans-serif"
+        // --- DROPDOWN MANAGEMENT ---
+        let activeDropdown = null;
+
+        function closeAllDropdowns() {
+            bulletsMenu.classList.remove('active');
+            chipsMenu.classList.remove('active');
+            activeDropdown = null;
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!bulletsBtn.contains(e.target) && !bulletsMenu.contains(e.target) &&
+                !chipsBtn.contains(e.target) && !chipsMenu.contains(e.target)) {
+                closeAllDropdowns();
+            }
+        });
+
+        // --- BULLETS BUTTON ---
+        bulletsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (activeDropdown === 'bullets') {
+                closeAllDropdowns();
+            } else {
+                closeAllDropdowns();
+                bulletsMenu.classList.add('active');
+                activeDropdown = 'bullets';
+                
+                // Position the menu
+                const rect = bulletsBtn.getBoundingClientRect();
+                bulletsMenu.style.top = `${rect.top}px`;
+            }
+        });
+
+        // Bullet menu items
+        document.querySelectorAll('#bulletsMenu .dropdown-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const type = item.getAttribute('data-type');
+                insertBulletList(type);
+                closeAllDropdowns();
+            });
+        });
+
+        function insertBulletList(type) {
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            
+            let bulletChar = '•';
+            let wrapperTag = 'ul';
+            let itemTag = 'li';
+            
+            switch(type) {
+                case 'numbered':
+                    bulletChar = '1.';
+                    wrapperTag = 'ol';
+                    break;
+                case 'checklist':
+                    bulletChar = '☐';
+                    break;
+                case 'dash':
+                    bulletChar = '-';
+                    break;
+            }
+            
+            const list = document.createElement(wrapperTag);
+            list.className = 'bullet-list';
+            
+            const listItem = document.createElement(itemTag);
+            listItem.textContent = 'List item';
+            list.appendChild(listItem);
+            
+            range.insertNode(list);
+            range.setStart(listItem, 0);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            showFormattingIndicator(`${type} list inserted`);
+        }
+
+        // --- CHIPS BUTTON ---
+        chipsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (activeDropdown === 'chips') {
+                closeAllDropdowns();
+            } else {
+                closeAllDropdowns();
+                chipsMenu.classList.add('active');
+                activeDropdown = 'chips';
+                
+                // Position the menu
+                const rect = chipsBtn.getBoundingClientRect();
+                chipsMenu.style.top = `${rect.top}px`;
+            }
+        });
+
+        // Chip menu items
+        document.querySelectorAll('#chipsMenu .dropdown-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const chipType = item.getAttribute('data-chip');
+                insertChip(chipType);
+                closeAllDropdowns();
+            });
+        });
+
+        function insertChip(type) {
+            const chipTexts = {
+                'red': 'Important',
+                'blue': 'Note',
+                'green': 'Success',
+                'yellow': 'Warning',
+                'purple': 'Idea',
+                'pink': 'Reminder'
             };
-            return fontMap[fontName] || "'Fredoka', sans-serif";
+            
+            const chip = document.createElement('span');
+            chip.className = `chip-tag chip-${type}`;
+            chip.textContent = chipTexts[type];
+            chip.contentEditable = 'false';
+            
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                range.insertNode(chip);
+                
+                // Add space after chip
+                const space = document.createTextNode(' ');
+                range.insertNode(space);
+                
+                range.setStartAfter(space);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                showFormattingIndicator(`${chipTexts[type]} chip inserted`);
+            }
         }
 
-        // Tooltip function for user feedback
-        function showTooltip(message) {
-            // Remove existing tooltip if any
-            const existingTooltip = document.querySelector('.custom-tooltip');
-            if (existingTooltip) existingTooltip.remove();
+        // --- LINE BREAK BUTTON ---
+        lineBreakBtn.addEventListener('click', () => {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const br = document.createElement('br');
+                range.insertNode(br);
+                
+                // Move cursor after the line break
+                range.setStartAfter(br);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                showFormattingIndicator('Line break inserted');
+            }
+        });
 
-            // Create new tooltip
-            const tooltip = document.createElement('div');
-            tooltip.className = 'custom-tooltip';
-            tooltip.textContent = message;
-            tooltip.style.cssText = `
-                position: fixed;
-                bottom: 100px;
-                left: 50%;
-                transform: translateX(-50%);
-                background-color: var(--accent-color);
-                color: white;
-                padding: 10px 20px;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 500;
-                z-index: 1000;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-                opacity: 0;
-                animation: tooltipFade 3s ease;
-            `;
-
-            document.body.appendChild(tooltip);
-
-            // Add CSS animation
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes tooltipFade {
-                    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
-                    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
-                    85% { opacity: 1; transform: translateX(-50%) translateY(0); }
-                    100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-                }
-            `;
-            document.head.appendChild(style);
-
-            // Remove after animation
+        // --- EXPORT BUTTON ---
+        exportBtn.addEventListener('click', () => {
+            showFormattingIndicator('Exporting notes...');
             setTimeout(() => {
-                tooltip.remove();
-                style.remove();
-            }, 3000);
+                const content = writingCanvas.innerHTML;
+                const blob = new Blob([content], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'notes-export.html';
+                a.click();
+                URL.revokeObjectURL(url);
+            }, 500);
+        });
+
+        // --- DELETE BUTTON ---
+        deleteBtn.addEventListener('click', () => {
+            if (confirm('Clear all notes?')) {
+                writingCanvas.innerHTML = '';
+                writingCanvas.focus();
+                showFormattingIndicator('All notes cleared');
+            }
+        });
+
+        // --- FORMATTING SHORTCUTS ---
+        function showFormattingIndicator(message) {
+            formattingIndicator.textContent = message;
+            formattingIndicator.classList.add('show');
+            
+            setTimeout(() => {
+                formattingIndicator.classList.remove('show');
+            }, 2000);
         }
 
-        // 5. Initialize with sample content focused
+        // Formatting shortcuts processor
+        function processFormattingShortcuts(text) {
+            let processed = false;
+            let newText = text;
+            
+            // Process colors: @color.red:
+            for (const [color, className] of Object.entries(formattingConfig.colors)) {
+                const regex = new RegExp(`@color\\.${color}:(.*?)(?=\\n|$)`, 'gi');
+                if (regex.test(newText)) {
+                    newText = newText.replace(regex, `<span class="${className}">$1</span>`);
+                    processed = true;
+                }
+            }
+            
+            // Process styles: @bold:, @italic:, etc.
+            for (const [style, className] of Object.entries(formattingConfig.styles)) {
+                const regex = new RegExp(`@${style}:(.*?)(?=\\n|$)`, 'gi');
+                if (regex.test(newText)) {
+                    if (style === 'normal') {
+                        newText = newText.replace(regex, `$1`);
+                    } else {
+                        newText = newText.replace(regex, `<span class="${className}">$1</span>`);
+                    }
+                    processed = true;
+                }
+            }
+            
+            // Process alignments: @align.center:
+            for (const [align, className] of Object.entries(formattingConfig.alignments)) {
+                const regex = new RegExp(`@align\\.${align}:(.*?)(?=\\n|$)`, 'gi');
+                if (regex.test(newText)) {
+                    newText = newText.replace(regex, `<div class="${className}">$1</div>`);
+                    processed = true;
+                }
+            }
+            
+            // Process headings: #head:, #subHead:, etc.
+            const headingRegex = /#(head|subHead)(?:\.(\w+))?(?:\.(\w+))?:(.*?)(?=\n|$)/gi;
+            newText = newText.replace(headingRegex, (match, type, mod1, mod2, content) => {
+                let className = type === 'head' ? 'heading-main' : 'heading-sub';
+                if (mod1 && formattingConfig.colors[mod1]) className += ` text-${mod1}`;
+                if (mod2 && formattingConfig.alignments[mod2]) className += ` text-${mod2}`;
+                return `<div class="${className}">${content}</div>`;
+            });
+            
+            // Process code blocks: $code:
+            const codeRegex = /\$code:(.*?)(?=\n|$)/gis;
+            newText = newText.replace(codeRegex, '<div class="code-block">$1</div>');
+            
+            // Process fonts: @setFont.FontName:
+            for (const [fontName, fontFamily] of Object.entries(formattingConfig.fonts)) {
+                const regex = new RegExp(`@setFont\\.${fontName.replace(/\s+/g, '\\s+')}:(.*?)(?=\\n|$)`, 'gi');
+                if (regex.test(newText)) {
+                    newText = newText.replace(regex, `<span style="font-family: ${fontFamily}">$1</span>`);
+                    processed = true;
+                }
+            }
+            
+            return { processed, newText };
+        }
+
+        // Real-time formatting
+        let lastText = '';
+        let processing = false;
+
+        writingCanvas.addEventListener('input', () => {
+            if (processing) return;
+            
+            const currentText = writingCanvas.innerHTML;
+            if (currentText === lastText) return;
+            
+            const { processed, newText } = processFormattingShortcuts(currentText);
+            
+            if (processed) {
+                processing = true;
+                
+                // Save cursor position
+                const selection = window.getSelection();
+                let cursorPosition = 0;
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    const preCaretRange = range.cloneRange();
+                    preCaretRange.selectNodeContents(writingCanvas);
+                    preCaretRange.setEnd(range.endContainer, range.endOffset);
+                    cursorPosition = preCaretRange.toString().length;
+                }
+                
+                // Update content
+                writingCanvas.innerHTML = newText;
+                lastText = newText;
+                
+                // Restore cursor position
+                const nodeStack = [writingCanvas];
+                let node;
+                let charIndex = 0;
+                
+                while (node = nodeStack.pop()) {
+                    if (node.nodeType === 3) {
+                        const nextCharIndex = charIndex + node.length;
+                        if (cursorPosition >= charIndex && cursorPosition <= nextCharIndex) {
+                            const range = document.createRange();
+                            range.setStart(node, cursorPosition - charIndex);
+                            range.collapse(true);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            break;
+                        }
+                        charIndex = nextCharIndex;
+                    } else {
+                        let i = node.childNodes.length;
+                        while (i--) {
+                            nodeStack.push(node.childNodes[i]);
+                        }
+                    }
+                }
+                
+                processing = false;
+                showFormattingIndicator('Formatting applied');
+            }
+            
+            lastText = currentText;
+        });
+
+        // Initialize
         writingCanvas.focus();
 
-        // 6. Keyboard shortcuts for font selection
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + Shift + F to open font dropdown
             if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
                 e.preventDefault();
                 fontSelectorBtn.click();
             }
 
-            // Escape to close font dropdown
-            if (e.key === 'Escape' && fontDropdown.classList.contains('active')) {
-                fontSelectorBtn.classList.remove('active');
-                fontDropdown.classList.remove('active');
-            }
-        });
-
-        // 7. Highlight selected text when user selects it
-        writingCanvas.addEventListener('mouseup', () => {
-            const selection = window.getSelection();
-            if (selection.toString().length > 0) {
-                // Show visual feedback that text is selected
-                const range = selection.getRangeAt(0);
-                const rect = range.getBoundingClientRect();
-
-                // You could add a floating toolbar here in future
-                // For now, just log for debugging
-                console.log('Text selected:', selection.toString());
+            if (e.key === 'Escape') {
+                if (fontDropdown.classList.contains('active')) {
+                    fontSelectorBtn.classList.remove('active');
+                    fontDropdown.classList.remove('active');
+                }
+                closeAllDropdowns();
             }
         });
 
