@@ -566,26 +566,31 @@ body {
     line-height: 1.6;
 }
 
-/* --- Formatting Indicator --- */
+/* --- Formatting Indicator (Toast) --- */
 .formatting-indicator {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    background: var(--accent-color);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: bold;
-    z-index: 1000;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    color: var(--text-primary);
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 500;
     opacity: 0;
-    transform: translateY(-20px);
-    transition: all 0.3s ease;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10000;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
 .formatting-indicator.show {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(-50%) translateY(0);
 }
 
 /* --- Dropdown Menus --- */
@@ -678,7 +683,8 @@ body {
 }
 
 /* Font Marker Span */
-.font-marker {
+.font-marker,
+.active-font-span {
     display: inline;
 }
 
@@ -976,10 +982,14 @@ body {
     border-radius: 16px;
     padding: 32px;
     max-width: 450px;
+    min-width: 400px;
+    max-height: 600px;
     width: 90%;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     transform: scale(0.9) translateY(20px);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
 }
 
 .form-modal.show .form-box {
@@ -991,10 +1001,12 @@ body {
     font-weight: 600;
     margin-bottom: 20px;
     color: var(--text-primary);
+    flex-shrink: 0;
 }
 
 .form-group {
     margin-bottom: 20px;
+    flex-shrink: 0;
 }
 
 .form-group label {
@@ -1029,6 +1041,7 @@ body {
     gap: 12px;
     justify-content: flex-end;
     margin-top: 24px;
+    flex-shrink: 0;
 }
 
 .form-btn {
@@ -1062,9 +1075,12 @@ body {
 }
 
 .folder-list {
-    max-height: 300px;
+    max-height: 280px;
+    min-height: 200px;
     overflow-y: auto;
     margin-top: 20px;
+    flex: 1;
+    padding-right: 4px;
 }
 
 .folder-item {

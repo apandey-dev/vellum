@@ -220,26 +220,26 @@ function deleteFolder(folderId) {
         return;
     }
 
-    // Move notes to default folder
-    notes.forEach(note => {
-        if (note.folderId === folderId) {
-            note.folderId = 'default';
-        }
-    });
+    const folder = folders.find(f => f.id === folderId);
+    const folderNotes = notes.filter(n => n.folderId === folderId);
 
-    const index = folders.findIndex(f => f.id === folderId);
-    if (index > -1) {
-        folders.splice(index, 1);
+    // Show custom confirmation modal
+    const modal = document.getElementById('confirmFolderDeleteModal');
+    const titleEl = document.getElementById('folderDeleteTitle');
+    const messageEl = document.getElementById('folderDeleteMessage');
+
+    titleEl.textContent = `Delete "${folder.name}"?`;
+
+    if (folderNotes.length > 0) {
+        messageEl.textContent = `${folderNotes.length} note(s) will be moved to Default folder.`;
+    } else {
+        messageEl.textContent = 'This folder will be deleted.';
     }
 
-    if (activeFolderId === folderId) {
-        activeFolderId = 'default';
-    }
+    modal.classList.add('show');
 
-    saveToStorage();
-    renderFolderList();
-    renderNoteChips();
-    showFormattingIndicator('Folder deleted!');
+    // Store folder ID for confirmation handler
+    modal.dataset.pendingFolderId = folderId;
 }
 
 function setActiveFolder(folderId) {
@@ -467,79 +467,94 @@ fontOptions.forEach(option => {
 });
 
 function applyFontToCurrentLine(fontName) {
-    writingCanvas.focus();
+    const fontFamily = formattingConfig.fonts[fontName] || "'Fredoka', sans-serif";
     const selection = window.getSelection();
 
-    if (!selection.rangeCount) return;
-
-    const fontFamily = formattingConfig.fonts[fontName] || "'Fredoka', sans-serif";
-    const range = selection.getRangeAt(0);
-
-    // If text is selected, wrap only the selection
-    if (!range.collapsed) {
-        const span = document.createElement('span');
-        span.style.fontFamily = fontFamily;
-
-        try {
-            const fragment = range.extractContents();
-            span.appendChild(fragment);
-            range.insertNode(span);
-
-            // Move cursor to end of span
-            range.setStartAfter(span);
-            range.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        } catch (e) {
-            console.error('Font application error:', e);
-        }
-    } else {
-        // No selection - create marker span at cursor for future typing
-        // This preserves all previous content
-
-        const markerSpan = document.createElement('span');
-        markerSpan.style.fontFamily = fontFamily;
-        markerSpan.className = 'font-marker';
-
-        // Add a zero-width space to make the span "real"
-        markerSpan.appendChild(document.createTextNode('\u200B'));
-
-        // Insert the marker span at cursor
-        range.insertNode(markerSpan);
-
-        // Place cursor inside the span, after the zero-width space
-        range.setStart(markerSpan.firstChild, 1);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-
-        // Listen for next input to continue typing in this span
-        const handleInput = (e) => {
-            // Check if we're still in a zero-width only span
-            const currentNode = selection.anchorNode;
-            if (currentNode && currentNode.parentElement &&
-                currentNode.parentElement.classList &&
-                currentNode.parentElement.classList.contains('font-marker')) {
-
-                const parent = currentNode.parentElement;
-
-                // Remove zero-width space if user is typing
-                if (currentNode.textContent.includes('\u200B')) {
-                    currentNode.textContent = currentNode.textContent.replace('\u200B', '');
-                }
-
-                // Remove marker class as it's now real content
-                parent.classList.remove('font-marker');
-            }
-
-            // Remove this listener after first input
-            writingCanvas.removeEventListener('input', handleInput);
-        };
-
-        writingCanvas.addEventListener('input', handleInput, { once: true });
+    if (!selection.rangeCount) {
+        writingCanvas.focus();
+        return;
     }
 
+    const range = selection.getRangeAt(0);
+
+    // Case 1: Text is selected - wrap only selection
+    if (!range.collapsed) {
+        try {
+            const span = document.createElement('span');
+            span.style.fontFamily = fontFamily;
+
+            const contents = range.extractContents();
+            span.appendChild(contents);
+            range.insertNode(span);
+
+            // Keep cursor at end of span, not at start!
+            const newRange = document.createRange();
+            newRange.setStartAfter(span);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+
+            writingCanvas.focus();
+            showFormattingIndicator(`Font: ${fontName} (selection)`);
+            return;
+        } catch (e) {
+            console.error('Font selection error:', e);
+        }
+    }
+
+    // Case 2: No selection - create typing context at cursor
+    // Save exact cursor position
+    const startContainer = range.startContainer;
+    const startOffset = range.startOffset;
+
+    // Create invisible span that will capture future typing
+    const fontSpan = document.createElement('span');
+    fontSpan.style.fontFamily = fontFamily;
+    fontSpan.classList.add('active-font-span');
+
+    // Insert empty text node inside span
+    const emptyText = document.createTextNode('');
+    fontSpan.appendChild(emptyText);
+
+    // Insert span at cursor
+    range.insertNode(fontSpan);
+
+    // Place cursor INSIDE the span
+    const newRange = document.createRange();
+    newRange.setStart(emptyText, 0);
+    newRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+
+    writingCanvas.focus();
     showFormattingIndicator(`Font: ${fontName} (from cursor)`);
+
+    // Monitor typing to ensure it stays in span
+    let inputHandler;
+    inputHandler = (e) => {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+
+        const currentRange = sel.getRangeAt(0);
+        const node = currentRange.startContainer;
+
+        // Check if we're still in our font span
+        let parent = node.nodeType === 3 ? node.parentElement : node;
+
+        // If not in any font span, remove handler
+        if (!parent || !parent.classList || !parent.classList.contains('active-font-span')) {
+            writingCanvas.removeEventListener('input', inputHandler);
+            return;
+        }
+
+        // If span has content, mark it as permanent
+        if (parent.textContent.length > 0) {
+            parent.classList.remove('active-font-span');
+            writingCanvas.removeEventListener('input', inputHandler);
+        }
+    };
+
+    writingCanvas.addEventListener('input', inputHandler);
 }
 
 // --- DROPDOWN MANAGEMENT ---
@@ -591,17 +606,35 @@ function insertBulletList(type) {
     }
 
     const range = selection.getRangeAt(0);
-    range.deleteContents();
 
-    let listElement;
-    let bulletChar = '• ';
+    // Don't delete content, just insert at cursor
+    let bulletText = '';
 
     if (type === 'numbered') {
-        bulletChar = '1. ';
+        // Smart numbering: Check if there's a number before cursor
+        let currentNode = range.startContainer;
+        let textBefore = '';
+
+        if (currentNode.nodeType === 3) { // Text node
+            textBefore = currentNode.textContent.substring(0, range.startOffset);
+        }
+
+        // Find last number in the text
+        const numberMatch = textBefore.match(/(\d+)\.\s*[^\d]*$/);
+        let nextNumber = 1;
+
+        if (numberMatch) {
+            nextNumber = parseInt(numberMatch[1]) + 1;
+        }
+
+        bulletText = `${nextNumber}. `;
+    } else {
+        // Regular bullet
+        bulletText = '• ';
     }
 
-    // Create inline text node with bullet
-    const textNode = document.createTextNode(bulletChar);
+    // Insert bullet text inline
+    const textNode = document.createTextNode(bulletText);
     range.insertNode(textNode);
 
     // Position cursor after bullet
@@ -610,7 +643,7 @@ function insertBulletList(type) {
     selection.removeAllRanges();
     selection.addRange(range);
 
-    showFormattingIndicator(`${type} bullet inserted`);
+    showFormattingIndicator(`${type === 'numbered' ? 'Number' : 'Bullet'} inserted`);
     saveCurrentNote();
 }
 
@@ -803,6 +836,53 @@ manageFoldersModal.addEventListener('click', (e) => {
     }
 });
 
+// --- FOLDER DELETE CONFIRMATION MODAL ---
+const confirmFolderDeleteModal = document.getElementById('confirmFolderDeleteModal');
+const cancelFolderDeleteBtn = document.getElementById('cancelFolderDelete');
+const confirmFolderDeleteBtn = document.getElementById('confirmFolderDelete');
+
+cancelFolderDeleteBtn.addEventListener('click', () => {
+    confirmFolderDeleteModal.classList.remove('show');
+    delete confirmFolderDeleteModal.dataset.pendingFolderId;
+});
+
+confirmFolderDeleteBtn.addEventListener('click', () => {
+    const folderId = confirmFolderDeleteModal.dataset.pendingFolderId;
+
+    if (folderId) {
+        // Move notes to default folder
+        notes.forEach(note => {
+            if (note.folderId === folderId) {
+                note.folderId = 'default';
+            }
+        });
+
+        const index = folders.findIndex(f => f.id === folderId);
+        if (index > -1) {
+            folders.splice(index, 1);
+        }
+
+        if (activeFolderId === folderId) {
+            activeFolderId = 'default';
+        }
+
+        saveToStorage();
+        renderFolderList();
+        renderNoteChips();
+        showFormattingIndicator('Folder deleted!');
+    }
+
+    confirmFolderDeleteModal.classList.remove('show');
+    delete confirmFolderDeleteModal.dataset.pendingFolderId;
+});
+
+confirmFolderDeleteModal.addEventListener('click', (e) => {
+    if (e.target === confirmFolderDeleteModal) {
+        confirmFolderDeleteModal.classList.remove('show');
+        delete confirmFolderDeleteModal.dataset.pendingFolderId;
+    }
+});
+
 // --- FORMATTING SHORTCUTS ---
 function getCurrentLine() {
     const selection = window.getSelection();
@@ -847,25 +927,32 @@ function processLineFormatting(lineNode) {
         }
     }
 
-    // Process headings
+    // Process headings: #head:, #subHead:, #head.center:, #head.red.center:, #head.center.red: (order independent)
     if (!processed) {
-        const headingRegex = /#(head|subHead)(?:\.(\w+))?(?:\.(\w+))?:(.*)$/i;
+        const headingRegex = /#(head|subHead)((?:\.\w+)*):(.*)$/i;
         const match = text.match(headingRegex);
         if (match) {
-            const [, type, mod1, mod2, content] = match;
+            const [, type, modifiers, content] = match;
             let className = type === 'head' ? 'heading-main' : 'heading-sub';
             let inlineStyles = '';
 
-            if (mod1 && isValidColor(mod1)) {
-                inlineStyles += `color: ${mod1}; `;
-            } else if (mod1 && formattingConfig.alignments[mod1]) {
-                className += ` text-${mod1}`;
-            }
+            // Parse all modifiers
+            if (modifiers) {
+                const mods = modifiers.split('.').filter(m => m.length > 0);
 
-            if (mod2 && formattingConfig.alignments[mod2]) {
-                className += ` text-${mod2}`;
-            } else if (mod2 && isValidColor(mod2)) {
-                inlineStyles += `color: ${mod2}; `;
+                // Check each modifier - could be color or alignment
+                mods.forEach(mod => {
+                    const modLower = mod.toLowerCase();
+
+                    // Check if it's a valid color
+                    if (isValidColor(modLower)) {
+                        inlineStyles += `color: ${modLower}; `;
+                    }
+                    // Check if it's an alignment
+                    else if (formattingConfig.alignments[modLower]) {
+                        className += ` text-${modLower}`;
+                    }
+                });
             }
 
             if (inlineStyles) {
@@ -993,6 +1080,70 @@ writingCanvas.addEventListener('keyup', (e) => {
 // Auto-save on input
 writingCanvas.addEventListener('input', () => {
     saveCurrentNote();
+});
+
+// Enter key handler for list continuation
+writingCanvas.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+
+        const range = selection.getRangeAt(0);
+        let currentNode = range.startContainer;
+
+        if (currentNode.nodeType === 3) { // Text node
+            const textBefore = currentNode.textContent.substring(0, range.startOffset);
+
+            // Check if line starts with bullet or number
+            const bulletMatch = textBefore.match(/^(\s*)(•|\d+\.)\s+(.*)$/);
+
+            if (bulletMatch) {
+                const [, indent, marker, content] = bulletMatch;
+
+                // If user pressed Enter on empty list item, remove it and exit list
+                if (!content.trim()) {
+                    e.preventDefault();
+
+                    // Remove the empty bullet/number
+                    currentNode.textContent = currentNode.textContent.substring(0, range.startOffset - (indent + marker).length - 1) +
+                        currentNode.textContent.substring(range.startOffset);
+
+                    // Insert newline
+                    const br = document.createElement('br');
+                    const newRange = document.createRange();
+                    newRange.setStart(currentNode, range.startOffset - (indent + marker).length - 1);
+                    newRange.insertNode(br);
+
+                    newRange.setStartAfter(br);
+                    newRange.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+                    return;
+                }
+
+                // Continue list with next item
+                e.preventDefault();
+
+                let newMarker = marker;
+
+                // If it's a number, increment it
+                if (/^\d+\.$/.test(marker)) {
+                    const num = parseInt(marker);
+                    newMarker = `${num + 1}.`;
+                }
+
+                // Insert newline and new marker
+                const newLine = document.createTextNode('\n' + indent + newMarker + ' ');
+                range.insertNode(newLine);
+
+                // Position cursor after new marker
+                range.setStartAfter(newLine);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+    }
 });
 
 // --- KEYBOARD SHORTCUTS ---

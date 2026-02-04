@@ -213,16 +213,32 @@
         <div class="form-box">
             <h3>Manage Folders</h3>
             <div class="form-group">
-                <label>New Folder Name</label>
-                <input type="text" id="newFolderName" placeholder="Enter folder name...">
-                <button class="form-btn primary" id="createFolderBtn" style="margin-top: 10px; width: 100%;">Create
-                    Folder</button>
+                <label>Create New Folder</label>
+                <input type="text" id="newFolderName" placeholder="Folder name...">
             </div>
+            <button class="form-btn primary" id="createFolderBtn">Create Folder</button>
+
             <div class="folder-list" id="folderList">
-                <!-- Folders will be dynamically added here -->
+                <!-- Folders will be dynamically added -->
             </div>
+
             <div class="form-actions">
                 <button class="form-btn secondary" id="closeFoldersModal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Folder Delete Confirmation Modal -->
+    <div class="confirm-modal" id="confirmFolderDeleteModal">
+        <div class="confirm-box">
+            <div class="confirm-icon">
+                <i class="ph ph-folder-minus"></i>
+            </div>
+            <h3 id="folderDeleteTitle">Delete Folder?</h3>
+            <p id="folderDeleteMessage">This folder will be deleted.</p>
+            <div class="confirm-actions">
+                <button class="confirm-btn cancel" id="cancelFolderDelete">Cancel</button>
+                <button class="confirm-btn delete" id="confirmFolderDelete">Delete</button>
             </div>
         </div>
     </div>
