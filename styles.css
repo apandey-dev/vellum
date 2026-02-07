@@ -1,14 +1,11 @@
-/* --- GLOBAL SCROLLBAR HIDING --- */
+/* --- GLOBAL SCROLLBAR HIDDEN --- */
 * {
     scrollbar-width: none;
-    /* Firefox */
     -ms-overflow-style: none;
-    /* IE/Edge */
 }
 
 *::-webkit-scrollbar {
     display: none;
-    /* Chrome, Safari, Opera */
 }
 
 /* --- CSS VARIABLES --- */
@@ -97,14 +94,22 @@ body {
 
 .logo {
     font-weight: 600;
-    font-size: 20px;
+    font-size: 28px;
     letter-spacing: -1px;
     margin-bottom: 30px;
-    background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+}
+
+.logo i {
+    font-size: 24px;
 }
 
 /* Tool Group */
@@ -589,6 +594,54 @@ body {
     line-height: 1.6;
 }
 
+/* Chip Styles */
+.chip-tag {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    margin: 0 4px;
+    user-select: none;
+    transition: all 0.2s;
+}
+
+.chip-red {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.chip-blue {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.chip-green {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.chip-yellow {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.chip-purple {
+    background-color: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.chip-pink {
+    background-color: rgba(236, 72, 153, 0.15);
+    color: #ec4899;
+    border: 1px solid rgba(236, 72, 153, 0.3);
+}
+
 /* --- Formatting Indicator (Toast) --- */
 .formatting-indicator {
     position: fixed;
@@ -663,46 +716,6 @@ body {
 
 .dropdown-item i {
     font-size: 18px;
-}
-
-/* Chip Styles */
-.chip-tag {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 12px;
-    font-weight: 500;
-    margin: 0 4px;
-}
-
-.chip-red {
-    background-color: #ef4444;
-    color: white;
-}
-
-.chip-blue {
-    background-color: #3b82f6;
-    color: white;
-}
-
-.chip-green {
-    background-color: #10b981;
-    color: white;
-}
-
-.chip-yellow {
-    background-color: #f59e0b;
-    color: black;
-}
-
-.chip-purple {
-    background-color: #8b5cf6;
-    color: white;
-}
-
-.chip-pink {
-    background-color: #ec4899;
-    color: white;
 }
 
 /* Font Marker Span */
@@ -854,16 +867,10 @@ body {
 
 .toggle-option.active {
     color: var(--bg-canvas);
-    /* Dynamic depending on theme, handled by slider bg usually, 
-       but here we want text contrast against the slider.
-       If active is Public/Private, text color changes. */
 }
 
-/* Specific text colors for active states if needed, 
-   but simpler is to use mix-blend-mode or just absolute coloring. */
 [data-theme="dark"] .toggle-option.active {
     color: #ffffff;
-    /* Fallback */
 }
 
 [data-theme="light"] .toggle-option.active {
@@ -1335,6 +1342,207 @@ body {
     color: white;
 }
 
+/* --- Export Modal Styling --- */
+.export-box {
+    max-width: 500px !important;
+    min-width: 450px !important;
+}
+
+.export-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.export-card {
+    background: var(--bg-panel);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.export-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-color);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.export-card.selected {
+    border-color: var(--accent-color);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.export-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.export-card[data-format="pdf"] .export-card-icon {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.export-card[data-format="markdown"] .export-card-icon {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.export-card[data-format="text"] .export-card-icon {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.export-card h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.export-card p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.pdf-options {
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+    margin-top: 20px;
+    display: none;
+}
+
+.pdf-options.visible {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+.theme-selector {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.theme-option {
+    flex: 1;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.theme-option:hover {
+    border-color: var(--accent-color);
+}
+
+.theme-option.active {
+    border-color: var(--accent-color);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.theme-preview {
+    width: 60px;
+    height: 40px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dark-theme {
+    background: #1a1a1a;
+    border: 1px solid #333;
+}
+
+.light-theme {
+    background: #ffffff;
+    border: 1px solid #ddd;
+}
+
+.theme-demo-text {
+    font-weight: bold;
+}
+
+.dark-theme .theme-demo-text {
+    color: white;
+}
+
+.light-theme .theme-demo-text {
+    color: black;
+}
+
+.theme-option span {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    margin-top: 8px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-switch .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.toggle-switch .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked+.toggle-slider {
+    background-color: var(--accent-color);
+}
+
+.toggle-switch input:checked+.toggle-slider:before {
+    transform: translateX(24px);
+}
+
+.export-actions {
+    margin-top: 24px;
+}
+
 /* Scrollbar Styling */
 .font-dropdown::-webkit-scrollbar,
 .dropdown-menu::-webkit-scrollbar,
@@ -1376,154 +1584,12 @@ body {
     .font-selector-btn {
         min-width: 150px;
     }
-}
 
-/ *   - - -   S H A R E   M O D A L   S T Y L E S   - - -   * /     . s h a r e - m o d a l - b o x    {
-                 m i n - w i d t h :    5 0 0 p x ;
-                 m a x - w i d t h :    5 5 0 p x ;
-         
-}
+    .export-options {
+        grid-template-columns: 1fr;
+    }
 
-         . m o d a l - d e s c r i p t i o n    {
-                 c o l o r :    v a r ( - - t e x t - s e c o n d a r y ) ;
-                 f o n t - s i z e :    1 4 p x ;
-                 m a r g i n - b o t t o m :    2 0 p x ;
-         
+    .export-box {
+        min-width: 300px !important;
+    }
 }
-
-         . s h a r e - t o g g l e - w r a p p e r    {
-                 m a r g i n :    2 4 p x   0 ;
-         
-}
-
-         . s h a r e - t o g g l e    {
-                 d i s p l a y :    f l e x ;
-                 b a c k g r o u n d :    v a r ( - - b g - p a n e l ) ;
-                 b o r d e r :    1 p x   s o l i d   v a r ( - - b o r d e r - c o l o r ) ;
-                 b o r d e r - r a d i u s :    5 0 p x ;
-                 p a d d i n g :    4 p x ;
-                 g a p :    4 p x ;
-         
-}
-
-         . t o g g l e - o p t i o n    {
-                 f l e x :    1 ;
-                 p a d d i n g :    1 2 p x   2 0 p x ;
-                 b o r d e r - r a d i u s :    5 0 p x ;
-                 t e x t - a l i g n :    c e n t e r ;
-                 c u r s o r :    p o i n t e r ;
-                 t r a n s i t i o n :    a l l   0 . 3 s   c u b i c - b e z i e r ( 0 . 1 6 ,    1 ,    0 . 3 ,    1 ) ;
-                 f o n t - w e i g h t :    5 0 0 ;
-                 d i s p l a y :    f l e x ;
-                 a l i g n - i t e m s :    c e n t e r ;
-                 j u s t i f y - c o n t e n t :    c e n t e r ;
-                 g a p :    8 p x ;
-                 c o l o r :    v a r ( - - t e x t - s e c o n d a r y ) ;
-         
-}
-
-         . t o g g l e - o p t i o n : h o v e r    {
-                 b a c k g r o u n d :    v a r ( - - h o v e r - b g ) ;
-                 c o l o r :    v a r ( - - t e x t - p r i m a r y ) ;
-         
-}
-
-         . t o g g l e - o p t i o n . a c t i v e    {
-                 b a c k g r o u n d :    v a r ( - - a c c e n t - c o l o r ) ;
-                 c o l o r :    w h i t e ;
-                 b o x - s h a d o w :    0   4 p x   1 2 p x   r g b a ( 5 9 ,    1 3 0 ,    2 4 6 ,    0 . 3 ) ;
-         
-}
-
-         . t o g g l e - o p t i o n   i    {
-                 f o n t - s i z e :    1 8 p x ;
-         
-}
-
-         . s h a r e - l i n k - s e c t i o n    {
-                 m a r g i n :    2 4 p x   0 ;
-         
-}
-
-         . s h a r e - l i n k - s e c t i o n   l a b e l    {
-                 d i s p l a y :    b l o c k ;
-                 f o n t - w e i g h t :    5 0 0 ;
-                 m a r g i n - b o t t o m :    8 p x ;
-                 c o l o r :    v a r ( - - t e x t - p r i m a r y ) ;
-         
-}
-
-         . s h a r e - l i n k - c o n t a i n e r    {
-                 d i s p l a y :    f l e x ;
-                 g a p :    1 0 p x ;
-                 a l i g n - i t e m s :    s t r e t c h ;
-         
-}
-
-         . s h a r e - l i n k - c o n t a i n e r   i n p u t    {
-                 f l e x :    1 ;
-                 p a d d i n g :    1 2 p x   1 6 p x ;
-                 b o r d e r - r a d i u s :    1 0 p x ;
-                 b o r d e r :    1 p x   s o l i d   v a r ( - - b o r d e r - c o l o r ) ;
-                 b a c k g r o u n d :    v a r ( - - b g - p a n e l ) ;
-                 c o l o r :    v a r ( - - t e x t - p r i m a r y ) ;
-                 f o n t - f a m i l y :    ' F r e d o k a '  ,    s a n s - s e r i f ;
-                 f o n t - s i z e :    1 3 p x ;
-                 t r a n s i t i o n :    a l l   0 . 2 s ;
-         
-}
-
-         . s h a r e - l i n k - c o n t a i n e r   i n p u t : f o c u s    {
-                 b o r d e r - c o l o r :    v a r ( - - a c c e n t - c o l o r ) ;
-                 o u t l i n e :    n o n e ;
-         
-}
-
-         . c o p y - l i n k - b t n    {
-                 p a d d i n g :    1 2 p x   2 0 p x ;
-                 b o r d e r - r a d i u s :    1 0 p x ;
-                 b o r d e r :    1 p x   s o l i d   v a r ( - - b o r d e r - c o l o r ) ;
-                 b a c k g r o u n d :    v a r ( - - b g - p a n e l ) ;
-                 c o l o r :    v a r ( - - t e x t - p r i m a r y ) ;
-                 f o n t - f a m i l y :    ' F r e d o k a '  ,    s a n s - s e r i f ;
-                 f o n t - w e i g h t :    5 0 0 ;
-                 c u r s o r :    p o i n t e r ;
-                 t r a n s i t i o n :    a l l   0 . 3 s   c u b i c - b e z i e r ( 0 . 1 6 ,    1 ,    0 . 3 ,    1 ) ;
-                 d i s p l a y :    f l e x ;
-                 a l i g n - i t e m s :    c e n t e r ;
-                 g a p :    6 p x ;
-         
-}
-
-         . c o p y - l i n k - b t n : h o v e r    {
-                 b a c k g r o u n d :    v a r ( - - a c c e n t - c o l o r ) ;
-                 c o l o r :    w h i t e ;
-                 b o r d e r - c o l o r :    v a r ( - - a c c e n t - c o l o r ) ;
-                 t r a n s f o r m :    t r a n s l a t e Y ( - 1 p x ) ;
-         
-}
-
-         . c o p y - l i n k - b t n   i    {
-                 f o n t - s i z e :    1 6 p x ;
-         
-}
-
-         . l i n k - s t a t u s    {
-                 d i s p l a y :    b l o c k ;
-                 m a r g i n - t o p :    8 p x ;
-                 c o l o r :    v a r ( - - t e x t - s e c o n d a r y ) ;
-                 f o n t - s i z e :    1 2 p x ;
-         
-}
-
-         . l i n k - s t a t u s . p u b l i c    {
-                 c o l o r :    v a r ( - - c o l o r - g r e e n ) ;
-         
-}
-
-         . l i n k - s t a t u s . p r i v a t e    {
-                 c o l o r :    v a r ( - - c o l o r - o r a n g e ) ;
-         
-}
-
-     

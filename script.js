@@ -24,6 +24,14 @@ const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 const newNoteModal = document.getElementById('newNoteModal');
 const manageFoldersModal = document.getElementById('manageFoldersModal');
+const exportModal = document.getElementById('exportModal');
+const closeExportModalBtn = document.getElementById('closeExportModal');
+const exportConfirmBtn = document.getElementById('exportConfirmBtn');
+const exportFileNameInput = document.getElementById('exportFileName');
+const exportCards = document.querySelectorAll('.export-card');
+const pdfOptions = document.getElementById('pdfOptions');
+const themeOptions = document.querySelectorAll('.theme-option');
+const includeHeaderFooter = document.getElementById('includeHeaderFooter');
 
 // Button elements
 const exportBtn = document.getElementById('exportBtn');
@@ -56,6 +64,9 @@ let folders = [];
 let activeNoteId = null;
 let activeFolderId = 'default';
 let lastNotePerFolder = {}; // Track last opened note per folder
+
+// Export state
+let selectedExportFormat = null;
 
 // --- FORMATTING CONFIG ---
 const formattingConfig = {
@@ -682,6 +693,8 @@ function applyFontAtCursor(fontName, useShortcutMode = false) {
     // Try to restore saved cursor range if available
     if (savedCursorRange) {
         restoreCursorRange();
+    } else {
+        writingCanvas.focus();
     }
 
     let selection = window.getSelection();
@@ -905,6 +918,7 @@ document.querySelectorAll('#chipsMenu .dropdown-item').forEach(item => {
     });
 });
 
+// IMPROVED CHIP INSERTION - Inserts at cursor position correctly
 function insertChip(type) {
     const chipTexts = {
         'red': 'Important',
@@ -929,9 +943,17 @@ function insertChip(type) {
     }
 
     const range = selection.getRangeAt(0);
+    
+    // Ensure we're in the writing canvas
+    if (!writingCanvas.contains(range.commonAncestorContainer)) {
+        writingCanvas.focus();
+        return;
+    }
 
     // Delete any selected content
-    range.deleteContents();
+    if (!range.collapsed) {
+        range.deleteContents();
+    }
 
     // Create chip element
     const chip = document.createElement('span');
@@ -976,21 +998,272 @@ lineBreakBtn.addEventListener('click', () => {
     }
 });
 
-// --- EXPORT BUTTON ---
+// --- EXPORT MODAL ---
 exportBtn.addEventListener('click', () => {
-    showFormattingIndicator('Exporting note...');
-    setTimeout(() => {
+    const note = notes.find(n => n.id === activeNoteId);
+    if (note) {
+        exportFileNameInput.value = note.name.replace(/[^\w\s]/gi, '');
+    }
+    
+    // Reset selection
+    exportCards.forEach(card => card.classList.remove('selected'));
+    selectedExportFormat = null;
+    exportConfirmBtn.disabled = true;
+    pdfOptions.classList.remove('visible');
+    
+    exportModal.classList.add('show');
+});
+
+closeExportModalBtn.addEventListener('click', () => {
+    exportModal.classList.remove('show');
+});
+
+exportModal.addEventListener('click', (e) => {
+    if (e.target === exportModal) {
+        exportModal.classList.remove('show');
+    }
+});
+
+// Export card selection
+exportCards.forEach(card => {
+    card.addEventListener('click', () => {
+        // Remove selection from all cards
+        exportCards.forEach(c => c.classList.remove('selected'));
+        
+        // Select clicked card
+        card.classList.add('selected');
+        selectedExportFormat = card.dataset.format;
+        exportConfirmBtn.disabled = false;
+        
+        // Show PDF options only for PDF export
+        if (selectedExportFormat === 'pdf') {
+            pdfOptions.classList.add('visible');
+        } else {
+            pdfOptions.classList.remove('visible');
+        }
+    });
+});
+
+// Theme selection
+themeOptions.forEach(option => {
+    option.addEventListener('click', () => {
+        themeOptions.forEach(opt => opt.classList.remove('active'));
+        option.classList.add('active');
+    });
+});
+
+// Export confirmation
+exportConfirmBtn.addEventListener('click', async () => {
+    const fileName = exportFileNameInput.value.trim() || 'note';
+    
+    if (!selectedExportFormat) {
+        showFormattingIndicator('Please select an export format');
+        return;
+    }
+    
+    exportModal.classList.remove('show');
+    showFormattingIndicator(`Exporting as ${selectedExportFormat.toUpperCase()}...`);
+    
+    switch (selectedExportFormat) {
+        case 'pdf':
+            await exportAsPDF(fileName);
+            break;
+        case 'markdown':
+            exportAsMarkdown(fileName);
+            break;
+        case 'text':
+            exportAsText(fileName);
+            break;
+    }
+});
+
+// --- EXPORT FUNCTIONS ---
+async function exportAsPDF(fileName) {
+    try {
         const note = notes.find(n => n.id === activeNoteId);
         const content = writingCanvas.innerHTML;
-        const blob = new Blob([content], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${note ? note.name : 'note'}-export.html`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }, 500);
-});
+        const selectedTheme = document.querySelector('.theme-option.active').dataset.theme;
+        const includeHeader = includeHeaderFooter.checked;
+        
+        // Create a temporary container for PDF generation
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '0';
+        tempContainer.style.width = '794px'; // A4 width in pixels
+        tempContainer.style.padding = '40px';
+        tempContainer.style.fontFamily = "'Fredoka', sans-serif";
+        tempContainer.style.lineHeight = '1.6';
+        tempContainer.style.fontSize = '14px';
+        
+        // Apply theme
+        if (selectedTheme === 'dark') {
+            tempContainer.style.backgroundColor = '#1a1a1a';
+            tempContainer.style.color = '#ffffff';
+        } else {
+            tempContainer.style.backgroundColor = '#ffffff';
+            tempContainer.style.color = '#000000';
+        }
+        
+        // Add header if enabled
+        if (includeHeader) {
+            const header = document.createElement('div');
+            header.style.textAlign = 'center';
+            header.style.marginBottom = '30px';
+            header.style.paddingBottom = '20px';
+            header.style.borderBottom = '1px solid #ddd';
+            
+            const title = document.createElement('h1');
+            title.textContent = fileName;
+            title.style.margin = '0';
+            title.style.fontSize = '24px';
+            title.style.fontWeight = 'bold';
+            
+            header.appendChild(title);
+            tempContainer.appendChild(header);
+        }
+        
+        // Add content
+        const contentDiv = document.createElement('div');
+        contentDiv.innerHTML = content;
+        
+        // Adjust content colors for theme
+        const elements = contentDiv.querySelectorAll('[style*="color"]');
+        elements.forEach(el => {
+            const color = el.style.color;
+            if (color && selectedTheme === 'light') {
+                // For light theme, adjust very dark colors to be readable
+                if (color.includes('rgb(0,0,0)') || color.includes('#000') || color.includes('black')) {
+                    el.style.color = '#000000';
+                } else if (color.includes('rgb(255,255,255)') || color.includes('#fff') || color.includes('white')) {
+                    el.style.color = '#333333';
+                }
+            }
+        });
+        
+        tempContainer.appendChild(contentDiv);
+        
+        // Add footer if enabled
+        if (includeHeader) {
+            const footer = document.createElement('div');
+            footer.style.textAlign = 'center';
+            footer.style.marginTop = '40px';
+            footer.style.paddingTop = '20px';
+            footer.style.borderTop = '1px solid #ddd';
+            footer.style.fontSize = '12px';
+            footer.style.color = '#666';
+            
+            const appName = document.createElement('div');
+            appName.textContent = 'Exported from FocusPad';
+            appName.style.marginBottom = '5px';
+            
+            const date = document.createElement('div');
+            date.textContent = new Date().toLocaleDateString();
+            
+            footer.appendChild(appName);
+            footer.appendChild(date);
+            tempContainer.appendChild(footer);
+        }
+        
+        document.body.appendChild(tempContainer);
+        
+        // Generate PDF with high quality
+        const canvas = await html2canvas(tempContainer, {
+            scale: 4, // High resolution for vector-like quality
+            useCORS: true,
+            backgroundColor: selectedTheme === 'dark' ? '#1a1a1a' : '#ffffff',
+            logging: false,
+            allowTaint: true
+        });
+        
+        // Remove temp container
+        document.body.removeChild(tempContainer);
+        
+        // Create PDF
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
+        const imgData = canvas.toDataURL('image/png', 1.0);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`${fileName}.pdf`);
+        
+        showFormattingIndicator('PDF exported successfully!');
+    } catch (error) {
+        console.error('PDF export error:', error);
+        showFormattingIndicator('Error exporting PDF');
+    }
+}
+
+function exportAsMarkdown(fileName) {
+    const note = notes.find(n => n.id === activeNoteId);
+    let content = writingCanvas.innerHTML;
+    
+    // Convert HTML to Markdown (simplified conversion)
+    let markdown = content
+        .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
+        .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
+        .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
+        .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+        .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
+        .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+        .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
+        .replace(/<u[^>]*>(.*?)<\/u>/gi, '$1')
+        .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
+        .replace(/<pre[^>]*>(.*?)<\/pre>/gi, '```\n$1\n```\n')
+        .replace(/<div[^>]*class="code-block"[^>]*>(.*?)<\/div>/gi, '```\n$1\n```\n')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+        .replace(/<div[^>]*>(.*?)<\/div>/gi, '$1\n')
+        .replace(/<span[^>]*>(.*?)<\/span>/gi, '$1')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .trim();
+    
+    // Add metadata
+    const metadata = `# ${fileName}\n\nExported from FocusPad on ${new Date().toLocaleDateString()}\n\n---\n\n`;
+    markdown = metadata + markdown;
+    
+    // Create and download file
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fileName}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showFormattingIndicator('Markdown exported successfully!');
+}
+
+function exportAsText(fileName) {
+    const note = notes.find(n => n.id === activeNoteId);
+    let content = writingCanvas.textContent || writingCanvas.innerText;
+    
+    // Add metadata
+    const metadata = `${fileName}\nExported from FocusPad on ${new Date().toLocaleDateString()}\n\n`;
+    content = metadata + content;
+    
+    // Create and download file
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fileName}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showFormattingIndicator('Text exported successfully!');
+}
 
 // --- DELETE BUTTON ---
 deleteBtn.addEventListener('click', () => {
@@ -1569,6 +1842,12 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         addNoteBtn.click();
     }
+    
+    // Export shortcut
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
+        e.preventDefault();
+        exportBtn.click();
+    }
 
     // Escape key handling
     if (e.key === 'Escape') {
@@ -1588,6 +1867,12 @@ document.addEventListener('keydown', (e) => {
         if (confirmModal.classList.contains('show')) {
             confirmModal.classList.remove('show');
         }
+        if (exportModal.classList.contains('show')) {
+            exportModal.classList.remove('show');
+        }
+        if (shareModal.classList.contains('show')) {
+            shareModal.classList.remove('show');
+        }
     }
 
     // Enter key in new note modal
@@ -1604,6 +1889,12 @@ document.addEventListener('keydown', (e) => {
             e.preventDefault();
             document.getElementById('createFolderBtn').click();
         }
+    }
+    
+    // Enter key in export modal for confirmation
+    if (e.key === 'Enter' && exportModal.classList.contains('show') && !exportConfirmBtn.disabled) {
+        e.preventDefault();
+        exportConfirmBtn.click();
     }
 });
 

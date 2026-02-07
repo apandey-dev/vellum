@@ -23,7 +23,9 @@
 <body>
 
     <nav class="sidebar" id="sidebar">
-        <div class="logo">Notes</div>
+        <div class="logo">
+            <i class="ph ph-notebook" id="logoIcon"></i>
+        </div>
 
         <div class="tool-group">
             <div class="tool-btn" id="exportBtn" data-tooltip="Export">
@@ -42,7 +44,7 @@
                 <i class="ph ph-line-break"></i>
             </div>
             <div class="tool-btn" id="chipsBtn" data-tooltip="Insert Chip">
-                <i class="ph ph-tag"></i>
+                <i class="ph ph-tag-chef"></i>
             </div>
         </div>
 
@@ -60,41 +62,32 @@
 
         <div class="dropdown-menu" id="chipsMenu">
             <div class="dropdown-item" data-chip="red">
-                <i class="ph ph-circle" style="color: #ef4444"></i>
+                <i class="ph ph-fire" style="color: #ef4444"></i>
                 <span>Important</span>
             </div>
             <div class="dropdown-item" data-chip="blue">
-                <i class="ph ph-circle" style="color: #3b82f6"></i>
+                <i class="ph ph-info" style="color: #3b82f6"></i>
                 <span>Note</span>
             </div>
             <div class="dropdown-item" data-chip="green">
-                <i class="ph ph-circle" style="color: #10b981"></i>
+                <i class="ph ph-check-circle" style="color: #10b981"></i>
                 <span>Success</span>
             </div>
             <div class="dropdown-item" data-chip="yellow">
-                <i class="ph ph-circle" style="color: #f59e0b"></i>
+                <i class="ph ph-warning" style="color: #f59e0b"></i>
                 <span>Warning</span>
             </div>
             <div class="dropdown-item" data-chip="purple">
-                <i class="ph ph-circle" style="color: #8b5cf6"></i>
+                <i class="ph ph-lightbulb" style="color: #8b5cf6"></i>
                 <span>Idea</span>
             </div>
             <div class="dropdown-item" data-chip="pink">
-                <i class="ph ph-circle" style="color: #ec4899"></i>
+                <i class="ph ph-bell" style="color: #ec4899"></i>
                 <span>Reminder</span>
             </div>
         </div>
 
         <div class="divider"></div>
-
-        <div class="tool-group">
-            <div class="tool-btn" data-tooltip="Assets">
-                <i class="ph ph-diamonds-four"></i>
-            </div>
-            <div class="tool-btn" data-tooltip="Layers">
-                <i class="ph ph-stack"></i>
-            </div>
-        </div>
 
         <div class="bottom-actions">
             <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
@@ -282,9 +275,81 @@
         </div>
     </div>
 
+    <!-- Export Modal -->
+    <div class="form-modal" id="exportModal">
+        <div class="form-box export-box">
+            <h3>Export Note</h3>
+            
+            <div class="form-group">
+                <label>File Name</label>
+                <input type="text" id="exportFileName" placeholder="Enter file name..." value="note">
+            </div>
+            
+            <div class="export-options">
+                <div class="export-card" data-format="pdf">
+                    <div class="export-card-icon">
+                        <i class="ph ph-file-pdf"></i>
+                    </div>
+                    <h4>PDF</h4>
+                    <p>High-quality document</p>
+                </div>
+                
+                <div class="export-card" data-format="markdown">
+                    <div class="export-card-icon">
+                        <i class="ph ph-file-text"></i>
+                    </div>
+                    <h4>Markdown</h4>
+                    <p>.md format</p>
+                </div>
+                
+                <div class="export-card" data-format="text">
+                    <div class="export-card-icon">
+                        <i class="ph ph-file"></i>
+                    </div>
+                    <h4>Text</h4>
+                    <p>Plain text file</p>
+                </div>
+            </div>
+            
+            <div class="pdf-options" id="pdfOptions">
+                <div class="form-group">
+                    <label>PDF Theme</label>
+                    <div class="theme-selector">
+                        <div class="theme-option active" data-theme="dark">
+                            <div class="theme-preview dark-theme">
+                                <div class="theme-demo-text">A</div>
+                            </div>
+                            <span>Dark</span>
+                        </div>
+                        <div class="theme-option" data-theme="light">
+                            <div class="theme-preview light-theme">
+                                <div class="theme-demo-text">A</div>
+                            </div>
+                            <span>Light</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Include Header/Footer</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="includeHeaderFooter" checked>
+                        <span class="toggle-slider"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions export-actions">
+                <button class="form-btn secondary" id="closeExportModal">Cancel</button>
+                <button class="form-btn primary" id="exportConfirmBtn" disabled>Export</button>
+            </div>
+        </div>
+    </div>
+
     <!-- External JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="script.js"></script>
 </body>
 
 </html>
-
