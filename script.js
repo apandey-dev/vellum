@@ -40,6 +40,7 @@ const deleteBtn = document.getElementById('deleteBtn');
 const bulletsBtn = document.getElementById('bulletsBtn');
 const chipsBtn = document.getElementById('chipsBtn');
 const addNoteBtn = document.getElementById('addNoteBtn');
+const pinBtn = document.getElementById('pinBtn');
 const manageFoldersBtn = document.getElementById('manageFoldersBtn');
 const shareBtn = document.getElementById('shareBtn');
 
@@ -67,6 +68,9 @@ let lastNotePerFolder = {}; // Track last opened note per folder
 
 // Export state
 let selectedExportFormat = null;
+
+// ESC Key Hierarchy Management
+let modalStack = [];
 
 // --- FORMATTING CONFIG ---
 const formattingConfig = {
@@ -127,9 +131,174 @@ function clearSavedCursorRange() {
 
 // --- HELPER FUNCTIONS ---
 function isValidColor(colorName) {
+    // Check if it's a valid CSS color
     const testElement = document.createElement('div');
     testElement.style.color = colorName;
-    return testElement.style.color !== '';
+    const testElement2 = document.createElement('div');
+    testElement2.style.color = '#' + colorName;
+    
+    // Check for hex without #
+    if (colorName.startsWith('#') || /^[0-9A-Fa-f]{3,6}$/.test(colorName)) {
+        const hexColor = colorName.startsWith('#') ? colorName : '#' + colorName;
+        testElement.style.color = hexColor;
+    }
+    
+    return testElement.style.color !== '' || testElement2.style.color !== '';
+}
+
+function normalizeColor(colorName) {
+    // Handle hex colors with or without #
+    if (colorName.startsWith('#') || /^[0-9A-Fa-f]{3,6}$/.test(colorName)) {
+        const hex = colorName.replace('#', '');
+        if (hex.length === 3) {
+            // Expand shorthand hex
+            return '#' + hex.split('').map(c => c + c).join('');
+        } else if (hex.length === 6) {
+            return '#' + hex.toLowerCase();
+        }
+    }
+    
+    // Convert to lowercase for named colors (except proper case for CSS)
+    const colorLower = colorName.toLowerCase();
+    const colorMap = {
+        'red': '#ff0000',
+        'blue': '#0000ff',
+        'green': '#008000',
+        'yellow': '#ffff00',
+        'purple': '#800080',
+        'pink': '#ffc0cb',
+        'orange': '#ffa500',
+        'gray': '#808080',
+        'black': '#000000',
+        'white': '#ffffff',
+        'cyan': '#00ffff',
+        'magenta': '#ff00ff',
+        'brown': '#a52a2a',
+        'gold': '#ffd700',
+        'silver': '#c0c0c0',
+        'violet': '#ee82ee',
+        'indigo': '#4b0082',
+        'teal': '#008080',
+        'maroon': '#800000',
+        'navy': '#000080',
+        'olive': '#808000',
+        'lime': '#00ff00',
+        'aqua': '#00ffff',
+        'fuchsia': '#ff00ff',
+        'coral': '#ff7f50',
+        'tomato': '#ff6347',
+        'orangered': '#ff4500',
+        'deeppink': '#ff1493',
+        'mediumvioletred': '#c71585',
+        'darkviolet': '#9400d3',
+        'darkorchid': '#9932cc',
+        'darkmagenta': '#8b008b',
+        'darkred': '#8b0000',
+        'darkgreen': '#006400',
+        'darkblue': '#00008b',
+        'darkcyan': '#008b8b',
+        'darkgoldenrod': '#b8860b',
+        'darkgray': '#a9a9a9',
+        'darkslategray': '#2f4f4f',
+        'lightslategray': '#778899',
+        'lightgray': '#d3d3d3',
+        'whitesmoke': '#f5f5f5',
+        'snow': '#fffafa',
+        'ivory': '#fffff0',
+        'honeydew': '#f0fff0',
+        'mintcream': '#f5fffa',
+        'azure': '#f0ffff',
+        'aliceblue': '#f0f8ff',
+        'ghostwhite': '#f8f8ff',
+        'lavender': '#e6e6fa',
+        'lavenderblush': '#fff0f5',
+        'mistyrose': '#ffe4e1',
+        'seashell': '#fff5ee',
+        'oldlace': '#fdf5e6',
+        'linen': '#faf0e6',
+        'beige': '#f5f5dc',
+        'floralwhite': '#fffaf0',
+        'cornsilk': '#fff8dc',
+        'lemonchiffon': '#fffacd',
+        'lightyellow': '#ffffe0',
+        'lightgoldenrodyellow': '#fafad2',
+        'papayawhip': '#ffefd5',
+        'peachpuff': '#ffdab9',
+        'bisque': '#ffe4c4',
+        'antiquewhite': '#faebd7',
+        'blanchedalmond': '#ffebcd',
+        'wheat': '#f5deb3',
+        'navajowhite': '#ffdead',
+        'tan': '#d2b48c',
+        'burlywood': '#deb887',
+        'sandybrown': '#f4a460',
+        'peru': '#cd853f',
+        'chocolate': '#d2691e',
+        'saddlebrown': '#8b4513',
+        'sienna': '#a0522d',
+        'rosybrown': '#bc8f8f',
+        'firebrick': '#b22222',
+        'indianred': '#cd5c5c',
+        'salmon': '#fa8072',
+        'lightsalmon': '#ffa07a',
+        'darksalmon': '#e9967a',
+        'lightcoral': '#f08080',
+        'palevioletred': '#db7093',
+        'hotpink': '#ff69b4',
+        'lightpink': '#ffb6c1',
+        'plum': '#dda0dd',
+        'thistle': '#d8bfd8',
+        'orchid': '#da70d6',
+        'mediumorchid': '#ba55d3',
+        'mediumpurple': '#9370db',
+        'slateblue': '#6a5acd',
+        'mediumslateblue': '#7b68ee',
+        'darkslateblue': '#483d8b',
+        'midnightblue': '#191970',
+        'royalblue': '#4169e1',
+        'steelblue': '#4682b4',
+        'dodgerblue': '#1e90ff',
+        'deepskyblue': '#00bfff',
+        'skyblue': '#87ceeb',
+        'lightskyblue': '#87cefa',
+        'lightblue': '#add8e6',
+        'powderblue': '#b0e0e6',
+        'paleturquoise': '#afeeee',
+        'lightcyan': '#e0ffff',
+        'cadetblue': '#5f9ea0',
+        'darkturquoise': '#00ced1',
+        'mediumturquoise': '#48d1cc',
+        'turquoise': '#40e0d0',
+        'aquamarine': '#7fffd4',
+        'seagreen': '#2e8b57',
+        'mediumseagreen': '#3cb371',
+        'springgreen': '#00ff7f',
+        'lawngreen': '#7cfc00',
+        'chartreuse': '#7fff00',
+        'greenyellow': '#adff2f',
+        'palegreen': '#98fb98',
+        'lightgreen': '#90ee90',
+        'mediumspringgreen': '#00fa9a',
+        'darkseagreen': '#8fbc8f',
+        'forestgreen': '#228b22',
+        'olivedrab': '#6b8e23',
+        'darkolivegreen': '#556b2f',
+        'yellowgreen': '#9acd32',
+        'khaki': '#f0e68c',
+        'darkkhaki': '#bdb76b',
+        'rebeccapurple': '#663399',
+        'cornflowerblue': '#6495ed',
+        'mediumaquamarine': '#66cdaa',
+        'darkslategrey': '#2f4f4f',
+        'dimgrey': '#696969',
+        'grey': '#808080',
+        'lightgrey': '#d3d3d3',
+        'lightslategrey': '#778899',
+        'slategrey': '#708090',
+        'darkslategrey': '#2f4f4f'
+    };
+    
+    return colorMap[colorLower] || colorName;
 }
 
 function generateId() {
@@ -177,14 +346,70 @@ function loadFromStorage() {
             id: generateId(),
             name: 'Welcome Note',
             folderId: 'default',
-            content: 'Welcome to FocusPad! 🎨\n\nStart writing amazing notes with advanced formatting!\n\nTry these shortcuts:\n=== (thick line)\n--- (dashed line)',
+            content: 'Welcome to FocusPad! 🎨\n\nStart writing amazing notes with advanced formatting!\n\nTry these shortcuts:\n=== (thick line)\n--- (dashed line)\n@color.red: Make text red\n@head.blue.center: Colored centered heading',
             createdAt: Date.now(),
-            updatedAt: Date.now()
+            updatedAt: Date.now(),
+            isPinned: false
         };
         notes.push(firstNote);
         activeNoteId = firstNote.id;
     }
 }
+
+// --- ESC KEY HIERARCHY MANAGEMENT ---
+function pushToModalStack(modal) {
+    modalStack.push(modal);
+}
+
+function popFromModalStack() {
+    return modalStack.pop();
+}
+
+function closeTopModal() {
+    if (modalStack.length > 0) {
+        const modal = modalStack[modalStack.length - 1];
+        modal.classList.remove('show');
+        modalStack.pop();
+        return true;
+    }
+    return false;
+}
+
+// --- PIN BUTTON FUNCTIONALITY ---
+function updatePinButton() {
+    if (!activeNoteId) {
+        pinBtn.classList.remove('pinned');
+        pinBtn.innerHTML = '<i class="ph ph-push-pin"></i>';
+        return;
+    }
+    
+    const note = notes.find(n => n.id === activeNoteId);
+    if (note && note.isPinned) {
+        pinBtn.classList.add('pinned');
+        pinBtn.innerHTML = '<i class="ph ph-push-pin-slash"></i>';
+    } else {
+        pinBtn.classList.remove('pinned');
+        pinBtn.innerHTML = '<i class="ph ph-push-pin"></i>';
+    }
+}
+
+function togglePinNote() {
+    if (!activeNoteId) {
+        showFormattingIndicator('No active note to pin');
+        return;
+    }
+    
+    const note = notes.find(n => n.id === activeNoteId);
+    if (note) {
+        note.isPinned = !note.isPinned;
+        saveToStorage();
+        updatePinButton();
+        showFormattingIndicator(note.isPinned ? 'Note pinned' : 'Note unpinned');
+    }
+}
+
+// Initialize pin button event
+pinBtn.addEventListener('click', togglePinNote);
 
 // --- PASTE SANITIZATION ---
 writingCanvas.addEventListener('paste', (e) => {
@@ -243,7 +468,8 @@ function createNote(name, folderId) {
         folderId: folderId,
         content: '',
         createdAt: Date.now(),
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
+        isPinned: false
     };
     notes.push(note);
     activeNoteId = note.id;
@@ -296,8 +522,8 @@ function loadActiveNote() {
         writingCanvas.contentEditable = 'true';
         writingCanvas.classList.remove('empty-folder-message');
 
-        // Apply theme compatibility to note content
-        applyThemeCompatibilityToNote();
+        // Update pin button
+        updatePinButton();
 
         // Enable delete button if we have notes in current folder
         const folderNotes = getNotesInFolder(activeFolderId);
@@ -325,6 +551,9 @@ function loadActiveNote() {
 
             // Disable delete button when no notes
             deleteBtn.classList.add('disabled');
+            
+            // Reset pin button
+            updatePinButton();
 
             // Add event listener to the create note button
             setTimeout(() => {
@@ -334,6 +563,7 @@ function loadActiveNote() {
                         updateFolderDropdown();
                         document.getElementById('newNoteName').value = '';
                         newNoteModal.classList.add('show');
+                        pushToModalStack(newNoteModal);
                         setTimeout(() => document.getElementById('newNoteName').focus(), 100);
                     });
                 }
@@ -399,6 +629,7 @@ function deleteFolder(folderId) {
     }
 
     modal.classList.add('show');
+    pushToModalStack(modal);
 
     // Store folder ID for confirmation handler
     modal.dataset.pendingFolderId = folderId;
@@ -461,7 +692,24 @@ function renderNoteChips() {
         if (note.id === activeNoteId) {
             chip.classList.add('active');
         }
-        chip.textContent = note.name;
+        if (note.isPinned) {
+            chip.classList.add('pinned-chip');
+        }
+        
+        const chipContent = document.createElement('div');
+        chipContent.className = 'chip-content';
+        
+        if (note.isPinned) {
+            const pinIcon = document.createElement('i');
+            pinIcon.className = 'ph ph-push-pin gap';
+            chipContent.appendChild(pinIcon);
+        }
+        
+        const textSpan = document.createElement('span');
+        textSpan.textContent = note.name;
+        chipContent.appendChild(textSpan);
+        
+        chip.appendChild(chipContent);
         chip.onclick = () => switchNote(note.id);
         noteChips.appendChild(chip);
     });
@@ -485,6 +733,11 @@ function renderFolderList() {
         nameDiv.onclick = () => {
             setActiveFolder(folder.id);
             manageFoldersModal.classList.remove('show');
+            // Remove from modal stack
+            const index = modalStack.indexOf(manageFoldersModal);
+            if (index > -1) {
+                modalStack.splice(index, 1);
+            }
         };
 
         const actions = document.createElement('div');
@@ -584,83 +837,90 @@ function loadTheme() {
 
     // Apply theme compatibility adjustments
     applyThemeCompatibility(savedTheme);
-    applyThemeCompatibilityToNote();
 }
 
 function saveTheme(theme) {
     localStorage.setItem(THEME_KEY, theme);
 }
 
-// ENHANCED THEME COMPATIBILITY FUNCTION
+// THEME COMPATIBILITY FUNCTION
 function applyThemeCompatibility(theme) {
-    // Apply to all elements with text
-    const allElements = document.querySelectorAll('*');
+    // Find all elements with text in the canvas
+    const walker = document.createTreeWalker(
+        writingCanvas,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
 
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+        if (node.textContent.trim()) {
+            textNodes.push(node);
+        }
+    }
+
+    // Adjust colors based on theme
+    const allElements = writingCanvas.querySelectorAll('*');
     allElements.forEach(el => {
-        // Skip writing canvas elements (handled separately)
-        if (el.closest('.writing-canvas')) return;
-
+        // Get computed style
         const computedStyle = window.getComputedStyle(el);
         const color = computedStyle.color;
+        const bgColor = computedStyle.backgroundColor;
 
-        if (color) {
-            // Parse RGB color
-            const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-            if (rgbMatch) {
-                const r = parseInt(rgbMatch[1]);
-                const g = parseInt(rgbMatch[2]);
-                const b = parseInt(rgbMatch[3]);
+        // Skip if no color style
+        if (!color) return;
 
-                // Calculate luminance
-                const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        // Parse RGB color
+        const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (!rgbMatch) return;
 
-                // Adjust based on theme
-                if (theme === 'light' && luminance < 0.3) {
-                    // Too dark for light theme
-                    el.style.color = `rgb(${Math.min(255, r + 100)}, ${Math.min(255, g + 100)}, ${Math.min(255, b + 100)})`;
-                } else if (theme === 'dark' && luminance > 0.7) {
-                    // Too light for dark theme
-                    el.style.color = `rgb(${Math.max(0, r - 100)}, ${Math.max(0, g - 100)}, ${Math.max(0, b - 100)})`;
-                }
-            }
+        const r = parseInt(rgbMatch[1]);
+        const g = parseInt(rgbMatch[2]);
+        const b = parseInt(rgbMatch[3]);
+
+        // Calculate luminance (perceived brightness)
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+        // For light theme: if text is too light, make it darker
+        if (theme === 'light' && luminance > 0.7) {
+            // Make text darker for better contrast
+            el.style.color = `rgb(${Math.max(0, r - 100)}, ${Math.max(0, g - 100)}, ${Math.max(0, b - 100)})`;
+            el.dataset.themeAdjusted = 'true';
+        }
+        // For dark theme: if text is too dark, make it lighter
+        else if (theme === 'dark' && luminance < 0.3) {
+            // Make text lighter for better contrast
+            el.style.color = `rgb(${Math.min(255, r + 100)}, ${Math.min(255, g + 100)}, ${Math.min(255, b + 100)})`;
+            el.dataset.themeAdjusted = 'true';
         }
     });
-}
 
-// Apply theme compatibility to note content
-function applyThemeCompatibilityToNote() {
-    const currentTheme = html.getAttribute('data-theme');
-    const elements = writingCanvas.querySelectorAll('*');
+    // Special handling for specific color classes
+    const colorClasses = ['text-red', 'text-blue', 'text-green', 'text-yellow',
+        'text-purple', 'text-pink', 'text-orange', 'text-gray'];
 
-    elements.forEach(el => {
-        // Check for color classes
-        if (el.classList.contains('text-black')) {
-            if (currentTheme === 'dark') {
-                el.style.color = 'var(--color-white)';
-            } else {
-                el.style.color = 'var(--color-black)';
-            }
-        } else if (el.classList.contains('text-white')) {
-            if (currentTheme === 'light') {
-                el.style.color = 'var(--color-black)';
-            } else {
-                el.style.color = 'var(--color-white)';
-            }
-        }
-
-        // Check for inline styles
-        const inlineColor = el.style.color;
-        if (inlineColor) {
-            if (inlineColor.includes('black') || inlineColor.includes('#000') || inlineColor.includes('rgb(0,0,0)')) {
-                if (currentTheme === 'dark') {
-                    el.style.color = 'var(--color-white)';
-                }
-            } else if (inlineColor.includes('white') || inlineColor.includes('#fff') || inlineColor.includes('rgb(255,255,255)')) {
-                if (currentTheme === 'light') {
-                    el.style.color = 'var(--color-black)';
+    colorClasses.forEach(className => {
+        const elements = writingCanvas.querySelectorAll(`.${className}`);
+        elements.forEach(el => {
+            // For light theme, ensure colors are darker variants
+            if (theme === 'light') {
+                if (className === 'text-white') {
+                    el.style.color = '#101828'; // Dark text for light theme
+                    el.classList.remove('text-white');
+                    el.classList.add('text-color-aware');
                 }
             }
-        }
+            // For dark theme, ensure colors are lighter variants
+            else if (theme === 'dark') {
+                if (className === 'text-black') {
+                    el.style.color = '#ffffff'; // White text for dark theme
+                    el.classList.remove('text-black');
+                    el.classList.add('text-color-aware');
+                }
+            }
+        });
     });
 
     saveCurrentNote();
@@ -676,14 +936,12 @@ themeToggle.addEventListener('click', () => {
         themeIcon.classList.add('ph-sun');
         saveTheme('light');
         applyThemeCompatibility('light');
-        applyThemeCompatibilityToNote();
     } else {
         html.setAttribute('data-theme', 'dark');
         themeIcon.classList.remove('ph-sun');
         themeIcon.classList.add('ph-moon');
         saveTheme('dark');
         applyThemeCompatibility('dark');
-        applyThemeCompatibilityToNote();
     }
 });
 
@@ -1178,15 +1436,24 @@ exportBtn.addEventListener('click', () => {
     });
 
     exportModal.classList.add('show');
+    pushToModalStack(exportModal);
 });
 
 closeExportModalBtn.addEventListener('click', () => {
     exportModal.classList.remove('show');
+    const index = modalStack.indexOf(exportModal);
+    if (index > -1) {
+        modalStack.splice(index, 1);
+    }
 });
 
 exportModal.addEventListener('click', (e) => {
     if (e.target === exportModal) {
         exportModal.classList.remove('show');
+        const index = modalStack.indexOf(exportModal);
+        if (index > -1) {
+            modalStack.splice(index, 1);
+        }
     }
 });
 
@@ -1226,6 +1493,11 @@ exportConfirmBtn.addEventListener('click', async () => {
     }
 
     exportModal.classList.remove('show');
+    const index = modalStack.indexOf(exportModal);
+    if (index > -1) {
+        modalStack.splice(index, 1);
+    }
+    
     showFormattingIndicator(`Exporting as ${selectedExportFormat.toUpperCase()}...`);
 
     switch (selectedExportFormat) {
@@ -1291,49 +1563,68 @@ async function exportAsPDF(fileName) {
         const contentDiv = document.createElement('div');
         contentDiv.innerHTML = content;
 
-        // Adjust content colors for theme compatibility
-        const elements = contentDiv.querySelectorAll('[style*="color"]');
-        elements.forEach(el => {
-            const color = el.style.color;
-            if (color && selectedTheme === 'light') {
-                // For light theme, adjust very dark colors to be readable
-                const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-                if (rgbMatch) {
-                    const r = parseInt(rgbMatch[1]);
-                    const g = parseInt(rgbMatch[2]);
-                    const b = parseInt(rgbMatch[3]);
-
-                    // If color is very dark (close to black), make it darker for light theme
-                    if (r < 50 && g < 50 && b < 50) {
-                        el.style.color = '#000000';
+        // Preserve ALL color styles from the note
+        const colorElements = contentDiv.querySelectorAll('[style*="color"]');
+        colorElements.forEach(el => {
+            const style = el.getAttribute('style');
+            // Extract color value from style
+            const colorMatch = style.match(/color:\s*([^;]+)/);
+            if (colorMatch) {
+                const colorValue = colorMatch[1].trim();
+                // Ensure color is preserved exactly as is
+                el.style.color = colorValue;
+                
+                // For light theme PDF, adjust very dark colors
+                if (selectedTheme === 'light') {
+                    // Check if color is very dark (black or near black)
+                    if (colorValue === 'black' || colorValue === '#000' || colorValue === '#000000' || 
+                        colorValue === 'rgb(0,0,0)' || colorValue === 'rgba(0,0,0,1)') {
+                        el.style.color = '#000000'; // Keep black for light theme
                     }
-                    // If color is very light (close to white), make it darker
-                    else if (r > 200 && g > 200 && b > 200) {
-                        el.style.color = '#333333';
+                    // Check if color is very light (white or near white)
+                    else if (colorValue === 'white' || colorValue === '#fff' || colorValue === '#ffffff' || 
+                            colorValue === 'rgb(255,255,255)' || colorValue === 'rgba(255,255,255,1)') {
+                        el.style.color = '#333333'; // Change white to dark gray for light theme
                     }
-                } else if (color.includes('white') || color.includes('#fff')) {
-                    el.style.color = '#000000';
                 }
-            } else if (color && selectedTheme === 'dark') {
-                // For dark theme, adjust very light colors
-                const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-                if (rgbMatch) {
-                    const r = parseInt(rgbMatch[1]);
-                    const g = parseInt(rgbMatch[2]);
-                    const b = parseInt(rgbMatch[3]);
-
-                    // If color is very light (close to white), make it lighter for dark theme
-                    if (r > 200 && g > 200 && b > 200) {
-                        el.style.color = '#ffffff';
+                // For dark theme PDF, adjust very light colors
+                else if (selectedTheme === 'dark') {
+                    // Check if color is very light (white or near white)
+                    if (colorValue === 'white' || colorValue === '#fff' || colorValue === '#ffffff' || 
+                        colorValue === 'rgb(255,255,255)' || colorValue === 'rgba(255,255,255,1)') {
+                        el.style.color = '#ffffff'; // Keep white for dark theme
                     }
-                    // If color is very dark (close to black), make it lighter
-                    else if (r < 50 && g < 50 && b < 50) {
-                        el.style.color = '#cccccc';
+                    // Check if color is very dark (black or near black)
+                    else if (colorValue === 'black' || colorValue === '#000' || colorValue === '#000000' || 
+                            colorValue === 'rgb(0,0,0)' || colorValue === 'rgba(0,0,0,1)') {
+                        el.style.color = '#cccccc'; // Change black to light gray for dark theme
                     }
-                } else if (color.includes('black') || color.includes('#000')) {
-                    el.style.color = '#ffffff';
                 }
             }
+        });
+
+        // Also preserve color classes
+        const colorClassElements = contentDiv.querySelectorAll('[class*="text-"]');
+        colorClassElements.forEach(el => {
+            const classes = el.className.split(' ');
+            classes.forEach(cls => {
+                if (cls.startsWith('text-')) {
+                    const colorName = cls.replace('text-', '');
+                    const colorMap = {
+                        'red': '#ef4444',
+                        'blue': '#3b82f6',
+                        'green': '#10b981',
+                        'yellow': '#f59e0b',
+                        'purple': '#8b5cf6',
+                        'pink': '#ec4899',
+                        'orange': '#f97316',
+                        'gray': '#6b7280'
+                    };
+                    if (colorMap[colorName]) {
+                        el.style.color = colorMap[colorName];
+                    }
+                }
+            });
         });
 
         tempContainer.appendChild(contentDiv);
@@ -1490,22 +1781,35 @@ deleteBtn.addEventListener('click', () => {
     }
 
     confirmModal.classList.add('show');
+    pushToModalStack(confirmModal);
 });
 
 cancelDeleteBtn.addEventListener('click', () => {
     confirmModal.classList.remove('show');
+    const index = modalStack.indexOf(confirmModal);
+    if (index > -1) {
+        modalStack.splice(index, 1);
+    }
     confirmDeleteBtn.textContent = 'Delete'; // Reset button text
 });
 
 confirmDeleteBtn.addEventListener('click', () => {
     deleteNote(activeNoteId);
     confirmModal.classList.remove('show');
+    const index = modalStack.indexOf(confirmModal);
+    if (index > -1) {
+        modalStack.splice(index, 1);
+    }
     confirmDeleteBtn.textContent = 'Delete'; // Reset button text
 });
 
 confirmModal.addEventListener('click', (e) => {
     if (e.target === confirmModal) {
         confirmModal.classList.remove('show');
+        const index = modalStack.indexOf(confirmModal);
+        if (index > -1) {
+            modalStack.splice(index, 1);
+        }
         confirmDeleteBtn.textContent = 'Delete'; // Reset button text
     }
 });
@@ -1526,11 +1830,16 @@ addNoteBtn.addEventListener('click', () => {
     });
 
     newNoteModal.classList.add('show');
+    pushToModalStack(newNoteModal);
     setTimeout(() => document.getElementById('newNoteName').focus(), 100);
 });
 
 document.getElementById('cancelNewNote').addEventListener('click', () => {
     newNoteModal.classList.remove('show');
+    const index = modalStack.indexOf(newNoteModal);
+    if (index > -1) {
+        modalStack.splice(index, 1);
+    }
 });
 
 document.getElementById('createNewNote').addEventListener('click', () => {
@@ -1544,11 +1853,19 @@ document.getElementById('createNewNote').addEventListener('click', () => {
 
     createNote(name, folderId);
     newNoteModal.classList.remove('show');
+    const index = modalStack.indexOf(newNoteModal);
+    if (index > -1) {
+        modalStack.splice(index, 1);
+    }
 });
 
 newNoteModal.addEventListener('click', (e) => {
     if (e.target === newNoteModal) {
         newNoteModal.classList.remove('show');
+        const index = modalStack.indexOf(newNoteModal);
+        if (index > -1) {
+            modalStack.splice(index, 1);
+        }
     }
 });
 
@@ -1557,6 +1874,7 @@ manageFoldersBtn.addEventListener('click', () => {
     renderFolderList();
     document.getElementById('newFolderName').value = '';
     manageFoldersModal.classList.add('show');
+    pushToModalStack(manageFoldersModal);
     setTimeout(() => document.getElementById('newFolderName').focus(), 100);
 });
 
@@ -1574,11 +1892,19 @@ document.getElementById('createFolderBtn').addEventListener('click', () => {
 
 document.getElementById('closeFoldersModal').addEventListener('click', () => {
     manageFoldersModal.classList.remove('show');
+    const index = modalStack.indexOf(manageFoldersModal);
+    if (index > -1) {
+        modalStack.splice(index, 1);
+    }
 });
 
 manageFoldersModal.addEventListener('click', (e) => {
     if (e.target === manageFoldersModal) {
         manageFoldersModal.classList.remove('show');
+        const index = modalStack.indexOf(manageFoldersModal);
+        if (index > -1) {
+            modalStack.splice(index, 1);
+        }
     }
 });
 
@@ -1589,6 +1915,10 @@ const confirmFolderDeleteBtn = document.getElementById('confirmFolderDelete');
 
 cancelFolderDeleteBtn.addEventListener('click', () => {
     confirmFolderDeleteModal.classList.remove('show');
+    const index = modalStack.indexOf(confirmFolderDeleteModal);
+    if (index > -1) {
+        modalStack.splice(index, 1);
+    }
     delete confirmFolderDeleteModal.dataset.pendingFolderId;
 });
 
@@ -1622,12 +1952,20 @@ confirmFolderDeleteBtn.addEventListener('click', () => {
     }
 
     confirmFolderDeleteModal.classList.remove('show');
+    const index = modalStack.indexOf(confirmFolderDeleteModal);
+    if (index > -1) {
+        modalStack.splice(index, 1);
+    }
     delete confirmFolderDeleteModal.dataset.pendingFolderId;
 });
 
 confirmFolderDeleteModal.addEventListener('click', (e) => {
     if (e.target === confirmFolderDeleteModal) {
         confirmFolderDeleteModal.classList.remove('show');
+        const index = modalStack.indexOf(confirmFolderDeleteModal);
+        if (index > -1) {
+            modalStack.splice(index, 1);
+        }
         delete confirmFolderDeleteModal.dataset.pendingFolderId;
     }
 });
@@ -1682,6 +2020,7 @@ shareBtn.addEventListener('click', () => {
 
     updateShareUI(isPublic);
     shareModal.classList.add('show');
+    pushToModalStack(shareModal);
 });
 
 shareToggle.addEventListener('click', () => {
@@ -1700,6 +2039,10 @@ shareToggle.addEventListener('click', () => {
 
 closeShareModalBtn.addEventListener('click', () => {
     shareModal.classList.remove('show');
+    const index = modalStack.indexOf(shareModal);
+    if (index > -1) {
+        modalStack.splice(index, 1);
+    }
 });
 
 copyLinkBtn.addEventListener('click', () => {
@@ -1716,6 +2059,10 @@ copyLinkBtn.addEventListener('click', () => {
 shareModal.addEventListener('click', (e) => {
     if (e.target === shareModal) {
         shareModal.classList.remove('show');
+        const index = modalStack.indexOf(shareModal);
+        if (index > -1) {
+            modalStack.splice(index, 1);
+        }
     }
 });
 
@@ -1755,6 +2102,7 @@ function getCurrentLine() {
     return node;
 }
 
+// ENHANCED COLOR PROCESSING FUNCTION
 function processLineFormatting(lineNode) {
     if (!lineNode) return false;
 
@@ -1814,44 +2162,32 @@ function processLineFormatting(lineNode) {
         return false;
     }
 
-    // Process colors - Support ALL native CSS color names via inline styles
-    const colorRegex = /@color\.(\w+):(.*)$/i;
+    // ENHANCED: Process colors with ANY valid CSS color (named colors, hex, rgb, hsl, etc.)
+    // Support: @color.red:, @color.#ff0000:, @color.rgb(255,0,0):, @color.rebeccapurple:
+    const colorRegex = /@color\.([^:]+):(.*)$/i;
     if (!processed && colorRegex.test(text)) {
         const match = text.match(colorRegex);
-        const colorName = match[1]; // Keep original case for colors like rebeccapurple
+        const colorName = match[1].trim();
         const content = match[2];
 
-        // Validate color using browser's built-in validation
+        // Validate color using enhanced validation
         if (isValidColor(colorName) && content !== undefined) {
-            // Apply theme-aware color handling
-            const currentTheme = html.getAttribute('data-theme');
-            let finalColor = colorName;
-
-            // Handle black/white specifically for theme compatibility
-            if (colorName.toLowerCase() === 'black') {
-                if (currentTheme === 'dark') {
-                    finalColor = 'var(--color-white)';
-                    newHTML = `<span style="color: ${finalColor}" class="text-color-aware">${content}</span>`;
-                } else {
-                    newHTML = `<span style="color: ${finalColor}">${content}</span>`;
-                }
-            } else if (colorName.toLowerCase() === 'white') {
-                if (currentTheme === 'light') {
-                    finalColor = 'var(--color-black)';
-                    newHTML = `<span style="color: ${finalColor}" class="text-color-aware">${content}</span>`;
-                } else {
-                    newHTML = `<span style="color: ${finalColor}">${content}</span>`;
-                }
-            } else {
-                newHTML = `<span style="color: ${finalColor}">${content}</span>`;
-            }
+            // Normalize color (handle hex shorthand, convert named colors to hex for consistency)
+            const normalizedColor = normalizeColor(colorName);
+            
+            // Apply color via inline style - preserve formatting
+            newHTML = `<span style="color: ${normalizedColor}" class="color-preserve">${content}</span>`;
             processed = true;
+            showFormattingIndicator(`Color applied: ${colorName}`);
+        } else {
+            showFormattingIndicator(`Invalid color: ${colorName}`);
         }
     }
 
-    // Process headings: #head:, #subHead:, #head.center:, #head.red.center:, #head.center.red: (order independent)
+    // ENHANCED: Process headings with colors and alignments
+    // Support: @head.red.center:, @head.#ff0000.left:, @head.rgb(255,0,0):, @head.rebeccapurple.right:
     if (!processed) {
-        const headingRegex = /#(head|subHead)((?:\.\w+)*):(.*)$/i;
+        const headingRegex = /@(head|subHead)\.([^:]+):(.*)$/i;
         const match = text.match(headingRegex);
         if (match) {
             const [, type, modifiers, content] = match;
@@ -1861,32 +2197,22 @@ function processLineFormatting(lineNode) {
                 let className = type === 'head' ? 'heading-main' : 'heading-sub';
                 let inlineStyles = '';
 
-                // Parse all modifiers
-                if (modifiers) {
-                    const mods = modifiers.split('.').filter(m => m.length > 0);
-
-                    // Check each modifier - could be color or alignment
-                    mods.forEach(mod => {
-                        const modLower = mod.toLowerCase();
-
-                        // Check if it's a valid color
-                        if (isValidColor(modLower)) {
-                            // Handle theme-aware colors
-                            const currentTheme = html.getAttribute('data-theme');
-                            if (modLower === 'black' && currentTheme === 'dark') {
-                                inlineStyles += `color: var(--color-white); `;
-                            } else if (modLower === 'white' && currentTheme === 'light') {
-                                inlineStyles += `color: var(--color-black); `;
-                            } else {
-                                inlineStyles += `color: ${modLower}; `;
-                            }
-                        }
-                        // Check if it's an alignment
-                        else if (formattingConfig.alignments[modLower]) {
-                            className += ` text-${modLower}`;
-                        }
-                    });
-                }
+                // Parse modifiers (could be color.alignment or just color)
+                const modParts = modifiers.split('.');
+                
+                modParts.forEach(mod => {
+                    const modTrimmed = mod.trim();
+                    
+                    // Check if it's a valid color
+                    if (isValidColor(modTrimmed)) {
+                        const normalizedColor = normalizeColor(modTrimmed);
+                        inlineStyles += `color: ${normalizedColor}; `;
+                    }
+                    // Check if it's an alignment
+                    else if (formattingConfig.alignments[modTrimmed.toLowerCase()]) {
+                        className += ` text-${modTrimmed.toLowerCase()}`;
+                    }
+                });
 
                 if (inlineStyles) {
                     newHTML = `<div class="${className}" style="${inlineStyles}">${content}</div>`;
@@ -1894,6 +2220,7 @@ function processLineFormatting(lineNode) {
                     newHTML = `<div class="${className}">${content}</div>`;
                 }
                 processed = true;
+                showFormattingIndicator(`${type === 'head' ? 'Heading' : 'Subheading'} with formatting applied`);
             }
         }
     }
@@ -2169,29 +2496,41 @@ document.addEventListener('keydown', (e) => {
         exportBtn.click();
     }
 
-    // Escape key handling
+    // Pin note shortcut
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        togglePinNote();
+    }
+
+    // Escape key handling with hierarchy
     if (e.key === 'Escape') {
+        // First close any open dropdowns
         if (fontDropdown.classList.contains('active')) {
             fontSelectorBtn.classList.remove('active');
             fontDropdown.classList.remove('active');
+            clearSavedCursorRange();
+            e.preventDefault();
+            return;
         }
-        closeAllDropdowns();
-
-        // Close modals on Escape
-        if (newNoteModal.classList.contains('show')) {
-            newNoteModal.classList.remove('show');
+        
+        if (activeDropdown) {
+            closeAllDropdowns();
+            e.preventDefault();
+            return;
         }
-        if (manageFoldersModal.classList.contains('show')) {
-            manageFoldersModal.classList.remove('show');
+        
+        // Then close modals in reverse order (LIFO - Last In First Out)
+        if (modalStack.length > 0) {
+            const modal = modalStack.pop();
+            modal.classList.remove('show');
+            e.preventDefault();
+            return;
         }
-        if (confirmModal.classList.contains('show')) {
-            confirmModal.classList.remove('show');
-        }
-        if (exportModal.classList.contains('show')) {
-            exportModal.classList.remove('show');
-        }
-        if (shareModal.classList.contains('show')) {
-            shareModal.classList.remove('show');
+        
+        // If in focus mode, exit focus mode
+        if (sidebar.classList.contains('hidden')) {
+            toggleFocus();
+            e.preventDefault();
         }
     }
 
@@ -2225,6 +2564,7 @@ function init() {
     renderNoteChips();
     loadActiveNote();
     updateFontDisplay();
+    updatePinButton();
 
     // Set initial focus
     if (activeNoteId) {

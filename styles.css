@@ -75,7 +75,7 @@
     --color-pink: #db2777;
     --color-orange: #ea580c;
     --color-gray: #4b5563;
-    
+
     /* Ensure black/white are visible in light mode */
     --color-black: #101828;
     --color-white: #f8fafc;
@@ -1810,4 +1810,40 @@ body {
 [data-theme="dark"] .writing-canvas span[style*="color"] {
     /* For inline styles in dark mode, ensure they're visible */
     filter: brightness(1.2);
+}
+
+/* Add to existing styles.css - Pin button styling */
+.action-btn.pinned {
+    color: var(--color-yellow) !important;
+    background-color: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.action-btn.pinned:hover {
+    background-color: rgba(245, 158, 11, 0.25);
+}
+
+/* Enhanced color classes for better theme compatibility */
+.color-preserve {
+    color: inherit !important;
+}
+
+/* For inline color styles to ensure they're preserved */
+.writing-canvas span[style*="color"],
+.writing-canvas div[style*="color"] {
+    filter: none !important;
+}
+
+/* Ensure color styles are preserved in both themes */
+[data-theme="light"] .writing-canvas span[style*="color"] {
+    filter: none !important;
+}
+
+[data-theme="dark"] .writing-canvas span[style*="color"] {
+    filter: none !important;
+}
+
+.gap {
+    margin-top: 5px;
+    margin-right: 5px;
 }
