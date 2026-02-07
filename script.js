@@ -263,13 +263,25 @@ function deleteNote(noteId) {
     const index = notes.findIndex(n => n.id === noteId);
     if (index > -1) {
         notes.splice(index, 1);
-        if (activeNoteId === noteId) {
-            activeNoteId = notes.length > 0 ? notes[0].id : null;
+
+        // Get current folder notes after deletion
+        const folderNotes = getNotesInFolder(activeFolderId);
+
+        if (folderNotes.length === 0) {
+            // No notes left in this folder
+            activeNoteId = null;
+            showFormattingIndicator('Note deleted! No notes in this folder.');
+        } else if (activeNoteId === noteId) {
+            // If we deleted the active note, switch to first note in folder
+            activeNoteId = folderNotes[0].id;
+            showFormattingIndicator('Note deleted! Switched to next note.');
+        } else {
+            showFormattingIndicator('Note deleted!');
         }
+
         saveToStorage();
         renderNoteChips();
         loadActiveNote();
-        showFormattingIndicator('Note deleted!');
     }
 }
 
@@ -283,15 +295,64 @@ function switchNote(noteId) {
 
 function loadActiveNote() {
     const note = notes.find(n => n.id === activeNoteId);
+
     if (note) {
+        // Show the note content
         writingCanvas.innerHTML = note.content || '';
+        writingCanvas.contentEditable = 'true';
+        writingCanvas.classList.remove('empty-folder-message');
+
+        // Enable delete button if we have notes in current folder
+        const folderNotes = getNotesInFolder(activeFolderId);
+        if (folderNotes.length > 0) {
+            deleteBtn.classList.remove('disabled');
+        }
     } else {
-        writingCanvas.innerHTML = '';
+        // No active note - check if current folder has any notes
+        const folderNotes = getNotesInFolder(activeFolderId);
+
+        if (folderNotes.length === 0) {
+            // Show "no notes in folder" message
+            writingCanvas.innerHTML = `
+                <div class="empty-folder-message">
+                    <div class="empty-folder-icon">
+                        <i class="ph ph-note-blank"></i>
+                    </div>
+                    <h3>No Notes in This Folder</h3>
+                    <p>This folder is empty. Create a new note to get started!</p>
+                    <button class="create-note-btn abc" id="createNoteFromEmpty">Create New Note</button>
+                </div>
+            `;
+            writingCanvas.contentEditable = 'false';
+            writingCanvas.classList.add('empty-folder-message');
+
+            // Disable delete button when no notes
+            deleteBtn.classList.add('disabled');
+
+            // Add event listener to the create note button
+            setTimeout(() => {
+                const createBtn = document.getElementById('createNoteFromEmpty');
+                if (createBtn) {
+                    createBtn.addEventListener('click', () => {
+                        updateFolderDropdown();
+                        document.getElementById('newNoteName').value = '';
+                        newNoteModal.classList.add('show');
+                        setTimeout(() => document.getElementById('newNoteName').focus(), 100);
+                    });
+                }
+            }, 100);
+        } else {
+            // Folder has notes but no active note selected - select first note
+            activeNoteId = folderNotes[0].id;
+            saveToStorage();
+            loadActiveNote();
+        }
     }
-    writingCanvas.focus();
 }
 
 function saveCurrentNote() {
+    if (!activeNoteId) return;
+
     const note = notes.find(n => n.id === activeNoteId);
     if (note) {
         note.content = writingCanvas.innerHTML;
@@ -372,23 +433,30 @@ function setActiveFolder(folderId) {
             // Load first note in folder
             activeNoteId = folderNotes[0].id;
         }
-
-        loadActiveNote();
     } else {
-        // No notes in folder - clear editor
+        // No notes in folder - clear active note
         activeNoteId = null;
-        writingCanvas.innerHTML = '';
     }
 
     saveToStorage();
     renderNoteChips();
     renderFolderList();
+    loadActiveNote();
 }
 
 // --- RENDER FUNCTIONS ---
 function renderNoteChips() {
     noteChips.innerHTML = '';
     const folderNotes = getNotesInFolder(activeFolderId);
+
+    if (folderNotes.length === 0) {
+        // Show empty state message
+        const emptyChip = document.createElement('div');
+        emptyChip.className = 'chip empty-chip';
+        emptyChip.textContent = 'No notes';
+        noteChips.appendChild(emptyChip);
+        return;
+    }
 
     folderNotes.forEach(note => {
         const chip = document.createElement('div');
@@ -501,7 +569,7 @@ function updateFolderDropdown() {
 
 function getSelectedFolderId() {
     const selectedOption = document.querySelector('.select-option.selected');
-    return selectedOption ? selectedOption.dataset.folderId : 'default';
+    return selectedOption ? selectedOption.dataset.folderId : activeFolderId;
 }
 
 // --- THEME FUNCTIONS ---
@@ -897,6 +965,12 @@ document.querySelectorAll('#bulletsMenu .dropdown-item').forEach(item => {
 });
 
 function insertBulletList(type) {
+    // Don't allow insertion if no active note
+    if (!activeNoteId) {
+        showFormattingIndicator('Please create a note first');
+        return;
+    }
+
     writingCanvas.focus();
 
     const selection = window.getSelection();
@@ -977,6 +1051,12 @@ document.querySelectorAll('#chipsMenu .dropdown-item').forEach(item => {
 
 // IMPROVED CHIP INSERTION - Inserts at cursor position correctly
 function insertChip(type) {
+    // Don't allow insertion if no active note
+    if (!activeNoteId) {
+        showFormattingIndicator('Please create a note first');
+        return;
+    }
+
     const chipTexts = {
         'red': 'Important',
         'blue': 'Note',
@@ -1040,6 +1120,12 @@ function insertChip(type) {
 
 // === AND --- SHORTCUTS FOR HORIZONTAL LINES
 function insertHorizontalLine(type) {
+    // Don't allow insertion if no active note
+    if (!activeNoteId) {
+        showFormattingIndicator('Please create a note first');
+        return;
+    }
+
     const selection = window.getSelection();
     if (selection.rangeCount === 0) return;
 
@@ -1074,6 +1160,12 @@ function insertHorizontalLine(type) {
 
 // --- EXPORT MODAL ---
 exportBtn.addEventListener('click', () => {
+    // Don't show export modal if no active note
+    if (!activeNoteId) {
+        showFormattingIndicator('No note to export. Create a note first.');
+        return;
+    }
+
     const note = notes.find(n => n.id === activeNoteId);
     if (note) {
         exportFileNameInput.value = note.name.replace(/[^\w\s]/gi, '');
@@ -1381,25 +1473,49 @@ function exportAsText(fileName) {
 
 // --- DELETE BUTTON ---
 deleteBtn.addEventListener('click', () => {
-    if (notes.length <= 1) {
-        showFormattingIndicator('Cannot delete last note!');
+    // Check if we have a note to delete
+    if (!activeNoteId) {
+        showFormattingIndicator('No note to delete');
         return;
     }
+
+    // Check if we're in empty folder state
+    const folderNotes = getNotesInFolder(activeFolderId);
+    if (folderNotes.length === 0) {
+        showFormattingIndicator('No notes in this folder to delete');
+        return;
+    }
+
+    // Check if this is the last note in the folder
+    if (folderNotes.length === 1) {
+        if (folderNotes[0].id === activeNoteId) {
+            // This is the last note in folder - show special message
+            confirmDeleteBtn.textContent = 'Delete Last Note';
+        } else {
+            confirmDeleteBtn.textContent = 'Delete';
+        }
+    } else {
+        confirmDeleteBtn.textContent = 'Delete';
+    }
+
     confirmModal.classList.add('show');
 });
 
 cancelDeleteBtn.addEventListener('click', () => {
     confirmModal.classList.remove('show');
+    confirmDeleteBtn.textContent = 'Delete'; // Reset button text
 });
 
 confirmDeleteBtn.addEventListener('click', () => {
     deleteNote(activeNoteId);
     confirmModal.classList.remove('show');
+    confirmDeleteBtn.textContent = 'Delete'; // Reset button text
 });
 
 confirmModal.addEventListener('click', (e) => {
     if (e.target === confirmModal) {
         confirmModal.classList.remove('show');
+        confirmDeleteBtn.textContent = 'Delete'; // Reset button text
     }
 });
 
@@ -1407,6 +1523,17 @@ confirmModal.addEventListener('click', (e) => {
 addNoteBtn.addEventListener('click', () => {
     updateFolderDropdown();
     document.getElementById('newNoteName').value = '';
+
+    // Set the selected folder to current active folder
+    const options = document.querySelectorAll('#folderSelectOptions .select-option');
+    options.forEach(option => {
+        option.classList.remove('selected');
+        if (option.dataset.folderId === activeFolderId) {
+            option.classList.add('selected');
+            document.getElementById('selectedFolderName').textContent = option.textContent;
+        }
+    });
+
     newNoteModal.classList.add('show');
     setTimeout(() => document.getElementById('newNoteName').focus(), 100);
 });
@@ -1498,6 +1625,9 @@ confirmFolderDeleteBtn.addEventListener('click', () => {
         renderFolderList();
         renderNoteChips();
         showFormattingIndicator('Folder deleted!');
+
+        // Load notes for the new active folder
+        loadActiveNote();
     }
 
     confirmFolderDeleteModal.classList.remove('show');
@@ -1549,10 +1679,13 @@ function updateShareUI(isPublic) {
 }
 
 shareBtn.addEventListener('click', () => {
-    // Default to private initially or load from note metadata if we had it
-    // For now, let's look at the UI state or default to Private
-    // Ideally we store 'isPublic' in the note object.
+    // Don't show share modal if no active note
+    if (!activeNoteId) {
+        showFormattingIndicator('No note to share. Create a note first.');
+        return;
+    }
 
+    // Default to private initially or load from note metadata if we had it
     const note = notes.find(n => n.id === activeNoteId);
     const isPublic = note && note.isPublic === true;
 
@@ -1650,6 +1783,12 @@ function processLineFormatting(lineNode) {
     }
 
     if (processed) {
+        // Don't process formatting if no active note
+        if (!activeNoteId) {
+            showFormattingIndicator('Please create a note first');
+            return false;
+        }
+
         // Replace the line with horizontal line
         const selection = window.getSelection();
         const range = selection.getRangeAt(0);
@@ -1671,11 +1810,18 @@ function processLineFormatting(lineNode) {
         selection.removeAllRanges();
         selection.addRange(newRange);
 
+        saveCurrentNote();
         return true;
     }
 
     // If no colon, don't process other formatting
     if (!text.includes(':')) return false;
+
+    // Don't process formatting if no active note
+    if (!activeNoteId) {
+        showFormattingIndicator('Please create a note first');
+        return false;
+    }
 
     // Process colors - Support ALL native CSS color names via inline styles
     const colorRegex = /@color\.(\w+):(.*)$/i;
@@ -1874,6 +2020,7 @@ function processLineFormatting(lineNode) {
                 selection.addRange(range);
             }
 
+            saveCurrentNote();
             return true;
         }
     }
@@ -1919,6 +2066,9 @@ writingCanvas.addEventListener('keyup', (e) => {
 // Enter key handler for list continuation
 writingCanvas.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
+        // Don't process if no active note
+        if (!activeNoteId) return;
+
         const selection = window.getSelection();
         if (!selection.rangeCount) return;
 
@@ -2056,7 +2206,11 @@ function init() {
     renderNoteChips();
     loadActiveNote();
     updateFontDisplay();
-    writingCanvas.focus();
+
+    // Set initial focus
+    if (activeNoteId) {
+        writingCanvas.focus();
+    }
 }
 
 // Start the app

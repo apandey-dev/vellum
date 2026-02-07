@@ -48,12 +48,10 @@
         <!-- Dropdown Menus -->
         <div class="dropdown-menu" id="bulletsMenu">
             <div class="dropdown-item" data-type="bullet">
-                <i class="ph ph-circle"></i>
-                <span>• Bullet List</span>
+                <span>Bullet</span>
             </div>
             <div class="dropdown-item" data-type="numbered">
-                <i class="ph ph-list-numbers"></i>
-                <span>1. Numbered List</span>
+                <span>Number</span>
             </div>
         </div>
 
@@ -276,12 +274,12 @@
     <div class="form-modal" id="exportModal">
         <div class="form-box export-box">
             <h3>Export Note</h3>
-            
+
             <div class="form-group">
                 <label>File Name</label>
                 <input type="text" id="exportFileName" placeholder="Enter file name..." value="note">
             </div>
-            
+
             <div class="export-options">
                 <div class="export-card" data-format="pdf">
                     <div class="export-card-icon">
@@ -290,7 +288,7 @@
                     <h4>PDF</h4>
                     <p>High-quality document</p>
                 </div>
-                
+
                 <div class="export-card" data-format="markdown">
                     <div class="export-card-icon">
                         <i class="ph ph-file-text"></i>
@@ -298,7 +296,7 @@
                     <h4>Markdown</h4>
                     <p>.md format</p>
                 </div>
-                
+
                 <div class="export-card" data-format="text">
                     <div class="export-card-icon">
                         <i class="ph ph-file"></i>
@@ -307,7 +305,7 @@
                     <p>Plain text file</p>
                 </div>
             </div>
-            
+
             <div class="pdf-options" id="pdfOptions">
                 <div class="form-group center">
                     <label>PDF Theme</label>
@@ -323,7 +321,7 @@
                         <div class="theme-pill-slider"></div>
                     </div>
                 </div>
-                
+
                 <div class="form-group hidden">
                     <label>Include Header/Footer</label>
                     <div class="toggle-switch">
@@ -332,7 +330,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="form-actions export-actions">
                 <button class="form-btn secondary" id="closeExportModal">Cancel</button>
                 <button class="form-btn primary" id="exportConfirmBtn" disabled>Export</button>

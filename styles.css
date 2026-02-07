@@ -519,7 +519,7 @@ body {
 }
 
 .writing-canvas:empty:before {
-    content: "Start typing here... ✨\A\ATry formatting shortcuts:\A• @color.tomato: for colors\A• @bold: for bold text\A• #head: for headings\A• $code: for code blocks\A• === or --- for horizontal line\A\APress Ctrl+N for new note!";
+    content: "Start typing here...";
     color: var(--text-secondary);
     font-style: italic;
     opacity: 0.6;
@@ -1640,12 +1640,115 @@ body {
     }
 }
 
-.hidden{
+.hidden {
     display: none;
 }
 
-.center{
+.center {
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+
+/* --- Empty Folder Message Styles --- */
+.writing-canvas.empty-folder-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--bg-panel);
+    cursor: default;
+    max-width: 1300px;
+    width: 100%;
+}
+
+.empty-folder-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 40px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.empty-folder-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(59, 130, 246, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: var(--accent-color);
+}
+
+.empty-folder-message h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.empty-folder-message p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.create-note-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    margin-top: 10px;
+    font-family: fredoka;
+}
+
+.create-note-btn:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* --- Disabled Button Styles --- */
+.tool-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.tool-btn.disabled:hover {
+    background-color: transparent;
+    color: var(--text-secondary);
+}
+
+/* --- Empty Chip Styles --- */
+.chip.empty-chip {
+    opacity: 0.6;
+    cursor: default;
+    background: transparent;
+    border: 1px dashed var(--border-color);
+}
+
+.chip.empty-chip:hover {
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+.abc{
+    padding: 20px;
 }
