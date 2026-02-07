@@ -192,13 +192,13 @@ writingCanvas.addEventListener('paste', (e) => {
 
     // Get content
     const text = e.clipboardData.getData('text/plain');
-    const html = e.clipboardData.getData('text/html');
+    const htmlContent = e.clipboardData.getData('text/html');
 
     // If we have HTML, we want to extract basic formatting but strip layout styles
-    if (html) {
+    if (htmlContent) {
         // Create a temporary container
         const temp = document.createElement('div');
-        temp.innerHTML = html;
+        temp.innerHTML = htmlContent;
 
         // Sanitization function
         function sanitize(node) {
@@ -216,9 +216,6 @@ writingCanvas.addEventListener('paste', (e) => {
                 node.removeAttribute('height');
             }
 
-            // Unwrap block elements that shouldn't be nested or specific layout text
-            // For this implementation, we allow typical basic tags
-
             // Recursively clean children
             const children = Array.from(node.children);
             children.forEach(child => sanitize(child));
@@ -227,9 +224,6 @@ writingCanvas.addEventListener('paste', (e) => {
         sanitize(temp);
 
         // Insert cleaned HTML
-        // Note: Using execCommand for 'insertHTML' is standard for contenteditable to preserve undo stack
-        // even though deprecated, it handles cursor placement better than manual node insertion needed here
-        // fallback to insertText if needed
         try {
             document.execCommand('insertHTML', false, temp.innerHTML);
         } catch (err) {
@@ -301,6 +295,9 @@ function loadActiveNote() {
         writingCanvas.innerHTML = note.content || '';
         writingCanvas.contentEditable = 'true';
         writingCanvas.classList.remove('empty-folder-message');
+
+        // Apply theme compatibility to note content
+        applyThemeCompatibilityToNote();
 
         // Enable delete button if we have notes in current folder
         const folderNotes = getNotesInFolder(activeFolderId);
@@ -587,90 +584,83 @@ function loadTheme() {
 
     // Apply theme compatibility adjustments
     applyThemeCompatibility(savedTheme);
+    applyThemeCompatibilityToNote();
 }
 
 function saveTheme(theme) {
     localStorage.setItem(THEME_KEY, theme);
 }
 
-// IMPROVED THEME COMPATIBILITY FUNCTION
+// ENHANCED THEME COMPATIBILITY FUNCTION
 function applyThemeCompatibility(theme) {
-    // Find all elements with text in the canvas
-    const walker = document.createTreeWalker(
-        writingCanvas,
-        NodeFilter.SHOW_TEXT,
-        null,
-        false
-    );
+    // Apply to all elements with text
+    const allElements = document.querySelectorAll('*');
 
-    const textNodes = [];
-    let node;
-    while (node = walker.nextNode()) {
-        if (node.textContent.trim()) {
-            textNodes.push(node);
-        }
-    }
-
-    // Adjust colors based on theme
-    const allElements = writingCanvas.querySelectorAll('*');
     allElements.forEach(el => {
-        // Get computed style
+        // Skip writing canvas elements (handled separately)
+        if (el.closest('.writing-canvas')) return;
+
         const computedStyle = window.getComputedStyle(el);
         const color = computedStyle.color;
-        const bgColor = computedStyle.backgroundColor;
 
-        // Skip if no color style
-        if (!color) return;
+        if (color) {
+            // Parse RGB color
+            const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (rgbMatch) {
+                const r = parseInt(rgbMatch[1]);
+                const g = parseInt(rgbMatch[2]);
+                const b = parseInt(rgbMatch[3]);
 
-        // Parse RGB color
-        const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-        if (!rgbMatch) return;
+                // Calculate luminance
+                const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
-        const r = parseInt(rgbMatch[1]);
-        const g = parseInt(rgbMatch[2]);
-        const b = parseInt(rgbMatch[3]);
-
-        // Calculate luminance (perceived brightness)
-        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-        // For light theme: if text is too light, make it darker
-        if (theme === 'light' && luminance > 0.7) {
-            // Make text darker for better contrast
-            el.style.color = `rgb(${Math.max(0, r - 100)}, ${Math.max(0, g - 100)}, ${Math.max(0, b - 100)})`;
-            el.dataset.themeAdjusted = 'true';
-        }
-        // For dark theme: if text is too dark, make it lighter
-        else if (theme === 'dark' && luminance < 0.3) {
-            // Make text lighter for better contrast
-            el.style.color = `rgb(${Math.min(255, r + 100)}, ${Math.min(255, g + 100)}, ${Math.min(255, b + 100)})`;
-            el.dataset.themeAdjusted = 'true';
+                // Adjust based on theme
+                if (theme === 'light' && luminance < 0.3) {
+                    // Too dark for light theme
+                    el.style.color = `rgb(${Math.min(255, r + 100)}, ${Math.min(255, g + 100)}, ${Math.min(255, b + 100)})`;
+                } else if (theme === 'dark' && luminance > 0.7) {
+                    // Too light for dark theme
+                    el.style.color = `rgb(${Math.max(0, r - 100)}, ${Math.max(0, g - 100)}, ${Math.max(0, b - 100)})`;
+                }
+            }
         }
     });
+}
 
-    // Special handling for specific color classes
-    const colorClasses = ['text-red', 'text-blue', 'text-green', 'text-yellow',
-        'text-purple', 'text-pink', 'text-orange', 'text-gray'];
+// Apply theme compatibility to note content
+function applyThemeCompatibilityToNote() {
+    const currentTheme = html.getAttribute('data-theme');
+    const elements = writingCanvas.querySelectorAll('*');
 
-    colorClasses.forEach(className => {
-        const elements = writingCanvas.querySelectorAll(`.${className}`);
-        elements.forEach(el => {
-            // For light theme, ensure colors are darker variants
-            if (theme === 'light') {
-                if (className === 'text-white') {
-                    el.style.color = '#101828'; // Dark text for light theme
-                    el.classList.remove('text-white');
-                    el.classList.add('text-color-aware');
+    elements.forEach(el => {
+        // Check for color classes
+        if (el.classList.contains('text-black')) {
+            if (currentTheme === 'dark') {
+                el.style.color = 'var(--color-white)';
+            } else {
+                el.style.color = 'var(--color-black)';
+            }
+        } else if (el.classList.contains('text-white')) {
+            if (currentTheme === 'light') {
+                el.style.color = 'var(--color-black)';
+            } else {
+                el.style.color = 'var(--color-white)';
+            }
+        }
+
+        // Check for inline styles
+        const inlineColor = el.style.color;
+        if (inlineColor) {
+            if (inlineColor.includes('black') || inlineColor.includes('#000') || inlineColor.includes('rgb(0,0,0)')) {
+                if (currentTheme === 'dark') {
+                    el.style.color = 'var(--color-white)';
+                }
+            } else if (inlineColor.includes('white') || inlineColor.includes('#fff') || inlineColor.includes('rgb(255,255,255)')) {
+                if (currentTheme === 'light') {
+                    el.style.color = 'var(--color-black)';
                 }
             }
-            // For dark theme, ensure colors are lighter variants
-            else if (theme === 'dark') {
-                if (className === 'text-black') {
-                    el.style.color = '#ffffff'; // White text for dark theme
-                    el.classList.remove('text-black');
-                    el.classList.add('text-color-aware');
-                }
-            }
-        });
+        }
     });
 
     saveCurrentNote();
@@ -686,12 +676,14 @@ themeToggle.addEventListener('click', () => {
         themeIcon.classList.add('ph-sun');
         saveTheme('light');
         applyThemeCompatibility('light');
+        applyThemeCompatibilityToNote();
     } else {
         html.setAttribute('data-theme', 'dark');
         themeIcon.classList.remove('ph-sun');
         themeIcon.classList.add('ph-moon');
         saveTheme('dark');
         applyThemeCompatibility('dark');
+        applyThemeCompatibilityToNote();
     }
 });
 
@@ -858,7 +850,6 @@ function applyFontAtCursor(fontName, useShortcutMode = false) {
     }
 
     // Case 2: No selection (cursor only) - create typing anchor for future text
-    // This treats cursor as "future typing anchor"
     const fontSpan = document.createElement('span');
     fontSpan.style.fontFamily = fontFamily;
     fontSpan.classList.add('cursor-font-marker');
@@ -1832,8 +1823,28 @@ function processLineFormatting(lineNode) {
 
         // Validate color using browser's built-in validation
         if (isValidColor(colorName) && content !== undefined) {
-            // Apply color via inline style - no CSS classes needed
-            newHTML = `<span style="color: ${colorName}">${content}</span>`;
+            // Apply theme-aware color handling
+            const currentTheme = html.getAttribute('data-theme');
+            let finalColor = colorName;
+
+            // Handle black/white specifically for theme compatibility
+            if (colorName.toLowerCase() === 'black') {
+                if (currentTheme === 'dark') {
+                    finalColor = 'var(--color-white)';
+                    newHTML = `<span style="color: ${finalColor}" class="text-color-aware">${content}</span>`;
+                } else {
+                    newHTML = `<span style="color: ${finalColor}">${content}</span>`;
+                }
+            } else if (colorName.toLowerCase() === 'white') {
+                if (currentTheme === 'light') {
+                    finalColor = 'var(--color-black)';
+                    newHTML = `<span style="color: ${finalColor}" class="text-color-aware">${content}</span>`;
+                } else {
+                    newHTML = `<span style="color: ${finalColor}">${content}</span>`;
+                }
+            } else {
+                newHTML = `<span style="color: ${finalColor}">${content}</span>`;
+            }
             processed = true;
         }
     }
@@ -1860,7 +1871,15 @@ function processLineFormatting(lineNode) {
 
                         // Check if it's a valid color
                         if (isValidColor(modLower)) {
-                            inlineStyles += `color: ${modLower}; `;
+                            // Handle theme-aware colors
+                            const currentTheme = html.getAttribute('data-theme');
+                            if (modLower === 'black' && currentTheme === 'dark') {
+                                inlineStyles += `color: var(--color-white); `;
+                            } else if (modLower === 'white' && currentTheme === 'light') {
+                                inlineStyles += `color: var(--color-black); `;
+                            } else {
+                                inlineStyles += `color: ${modLower}; `;
+                            }
                         }
                         // Check if it's an alignment
                         else if (formattingConfig.alignments[modLower]) {

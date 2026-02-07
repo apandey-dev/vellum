@@ -75,6 +75,10 @@
     --color-pink: #db2777;
     --color-orange: #ea580c;
     --color-gray: #4b5563;
+    
+    /* Ensure black/white are visible in light mode */
+    --color-black: #101828;
+    --color-white: #f8fafc;
 }
 
 /* Theme-aware text color classes */
@@ -88,11 +92,40 @@
 
 /* Theme compatibility for color classes */
 [data-theme="light"] .text-white {
-    color: var(--text-primary) !important;
+    color: var(--color-black) !important;
 }
 
 [data-theme="dark"] .text-black {
-    color: var(--text-primary) !important;
+    color: var(--color-white) !important;
+}
+
+/* Enhanced theme-aware color classes */
+.text-black,
+[data-theme="dark"] .text-black {
+    color: var(--color-white) !important;
+}
+
+.text-white,
+[data-theme="light"] .text-white {
+    color: var(--color-black) !important;
+}
+
+/* Dynamic color adjustment for all text */
+[data-theme="light"] .writing-canvas *:not([class*="text-"]) {
+    color: var(--color-black) !important;
+}
+
+[data-theme="dark"] .writing-canvas *:not([class*="text-"]) {
+    color: var(--color-white) !important;
+}
+
+/* Ensure formatted text is visible */
+[data-theme="light"] .writing-canvas .text-red {
+    color: var(--color-red) !important;
+}
+
+[data-theme="dark"] .writing-canvas .text-red {
+    color: var(--color-red) !important;
 }
 
 * {
@@ -510,6 +543,22 @@ body {
     overflow-wrap: break-word;
     white-space: pre-wrap;
     max-width: 100%;
+    color: var(--text-primary) !important;
+}
+
+/* Ensure all text in writing canvas has proper color */
+.writing-canvas,
+.writing-canvas * {
+    color: inherit !important;
+}
+
+/* Theme-aware text color inheritance */
+[data-theme="light"] .writing-canvas {
+    color: var(--color-black) !important;
+}
+
+[data-theme="dark"] .writing-canvas {
+    color: var(--color-white) !important;
 }
 
 /* Ensure all children respect width */
@@ -528,43 +577,43 @@ body {
 
 /* --- Formatting Styles --- */
 .text-red {
-    color: var(--color-red);
+    color: var(--color-red) !important;
 }
 
 .text-blue {
-    color: var(--color-blue);
+    color: var(--color-blue) !important;
 }
 
 .text-green {
-    color: var(--color-green);
+    color: var(--color-green) !important;
 }
 
 .text-yellow {
-    color: var(--color-yellow);
+    color: var(--color-yellow) !important;
 }
 
 .text-purple {
-    color: var(--color-purple);
+    color: var(--color-purple) !important;
 }
 
 .text-pink {
-    color: var(--color-pink);
+    color: var(--color-pink) !important;
 }
 
 .text-orange {
-    color: var(--color-orange);
+    color: var(--color-orange) !important;
 }
 
 .text-gray {
-    color: var(--color-gray);
+    color: var(--color-gray) !important;
 }
 
 .text-black {
-    color: var(--text-primary);
+    color: var(--text-primary) !important;
 }
 
 .text-white {
-    color: var(--text-primary);
+    color: var(--text-primary) !important;
 }
 
 .text-bold {
@@ -667,37 +716,37 @@ body {
 
 .chip-red {
     background-color: rgba(239, 68, 68, 0.15);
-    color: var(--color-red);
+    color: var(--color-red) !important;
     border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .chip-blue {
     background-color: rgba(59, 130, 246, 0.15);
-    color: var(--color-blue);
+    color: var(--color-blue) !important;
     border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .chip-green {
     background-color: rgba(16, 185, 129, 0.15);
-    color: var(--color-green);
+    color: var(--color-green) !important;
     border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .chip-yellow {
     background-color: rgba(245, 158, 11, 0.15);
-    color: var(--color-yellow);
+    color: var(--color-yellow) !important;
     border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .chip-purple {
     background-color: rgba(139, 92, 246, 0.15);
-    color: var(--color-purple);
+    color: var(--color-purple) !important;
     border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
 .chip-pink {
     background-color: rgba(236, 72, 153, 0.15);
-    color: var(--color-pink);
+    color: var(--color-pink) !important;
     border: 1px solid rgba(236, 72, 153, 0.3);
 }
 
@@ -1650,7 +1699,6 @@ body {
     align-items: center;
 }
 
-
 /* --- Empty Folder Message Styles --- */
 .writing-canvas.empty-folder-message {
     display: flex;
@@ -1749,6 +1797,17 @@ body {
     color: var(--text-secondary);
 }
 
-.abc{
+.abc {
     padding: 20px;
+}
+
+/* --- Enhanced Theme Compatibility for Inline Styles --- */
+[data-theme="light"] .writing-canvas span[style*="color"] {
+    /* For inline styles in light mode, ensure they're visible */
+    filter: brightness(0.8);
+}
+
+[data-theme="dark"] .writing-canvas span[style*="color"] {
+    /* For inline styles in dark mode, ensure they're visible */
+    filter: brightness(1.2);
 }
