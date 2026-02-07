@@ -30,14 +30,14 @@ const exportConfirmBtn = document.getElementById('exportConfirmBtn');
 const exportFileNameInput = document.getElementById('exportFileName');
 const exportCards = document.querySelectorAll('.export-card');
 const pdfOptions = document.getElementById('pdfOptions');
-const themeOptions = document.querySelectorAll('.theme-option');
+const themeTogglePill = document.querySelector('.theme-toggle-pill');
+const themePillOptions = document.querySelectorAll('.theme-pill-option');
 const includeHeaderFooter = document.getElementById('includeHeaderFooter');
 
 // Button elements
 const exportBtn = document.getElementById('exportBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 const bulletsBtn = document.getElementById('bulletsBtn');
-const lineBreakBtn = document.getElementById('lineBreakBtn');
 const chipsBtn = document.getElementById('chipsBtn');
 const addNoteBtn = document.getElementById('addNoteBtn');
 const manageFoldersBtn = document.getElementById('manageFoldersBtn');
@@ -177,7 +177,7 @@ function loadFromStorage() {
             id: generateId(),
             name: 'Welcome Note',
             folderId: 'default',
-            content: 'Welcome to FocusPad! 🎨\n\nStart writing amazing notes with advanced formatting!',
+            content: 'Welcome to FocusPad! 🎨\n\nStart writing amazing notes with advanced formatting!\n\nTry these shortcuts:\n=== (thick line)\n--- (dashed line)',
             createdAt: Date.now(),
             updatedAt: Date.now()
         };
@@ -516,42 +516,99 @@ function loadTheme() {
         themeIcon.classList.remove('ph-sun');
         themeIcon.classList.add('ph-moon');
     }
+
+    // Apply theme compatibility adjustments
+    applyThemeCompatibility(savedTheme);
 }
 
 function saveTheme(theme) {
     localStorage.setItem(THEME_KEY, theme);
 }
 
-function adjustTextColorsForTheme(theme) {
-    // Find all elements with inline color styles
-    const allElements = writingCanvas.querySelectorAll('[style*="color"]');
+// IMPROVED THEME COMPATIBILITY FUNCTION
+function applyThemeCompatibility(theme) {
+    // Find all elements with text in the canvas
+    const walker = document.createTreeWalker(
+        writingCanvas,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
 
-    allElements.forEach(el => {
-        const currentColor = el.style.color;
-        if (!currentColor) return;
-
-        // Check if color is black or white
-        const isWhite = currentColor.toLowerCase().match(/white|#fff|#ffffff|rgb\(255,\s*255,\s*255\)/);
-        const isBlack = currentColor.toLowerCase().match(/black|#000|#000000|rgb\(0,\s*0,\s*0\)/);
-
-        if (theme === 'light') {
-            // In light mode, white text becomes black
-            if (isWhite) {
-                el.style.color = 'black';
-                el.dataset.autoAdjusted = 'true';
-            }
-        } else {
-            // In dark mode, black text becomes white (if it was auto-adjusted)
-            if (isBlack && el.dataset.autoAdjusted === 'true') {
-                el.style.color = 'white';
-            }
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+        if (node.textContent.trim()) {
+            textNodes.push(node);
         }
+    }
+
+    // Adjust colors based on theme
+    const allElements = writingCanvas.querySelectorAll('*');
+    allElements.forEach(el => {
+        // Get computed style
+        const computedStyle = window.getComputedStyle(el);
+        const color = computedStyle.color;
+        const bgColor = computedStyle.backgroundColor;
+
+        // Skip if no color style
+        if (!color) return;
+
+        // Parse RGB color
+        const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (!rgbMatch) return;
+
+        const r = parseInt(rgbMatch[1]);
+        const g = parseInt(rgbMatch[2]);
+        const b = parseInt(rgbMatch[3]);
+
+        // Calculate luminance (perceived brightness)
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+        // For light theme: if text is too light, make it darker
+        if (theme === 'light' && luminance > 0.7) {
+            // Make text darker for better contrast
+            el.style.color = `rgb(${Math.max(0, r - 100)}, ${Math.max(0, g - 100)}, ${Math.max(0, b - 100)})`;
+            el.dataset.themeAdjusted = 'true';
+        }
+        // For dark theme: if text is too dark, make it lighter
+        else if (theme === 'dark' && luminance < 0.3) {
+            // Make text lighter for better contrast
+            el.style.color = `rgb(${Math.min(255, r + 100)}, ${Math.min(255, g + 100)}, ${Math.min(255, b + 100)})`;
+            el.dataset.themeAdjusted = 'true';
+        }
+    });
+
+    // Special handling for specific color classes
+    const colorClasses = ['text-red', 'text-blue', 'text-green', 'text-yellow',
+        'text-purple', 'text-pink', 'text-orange', 'text-gray'];
+
+    colorClasses.forEach(className => {
+        const elements = writingCanvas.querySelectorAll(`.${className}`);
+        elements.forEach(el => {
+            // For light theme, ensure colors are darker variants
+            if (theme === 'light') {
+                if (className === 'text-white') {
+                    el.style.color = '#101828'; // Dark text for light theme
+                    el.classList.remove('text-white');
+                    el.classList.add('text-color-aware');
+                }
+            }
+            // For dark theme, ensure colors are lighter variants
+            else if (theme === 'dark') {
+                if (className === 'text-black') {
+                    el.style.color = '#ffffff'; // White text for dark theme
+                    el.classList.remove('text-black');
+                    el.classList.add('text-color-aware');
+                }
+            }
+        });
     });
 
     saveCurrentNote();
 }
 
-// --- THEME TOGGLE ---
+// Enhanced theme toggle with better compatibility
 themeToggle.addEventListener('click', () => {
     const currentTheme = html.getAttribute('data-theme');
 
@@ -560,13 +617,13 @@ themeToggle.addEventListener('click', () => {
         themeIcon.classList.remove('ph-moon');
         themeIcon.classList.add('ph-sun');
         saveTheme('light');
-        adjustTextColorsForTheme('light');
+        applyThemeCompatibility('light');
     } else {
         html.setAttribute('data-theme', 'dark');
         themeIcon.classList.remove('ph-sun');
         themeIcon.classList.add('ph-moon');
         saveTheme('dark');
-        adjustTextColorsForTheme('dark');
+        applyThemeCompatibility('dark');
     }
 });
 
@@ -943,7 +1000,7 @@ function insertChip(type) {
     }
 
     const range = selection.getRangeAt(0);
-    
+
     // Ensure we're in the writing canvas
     if (!writingCanvas.contains(range.commonAncestorContainer)) {
         writingCanvas.focus();
@@ -981,22 +1038,39 @@ function insertChip(type) {
     saveCurrentNote();
 }
 
-// --- LINE BREAK BUTTON ---
-lineBreakBtn.addEventListener('click', () => {
+// === AND --- SHORTCUTS FOR HORIZONTAL LINES
+function insertHorizontalLine(type) {
     const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const br = document.createElement('br');
-        range.insertNode(br);
+    if (selection.rangeCount === 0) return;
 
-        range.setStartAfter(br);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
+    const range = selection.getRangeAt(0);
 
-        showFormattingIndicator('Line break inserted');
+    // Create horizontal line element
+    const hr = document.createElement('div');
+    hr.className = 'horizontal-line';
+
+    if (type === 'thick') {
+        hr.classList.add('thick');
+    } else if (type === 'dashed') {
+        hr.classList.add('dashed');
     }
-});
+
+    // Insert at cursor position
+    range.insertNode(hr);
+
+    // Add a new line after the horizontal line
+    const br = document.createElement('br');
+    range.insertNode(br);
+
+    // Move cursor to after the new line
+    range.setStartAfter(br);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    showFormattingIndicator(`Horizontal line inserted`);
+    saveCurrentNote();
+}
 
 // --- EXPORT MODAL ---
 exportBtn.addEventListener('click', () => {
@@ -1004,13 +1078,22 @@ exportBtn.addEventListener('click', () => {
     if (note) {
         exportFileNameInput.value = note.name.replace(/[^\w\s]/gi, '');
     }
-    
+
     // Reset selection
     exportCards.forEach(card => card.classList.remove('selected'));
     selectedExportFormat = null;
     exportConfirmBtn.disabled = true;
-    pdfOptions.classList.remove('visible');
-    
+
+    // Set default PDF theme based on current app theme
+    const currentTheme = html.getAttribute('data-theme');
+    themeTogglePill.dataset.theme = currentTheme;
+    themePillOptions.forEach(option => {
+        option.classList.remove('active');
+        if (option.dataset.theme === currentTheme) {
+            option.classList.add('active');
+        }
+    });
+
     exportModal.classList.add('show');
 });
 
@@ -1029,25 +1112,23 @@ exportCards.forEach(card => {
     card.addEventListener('click', () => {
         // Remove selection from all cards
         exportCards.forEach(c => c.classList.remove('selected'));
-        
+
         // Select clicked card
         card.classList.add('selected');
         selectedExportFormat = card.dataset.format;
         exportConfirmBtn.disabled = false;
-        
-        // Show PDF options only for PDF export
-        if (selectedExportFormat === 'pdf') {
-            pdfOptions.classList.add('visible');
-        } else {
-            pdfOptions.classList.remove('visible');
-        }
     });
 });
 
-// Theme selection
-themeOptions.forEach(option => {
+// PDF Theme pill toggle
+themePillOptions.forEach(option => {
     option.addEventListener('click', () => {
-        themeOptions.forEach(opt => opt.classList.remove('active'));
+        const selectedTheme = option.dataset.theme;
+        themeTogglePill.dataset.theme = selectedTheme;
+
+        themePillOptions.forEach(opt => {
+            opt.classList.remove('active');
+        });
         option.classList.add('active');
     });
 });
@@ -1055,15 +1136,15 @@ themeOptions.forEach(option => {
 // Export confirmation
 exportConfirmBtn.addEventListener('click', async () => {
     const fileName = exportFileNameInput.value.trim() || 'note';
-    
+
     if (!selectedExportFormat) {
         showFormattingIndicator('Please select an export format');
         return;
     }
-    
+
     exportModal.classList.remove('show');
     showFormattingIndicator(`Exporting as ${selectedExportFormat.toUpperCase()}...`);
-    
+
     switch (selectedExportFormat) {
         case 'pdf':
             await exportAsPDF(fileName);
@@ -1082,9 +1163,9 @@ async function exportAsPDF(fileName) {
     try {
         const note = notes.find(n => n.id === activeNoteId);
         const content = writingCanvas.innerHTML;
-        const selectedTheme = document.querySelector('.theme-option.active').dataset.theme;
+        const selectedTheme = themeTogglePill.dataset.theme || 'dark';
         const includeHeader = includeHeaderFooter.checked;
-        
+
         // Create a temporary container for PDF generation
         const tempContainer = document.createElement('div');
         tempContainer.style.position = 'absolute';
@@ -1095,7 +1176,7 @@ async function exportAsPDF(fileName) {
         tempContainer.style.fontFamily = "'Fredoka', sans-serif";
         tempContainer.style.lineHeight = '1.6';
         tempContainer.style.fontSize = '14px';
-        
+
         // Apply theme
         if (selectedTheme === 'dark') {
             tempContainer.style.backgroundColor = '#1a1a1a';
@@ -1104,7 +1185,7 @@ async function exportAsPDF(fileName) {
             tempContainer.style.backgroundColor = '#ffffff';
             tempContainer.style.color = '#000000';
         }
-        
+
         // Add header if enabled
         if (includeHeader) {
             const header = document.createElement('div');
@@ -1112,37 +1193,68 @@ async function exportAsPDF(fileName) {
             header.style.marginBottom = '30px';
             header.style.paddingBottom = '20px';
             header.style.borderBottom = '1px solid #ddd';
-            
+
             const title = document.createElement('h1');
             title.textContent = fileName;
             title.style.margin = '0';
             title.style.fontSize = '24px';
             title.style.fontWeight = 'bold';
-            
+
             header.appendChild(title);
             tempContainer.appendChild(header);
         }
-        
+
         // Add content
         const contentDiv = document.createElement('div');
         contentDiv.innerHTML = content;
-        
-        // Adjust content colors for theme
+
+        // Adjust content colors for theme compatibility
         const elements = contentDiv.querySelectorAll('[style*="color"]');
         elements.forEach(el => {
             const color = el.style.color;
             if (color && selectedTheme === 'light') {
                 // For light theme, adjust very dark colors to be readable
-                if (color.includes('rgb(0,0,0)') || color.includes('#000') || color.includes('black')) {
+                const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+                if (rgbMatch) {
+                    const r = parseInt(rgbMatch[1]);
+                    const g = parseInt(rgbMatch[2]);
+                    const b = parseInt(rgbMatch[3]);
+
+                    // If color is very dark (close to black), make it darker for light theme
+                    if (r < 50 && g < 50 && b < 50) {
+                        el.style.color = '#000000';
+                    }
+                    // If color is very light (close to white), make it darker
+                    else if (r > 200 && g > 200 && b > 200) {
+                        el.style.color = '#333333';
+                    }
+                } else if (color.includes('white') || color.includes('#fff')) {
                     el.style.color = '#000000';
-                } else if (color.includes('rgb(255,255,255)') || color.includes('#fff') || color.includes('white')) {
-                    el.style.color = '#333333';
+                }
+            } else if (color && selectedTheme === 'dark') {
+                // For dark theme, adjust very light colors
+                const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+                if (rgbMatch) {
+                    const r = parseInt(rgbMatch[1]);
+                    const g = parseInt(rgbMatch[2]);
+                    const b = parseInt(rgbMatch[3]);
+
+                    // If color is very light (close to white), make it lighter for dark theme
+                    if (r > 200 && g > 200 && b > 200) {
+                        el.style.color = '#ffffff';
+                    }
+                    // If color is very dark (close to black), make it lighter
+                    else if (r < 50 && g < 50 && b < 50) {
+                        el.style.color = '#cccccc';
+                    }
+                } else if (color.includes('black') || color.includes('#000')) {
+                    el.style.color = '#ffffff';
                 }
             }
         });
-        
+
         tempContainer.appendChild(contentDiv);
-        
+
         // Add footer if enabled
         if (includeHeader) {
             const footer = document.createElement('div');
@@ -1152,33 +1264,34 @@ async function exportAsPDF(fileName) {
             footer.style.borderTop = '1px solid #ddd';
             footer.style.fontSize = '12px';
             footer.style.color = '#666';
-            
+
             const appName = document.createElement('div');
             appName.textContent = 'Exported from FocusPad';
             appName.style.marginBottom = '5px';
-            
+
             const date = document.createElement('div');
             date.textContent = new Date().toLocaleDateString();
-            
+
             footer.appendChild(appName);
             footer.appendChild(date);
             tempContainer.appendChild(footer);
         }
-        
+
         document.body.appendChild(tempContainer);
-        
+
         // Generate PDF with high quality
         const canvas = await html2canvas(tempContainer, {
             scale: 4, // High resolution for vector-like quality
             useCORS: true,
             backgroundColor: selectedTheme === 'dark' ? '#1a1a1a' : '#ffffff',
             logging: false,
-            allowTaint: true
+            allowTaint: true,
+            letterRendering: true
         });
-        
+
         // Remove temp container
         document.body.removeChild(tempContainer);
-        
+
         // Create PDF
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({
@@ -1186,14 +1299,14 @@ async function exportAsPDF(fileName) {
             unit: 'mm',
             format: 'a4'
         });
-        
+
         const imgData = canvas.toDataURL('image/png', 1.0);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
+
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         pdf.save(`${fileName}.pdf`);
-        
+
         showFormattingIndicator('PDF exported successfully!');
     } catch (error) {
         console.error('PDF export error:', error);
@@ -1204,7 +1317,7 @@ async function exportAsPDF(fileName) {
 function exportAsMarkdown(fileName) {
     const note = notes.find(n => n.id === activeNoteId);
     let content = writingCanvas.innerHTML;
-    
+
     // Convert HTML to Markdown (simplified conversion)
     let markdown = content
         .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
@@ -1218,6 +1331,7 @@ function exportAsMarkdown(fileName) {
         .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
         .replace(/<pre[^>]*>(.*?)<\/pre>/gi, '```\n$1\n```\n')
         .replace(/<div[^>]*class="code-block"[^>]*>(.*?)<\/div>/gi, '```\n$1\n```\n')
+        .replace(/<div[^>]*class="horizontal-line"[^>]*>/gi, '\n---\n\n')
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
         .replace(/<div[^>]*>(.*?)<\/div>/gi, '$1\n')
@@ -1228,11 +1342,11 @@ function exportAsMarkdown(fileName) {
         .replace(/&gt;/g, '>')
         .replace(/&amp;/g, '&')
         .trim();
-    
+
     // Add metadata
     const metadata = `# ${fileName}\n\nExported from FocusPad on ${new Date().toLocaleDateString()}\n\n---\n\n`;
     markdown = metadata + markdown;
-    
+
     // Create and download file
     const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -1241,18 +1355,18 @@ function exportAsMarkdown(fileName) {
     a.download = `${fileName}.md`;
     a.click();
     URL.revokeObjectURL(url);
-    
+
     showFormattingIndicator('Markdown exported successfully!');
 }
 
 function exportAsText(fileName) {
     const note = notes.find(n => n.id === activeNoteId);
     let content = writingCanvas.textContent || writingCanvas.innerText;
-    
+
     // Add metadata
     const metadata = `${fileName}\nExported from FocusPad on ${new Date().toLocaleDateString()}\n\n`;
     content = metadata + content;
-    
+
     // Create and download file
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -1261,7 +1375,7 @@ function exportAsText(fileName) {
     a.download = `${fileName}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-    
+
     showFormattingIndicator('Text exported successfully!');
 }
 
@@ -1524,6 +1638,43 @@ function processLineFormatting(lineNode) {
     let processed = false;
     let newHTML = '';
 
+    // Check for horizontal line shortcuts
+    const trimmedText = text.trim();
+
+    if (trimmedText === '===') {
+        newHTML = '<div class="horizontal-line thick"></div>';
+        processed = true;
+    } else if (trimmedText === '---') {
+        newHTML = '<div class="horizontal-line dashed"></div>';
+        processed = true;
+    }
+
+    if (processed) {
+        // Replace the line with horizontal line
+        const selection = window.getSelection();
+        const range = selection.getRangeAt(0);
+
+        const temp = document.createElement('div');
+        temp.innerHTML = newHTML;
+        const newNode = temp.firstChild;
+
+        if (lineNode.nodeType === 3) {
+            lineNode.parentNode.replaceChild(newNode, lineNode);
+        } else {
+            lineNode.parentNode.replaceChild(newNode, lineNode);
+        }
+
+        // Move cursor to after the horizontal line
+        const newRange = document.createRange();
+        newRange.setStartAfter(newNode);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+
+        return true;
+    }
+
+    // If no colon, don't process other formatting
     if (!text.includes(':')) return false;
 
     // Process colors - Support ALL native CSS color names via inline styles
@@ -1735,7 +1886,7 @@ let processing = false;
 writingCanvas.addEventListener('keyup', (e) => {
     if (processing) return;
 
-    if (e.key === ':' || e.key === ' ') {
+    if (e.key === ':' || e.key === ' ' || e.key === 'Enter') {
         processing = true;
 
         const lineNode = getCurrentLine();
@@ -1842,7 +1993,7 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         addNoteBtn.click();
     }
-    
+
     // Export shortcut
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
         e.preventDefault();
@@ -1890,7 +2041,7 @@ document.addEventListener('keydown', (e) => {
             document.getElementById('createFolderBtn').click();
         }
     }
-    
+
     // Enter key in export modal for confirmation
     if (e.key === 'Enter' && exportModal.classList.contains('show') && !exportConfirmBtn.disabled) {
         e.preventDefault();

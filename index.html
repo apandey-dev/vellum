@@ -40,9 +40,6 @@
             <div class="tool-btn" id="bulletsBtn" data-tooltip="Bullets">
                 <i class="ph ph-list-bullets"></i>
             </div>
-            <div class="tool-btn" id="lineBreakBtn" data-tooltip="Line Break">
-                <i class="ph ph-line-break"></i>
-            </div>
             <div class="tool-btn" id="chipsBtn" data-tooltip="Insert Chip">
                 <i class="ph ph-tag-chef"></i>
             </div>
@@ -312,25 +309,22 @@
             </div>
             
             <div class="pdf-options" id="pdfOptions">
-                <div class="form-group">
+                <div class="form-group center">
                     <label>PDF Theme</label>
-                    <div class="theme-selector">
-                        <div class="theme-option active" data-theme="dark">
-                            <div class="theme-preview dark-theme">
-                                <div class="theme-demo-text">A</div>
-                            </div>
+                    <div class="theme-toggle-pill">
+                        <div class="theme-pill-option active" data-theme="dark">
+                            <i class="ph ph-moon"></i>
                             <span>Dark</span>
                         </div>
-                        <div class="theme-option" data-theme="light">
-                            <div class="theme-preview light-theme">
-                                <div class="theme-demo-text">A</div>
-                            </div>
+                        <div class="theme-pill-option" data-theme="light">
+                            <i class="ph ph-sun"></i>
                             <span>Light</span>
                         </div>
+                        <div class="theme-pill-slider"></div>
                     </div>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group hidden">
                     <label>Include Header/Footer</label>
                     <div class="toggle-switch">
                         <input type="checkbox" id="includeHeaderFooter" checked>
