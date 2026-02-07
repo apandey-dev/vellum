@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusPad - Shared Note</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <!-- Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        /* Shared variables from styles.css for consistency */
+        :root {
+            --bg-canvas: #f2f4f7;
+            --bg-panel: #ffffff;
+            --text-primary: #101828;
+            --text-secondary: #667085;
+            --border-color: #eaecf0;
+            --accent-color: #000000;
+            --grid-color: #e4e7ec;
+
+            /* Colors matching editor */
+            --color-red: #ef4444;
+            --color-blue: #3b82f6;
+            --color-green: #10b981;
+            --color-yellow: #f59e0b;
+            --color-purple: #8b5cf6;
+            --color-pink: #ec4899;
+        }
+
+        [data-theme="dark"] {
+            --bg-canvas: #09090b;
+            --bg-panel: #141415;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --border-color: #2a2a2a;
+            --accent-color: #3b82f6;
+            --grid-color: #1f1f22;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: 'Fredoka', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Top Bar */
+        .share-header {
+            height: 70px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .action-btn {
+            height: 40px;
+            padding: 0 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: var(--border-color);
+        }
+
+        .action-btn.primary {
+            background-color: var(--text-primary);
+            color: var(--bg-canvas);
+            border-color: var(--text-primary);
+        }
+
+        .theme-btn {
+            width: 40px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        /* Main Content */
+        .content-wrapper {
+            margin-top: 100px;
+            margin-bottom: 60px;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 0 20px;
+            flex-wrap: wrap;
+        }
+
+        .paper-container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .note-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            line-height: 1.2;
+        }
+
+        .note-content {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 50px;
+            min-height: 500px;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .note-content * {
+            max-width: 100%;
+        }
+
+        /* Sidebar for Export (Right Side) */
+        .export-sidebar {
+            width: 280px;
+            flex-shrink: 0;
+        }
+
+        .export-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            position: sticky;
+            top: 100px;
+        }
+
+        .export-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .export-opt {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            background: var(--bg-canvas);
+            border: 1px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        .export-opt:hover {
+            border-color: var(--text-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .export-opt i {
+            font-size: 20px;
+            opacity: 0.7;
+        }
+
+        /* Error/Loading State */
+        .state-msg {
+            text-align: center;
+            margin-top: 100px;
+            font-size: 20px;
+            color: var(--text-secondary);
+        }
+
+        /* --- STYLES FROM EDITOR FOR COMPATIBILITY --- */
+        .text-bold {
+            font-weight: bold;
+        }
+
+        .text-italic {
+            font-style: italic;
+        }
+
+        .text-underline {
+            text-decoration: underline;
+        }
+
+        .text-strike {
+            text-decoration: line-through;
+        }
+
+        .text-center {
+            text-align: center;
+            display: block;
+        }
+
+        .text-right {
+            text-align: right;
+            display: block;
+        }
+
+        .heading-main {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 24px 0 16px;
+        }
+
+        .heading-sub {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0 12px;
+        }
+
+        .code-block {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+            margin: 16px 0;
+        }
+
+        .chip-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 0 4px;
+        }
+
+        .chip-red {
+            background: #ef4444;
+            color: white;
+        }
+
+        .chip-blue {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .chip-green {
+            background: #10b981;
+            color: white;
+        }
+
+        .chip-yellow {
+            background: #f59e0b;
+            color: black;
+        }
+
+        .chip-purple {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .chip-pink {
+            background: #ec4899;
+            color: white;
+        }
+
+        /* --- PRINT STYLES (Vector Quality) --- */
+        @media print {
+
+            /* Hide UI */
+            .share-header,
+            .export-sidebar {
+                display: none !important;
+            }
+
+            /* Reset Body */
+            body {
+                background: white !important;
+                color: black !important;
+                display: block;
+                height: auto;
+                overflow: visible;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .content-wrapper {
+                margin: 0;
+                padding: 0;
+                display: block;
+            }
+
+            .paper-container {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .note-title {
+                color: black !important;
+                margin-top: 0;
+            }
+
+            .note-content {
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                background: white !important;
+                color: black !important;
+            }
+
+            /* Ensure Colors Print nicely (converting dark colors to print safe) */
+            * {
+                box-shadow: none !important;
+                text-shadow: none !important;
+            }
+
+            /* Provide proper page breaks */
+            p,
+            div,
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="share-header">
+        <div class="header-left">
+            <div class="brand">FocusPad</div>
+        </div>
+        <div class="header-actions">
+            <button class="action-btn theme-btn" id="themeToggle" title="Toggle Theme">
+                <i class="ph ph-sun"></i>
+            </button>
+            <button class="action-btn primary" onclick="window.print()">
+                <i class="ph ph-printer"></i> Print
+            </button>
+        </div>
+    </header>
+
+    <div id="app" class="content-wrapper">
+        <!-- JS will populate or show error -->
+        <div class="state-msg">Loading note...</div>
+    </div>
+
+    <!-- Template for content -->
+    <template id="noteTemplate">
+        <div class="paper-container">
+            <h1 class="note-title" id="displayTitle">Untitled Note</h1>
+            <div class="note-content" id="displayContent"></div>
+        </div>
+
+        <aside class="export-sidebar">
+            <div class="export-card">
+                <div class="export-title">Export Options</div>
+
+                <button class="export-opt" onclick="window.print()">
+                    <i class="ph ph-file-pdf"></i>
+                    <span>Save as PDF</span>
+                </button>
+
+                <button class="export-opt" id="exportMd">
+                    <i class="ph ph-markdown-logo"></i>
+                    <span>Markdown</span>
+                </button>
+
+                <button class="export-opt" id="exportTxt">
+                    <i class="ph ph-file-text"></i>
+                    <span>Plain Text</span>
+                </button>
+            </div>
+        </aside>
+    </template>
+
+    <script>
+        // --- LOGIC ---
+        const NOTES_KEY = 'focuspad_notes';
+        const template = document.getElementById('noteTemplate');
+        const app = document.getElementById('app');
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+
+        // 1. Theme Logic
+        function toggleTheme() {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+
+            const icon = themeToggle.querySelector('i');
+            if (next === 'dark') {
+                icon.className = 'ph ph-moon';
+            } else {
+                icon.className = 'ph ph-sun';
+            }
+        }
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // 2. Load Note
+        function loadNote() {
+            const params = new URLSearchParams(window.location.search);
+            const noteId = params.get('id');
+
+            if (!noteId) {
+                app.innerHTML = '<div class="state-msg">No note ID specified.</div>';
+                return;
+            }
+
+            try {
+                const savedNotes = localStorage.getItem(NOTES_KEY);
+                const notes = savedNotes ? JSON.parse(savedNotes) : [];
+                const note = notes.find(n => n.id === noteId);
+
+                if (!note) {
+                    app.innerHTML = '<div class="state-msg">Note not found or deleted.</div>';
+                    return;
+                }
+
+                // Check Privacy (Simulated)
+                if (note.isPublic === false) {
+                    app.innerHTML = '<div class="state-msg"><i class="ph ph-lock-key"></i><br>This note is private.</div>';
+                    return;
+                }
+
+                // Render
+                app.innerHTML = '';
+                const clone = template.content.cloneNode(true);
+
+                clone.getElementById('displayTitle').textContent = note.name;
+                clone.getElementById('displayContent').innerHTML = note.content;
+
+                // Setup Exports
+                const exportMd = clone.getElementById('exportMd');
+                const exportTxt = clone.getElementById('exportTxt');
+
+                exportMd.onclick = () => downloadFile(note.name, note.content, 'md');
+                exportTxt.onclick = () => downloadFile(note.name, note.content, 'txt');
+
+                app.appendChild(clone);
+
+            } catch (e) {
+                console.error(e);
+                app.innerHTML = '<div class="state-msg">Error loading note.</div>';
+            }
+        }
+
+        // 3. Download Helpers
+        function downloadFile(name, content, type) {
+            let text = content;
+            let mime = 'text/plain';
+
+            if (type === 'md') {
+                // Determine simplest markdown conversion 
+                // For now, simple replacement of html tags
+                text = convertToMarkdown(content);
+                mime = 'text/markdown';
+            } else {
+                text = app.querySelector('#displayContent').innerText; // Strip HTML
+            }
+
+            const blob = new Blob([text], { type: mime });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${name}.${type}`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function convertToMarkdown(html) {
+            // Basic HTML to MD converter for the user's content
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+
+            // This is a naive implementation; complex HTML needs a lib like turndown
+            // But for our editor's clean output, textContent usually suffices for "Plain"
+            // For MD, we'd wrap headers etc.
+            // Keeping it simple as requested: vector quality PDF was key.
+            return temp.innerText;
+        }
+
+        // Initialize
+        loadNote();
+
+    </script>
+</body>
+
+</html>

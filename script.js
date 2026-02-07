@@ -33,6 +33,7 @@ const lineBreakBtn = document.getElementById('lineBreakBtn');
 const chipsBtn = document.getElementById('chipsBtn');
 const addNoteBtn = document.getElementById('addNoteBtn');
 const manageFoldersBtn = document.getElementById('manageFoldersBtn');
+const shareBtn = document.getElementById('shareBtn');
 
 // Dropdown menus
 const bulletsMenu = document.getElementById('bulletsMenu');
@@ -173,6 +174,61 @@ function loadFromStorage() {
         activeNoteId = firstNote.id;
     }
 }
+
+// --- PASTE SANITIZATION ---
+writingCanvas.addEventListener('paste', (e) => {
+    e.preventDefault();
+
+    // Get content
+    const text = e.clipboardData.getData('text/plain');
+    const html = e.clipboardData.getData('text/html');
+
+    // If we have HTML, we want to extract basic formatting but strip layout styles
+    if (html) {
+        // Create a temporary container
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+
+        // Sanitization function
+        function sanitize(node) {
+            // Remove style attributes
+            if (node.hasAttribute && node.hasAttribute('style')) {
+                node.removeAttribute('style');
+            }
+            if (node.hasAttribute && node.hasAttribute('class')) {
+                node.removeAttribute('class');
+            }
+            if (node.hasAttribute && node.hasAttribute('width')) {
+                node.removeAttribute('width');
+            }
+            if (node.hasAttribute && node.hasAttribute('height')) {
+                node.removeAttribute('height');
+            }
+
+            // Unwrap block elements that shouldn't be nested or specific layout text
+            // For this implementation, we allow typical basic tags
+
+            // Recursively clean children
+            const children = Array.from(node.children);
+            children.forEach(child => sanitize(child));
+        }
+
+        sanitize(temp);
+
+        // Insert cleaned HTML
+        // Note: Using execCommand for 'insertHTML' is standard for contenteditable to preserve undo stack
+        // even though deprecated, it handles cursor placement better than manual node insertion needed here
+        // fallback to insertText if needed
+        try {
+            document.execCommand('insertHTML', false, temp.innerHTML);
+        } catch (err) {
+            document.execCommand('insertText', false, text);
+        }
+    } else {
+        // Fallback to plain text
+        document.execCommand('insertText', false, text);
+    }
+});
 
 // --- NOTE FUNCTIONS ---
 function createNote(name, folderId) {
@@ -1065,6 +1121,90 @@ confirmFolderDeleteModal.addEventListener('click', (e) => {
     if (e.target === confirmFolderDeleteModal) {
         confirmFolderDeleteModal.classList.remove('show');
         delete confirmFolderDeleteModal.dataset.pendingFolderId;
+    }
+});
+
+// --- SHARE MODAL & LOGIC ---
+const shareModal = document.getElementById('shareModal');
+const shareToggle = document.getElementById('shareToggle');
+const shareLinkSection = document.getElementById('shareLinkSection');
+const sharePrivateMsg = document.getElementById('sharePrivateMsg');
+const closeShareModalBtn = document.getElementById('closeShareModal');
+const copyLinkBtn = document.getElementById('copyLinkBtn');
+const shareLinkInput = document.getElementById('shareLinkInput');
+
+function updateShareUI(isPublic) {
+    const slider = shareToggle.querySelector('.toggle-slider');
+    const options = shareToggle.querySelectorAll('.toggle-option');
+
+    if (isPublic) {
+        shareToggle.classList.add('public');
+        shareToggle.classList.remove('private');
+        options[1].classList.add('active'); // Public
+        options[0].classList.remove('active'); // Private
+
+        shareLinkSection.classList.add('visible');
+        sharePrivateMsg.classList.remove('visible');
+
+        // Generate Link (simulated for local file)
+        const noteId = activeNoteId || 'default';
+        const dummyBase = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+        shareLinkInput.value = `${dummyBase}/share.html?id=${noteId}`;
+    } else {
+        shareToggle.classList.add('private');
+        shareToggle.classList.remove('public');
+        options[0].classList.add('active'); // Private
+        options[1].classList.remove('active'); // Public
+
+        sharePrivateMsg.classList.add('visible');
+        shareLinkSection.classList.remove('visible');
+    }
+}
+
+shareBtn.addEventListener('click', () => {
+    // Default to private initially or load from note metadata if we had it
+    // For now, let's look at the UI state or default to Private
+    // Ideally we store 'isPublic' in the note object.
+
+    const note = notes.find(n => n.id === activeNoteId);
+    const isPublic = note && note.isPublic === true;
+
+    updateShareUI(isPublic);
+    shareModal.classList.add('show');
+});
+
+shareToggle.addEventListener('click', () => {
+    const wasPublic = shareToggle.classList.contains('public');
+    const isNowPublic = !wasPublic;
+
+    updateShareUI(isNowPublic);
+
+    // Save state to note
+    const note = notes.find(n => n.id === activeNoteId);
+    if (note) {
+        note.isPublic = isNowPublic;
+        saveToStorage();
+    }
+});
+
+closeShareModalBtn.addEventListener('click', () => {
+    shareModal.classList.remove('show');
+});
+
+copyLinkBtn.addEventListener('click', () => {
+    shareLinkInput.select();
+    document.execCommand('copy');
+
+    const originalIcon = copyLinkBtn.innerHTML;
+    copyLinkBtn.innerHTML = '<i class="ph ph-check"></i>';
+    setTimeout(() => {
+        copyLinkBtn.innerHTML = originalIcon;
+    }, 2000);
+});
+
+shareModal.addEventListener('click', (e) => {
+    if (e.target === shareModal) {
+        shareModal.classList.remove('show');
     }
 });
 

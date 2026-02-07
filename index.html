@@ -29,6 +29,9 @@
             <div class="tool-btn" id="exportBtn" data-tooltip="Export">
                 <i class="ph ph-export"></i>
             </div>
+            <div class="tool-btn" id="shareBtn" data-tooltip="Share">
+                <i class="ph ph-share-network"></i>
+            </div>
             <div class="tool-btn" id="deleteBtn" data-tooltip="Delete">
                 <i class="ph ph-trash"></i>
             </div>
@@ -243,8 +246,45 @@
         </div>
     </div>
 
+    <!-- Share Modal -->
+    <div class="form-modal" id="shareModal">
+        <div class="form-box share-box">
+            <h3>Share Note</h3>
+            <p class="share-subtitle">Control who can view this note</p>
+
+            <div class="share-toggle-wrapper">
+                <div class="share-toggle" id="shareToggle">
+                    <div class="toggle-option active" data-value="private">Private</div>
+                    <div class="toggle-option" data-value="public">Public</div>
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+
+            <div class="share-link-section" id="shareLinkSection">
+                <label>Public Link</label>
+                <div class="link-input-wrapper">
+                    <input type="text" id="shareLinkInput" readonly value="https://focuspad.app/share/...">
+                    <button class="copy-btn" id="copyLinkBtn" data-tooltip="Copy">
+                        <i class="ph ph-copy"></i>
+                    </button>
+                </div>
+                <p class="share-info"><i class="ph ph-info"></i> Anyone with this link can view this note.</p>
+            </div>
+
+            <div class="share-private-msg" id="sharePrivateMsg">
+                <i class="ph ph-lock-key"></i>
+                <p>This note is restricted to you only.</p>
+            </div>
+
+            <div class="form-actions">
+                <button class="form-btn secondary" id="closeShareModal">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- External JavaScript -->
     <script src="script.js"></script>
 </body>
 
 </html>
+

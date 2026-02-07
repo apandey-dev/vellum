@@ -461,6 +461,16 @@ body {
     min-height: 400px;
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    max-width: 100%;
+}
+
+/* Ensure all children respect width */
+.writing-canvas * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .writing-canvas:empty:before {
@@ -797,6 +807,178 @@ body {
 
 .select-options::-webkit-scrollbar {
     width: 6px;
+}
+
+/* --- Share Modal Styling --- */
+.share-box {
+    max-width: 450px !important;
+    text-align: center;
+}
+
+.share-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    margin-top: -10px;
+}
+
+.share-toggle-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.share-toggle {
+    background: var(--bg-canvas);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    position: relative;
+    padding: 4px;
+    cursor: pointer;
+    width: 200px;
+    height: 48px;
+}
+
+.toggle-option {
+    flex: 1;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: color 0.3s;
+}
+
+.toggle-option.active {
+    color: var(--bg-canvas);
+    /* Dynamic depending on theme, handled by slider bg usually, 
+       but here we want text contrast against the slider.
+       If active is Public/Private, text color changes. */
+}
+
+/* Specific text colors for active states if needed, 
+   but simpler is to use mix-blend-mode or just absolute coloring. */
+[data-theme="dark"] .toggle-option.active {
+    color: #ffffff;
+    /* Fallback */
+}
+
+[data-theme="light"] .toggle-option.active {
+    color: #ffffff;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    background: var(--text-primary);
+    border-radius: 8px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1;
+}
+
+/* Toggle Logic in CSS Class */
+.share-toggle.public .toggle-slider {
+    transform: translateX(100%);
+    background-color: var(--color-green);
+}
+
+.share-toggle.private .toggle-slider {
+    transform: translateX(0);
+    background-color: var(--text-secondary);
+}
+
+.share-link-section {
+    text-align: left;
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.share-link-section.visible {
+    display: block;
+}
+
+.link-input-wrapper {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.link-input-wrapper input {
+    flex: 1;
+    background: var(--bg-canvas);
+    border: 1px solid var(--border-color);
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: 'Fredoka', sans-serif;
+    font-size: 13px;
+    cursor: text;
+}
+
+.copy-btn {
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-panel);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+}
+
+.copy-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.share-info {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.share-private-msg {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 0;
+    color: var(--text-secondary);
+    animation: fadeIn 0.3s ease;
+}
+
+.share-private-msg.visible {
+    display: flex;
+}
+
+.share-private-msg i {
+    font-size: 32px;
+    opacity: 0.5;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .select-options::-webkit-scrollbar-track {
@@ -1195,3 +1377,153 @@ body {
         min-width: 150px;
     }
 }
+
+/ *   - - -   S H A R E   M O D A L   S T Y L E S   - - -   * /     . s h a r e - m o d a l - b o x    {
+                 m i n - w i d t h :    5 0 0 p x ;
+                 m a x - w i d t h :    5 5 0 p x ;
+         
+}
+
+         . m o d a l - d e s c r i p t i o n    {
+                 c o l o r :    v a r ( - - t e x t - s e c o n d a r y ) ;
+                 f o n t - s i z e :    1 4 p x ;
+                 m a r g i n - b o t t o m :    2 0 p x ;
+         
+}
+
+         . s h a r e - t o g g l e - w r a p p e r    {
+                 m a r g i n :    2 4 p x   0 ;
+         
+}
+
+         . s h a r e - t o g g l e    {
+                 d i s p l a y :    f l e x ;
+                 b a c k g r o u n d :    v a r ( - - b g - p a n e l ) ;
+                 b o r d e r :    1 p x   s o l i d   v a r ( - - b o r d e r - c o l o r ) ;
+                 b o r d e r - r a d i u s :    5 0 p x ;
+                 p a d d i n g :    4 p x ;
+                 g a p :    4 p x ;
+         
+}
+
+         . t o g g l e - o p t i o n    {
+                 f l e x :    1 ;
+                 p a d d i n g :    1 2 p x   2 0 p x ;
+                 b o r d e r - r a d i u s :    5 0 p x ;
+                 t e x t - a l i g n :    c e n t e r ;
+                 c u r s o r :    p o i n t e r ;
+                 t r a n s i t i o n :    a l l   0 . 3 s   c u b i c - b e z i e r ( 0 . 1 6 ,    1 ,    0 . 3 ,    1 ) ;
+                 f o n t - w e i g h t :    5 0 0 ;
+                 d i s p l a y :    f l e x ;
+                 a l i g n - i t e m s :    c e n t e r ;
+                 j u s t i f y - c o n t e n t :    c e n t e r ;
+                 g a p :    8 p x ;
+                 c o l o r :    v a r ( - - t e x t - s e c o n d a r y ) ;
+         
+}
+
+         . t o g g l e - o p t i o n : h o v e r    {
+                 b a c k g r o u n d :    v a r ( - - h o v e r - b g ) ;
+                 c o l o r :    v a r ( - - t e x t - p r i m a r y ) ;
+         
+}
+
+         . t o g g l e - o p t i o n . a c t i v e    {
+                 b a c k g r o u n d :    v a r ( - - a c c e n t - c o l o r ) ;
+                 c o l o r :    w h i t e ;
+                 b o x - s h a d o w :    0   4 p x   1 2 p x   r g b a ( 5 9 ,    1 3 0 ,    2 4 6 ,    0 . 3 ) ;
+         
+}
+
+         . t o g g l e - o p t i o n   i    {
+                 f o n t - s i z e :    1 8 p x ;
+         
+}
+
+         . s h a r e - l i n k - s e c t i o n    {
+                 m a r g i n :    2 4 p x   0 ;
+         
+}
+
+         . s h a r e - l i n k - s e c t i o n   l a b e l    {
+                 d i s p l a y :    b l o c k ;
+                 f o n t - w e i g h t :    5 0 0 ;
+                 m a r g i n - b o t t o m :    8 p x ;
+                 c o l o r :    v a r ( - - t e x t - p r i m a r y ) ;
+         
+}
+
+         . s h a r e - l i n k - c o n t a i n e r    {
+                 d i s p l a y :    f l e x ;
+                 g a p :    1 0 p x ;
+                 a l i g n - i t e m s :    s t r e t c h ;
+         
+}
+
+         . s h a r e - l i n k - c o n t a i n e r   i n p u t    {
+                 f l e x :    1 ;
+                 p a d d i n g :    1 2 p x   1 6 p x ;
+                 b o r d e r - r a d i u s :    1 0 p x ;
+                 b o r d e r :    1 p x   s o l i d   v a r ( - - b o r d e r - c o l o r ) ;
+                 b a c k g r o u n d :    v a r ( - - b g - p a n e l ) ;
+                 c o l o r :    v a r ( - - t e x t - p r i m a r y ) ;
+                 f o n t - f a m i l y :    ' F r e d o k a '  ,    s a n s - s e r i f ;
+                 f o n t - s i z e :    1 3 p x ;
+                 t r a n s i t i o n :    a l l   0 . 2 s ;
+         
+}
+
+         . s h a r e - l i n k - c o n t a i n e r   i n p u t : f o c u s    {
+                 b o r d e r - c o l o r :    v a r ( - - a c c e n t - c o l o r ) ;
+                 o u t l i n e :    n o n e ;
+         
+}
+
+         . c o p y - l i n k - b t n    {
+                 p a d d i n g :    1 2 p x   2 0 p x ;
+                 b o r d e r - r a d i u s :    1 0 p x ;
+                 b o r d e r :    1 p x   s o l i d   v a r ( - - b o r d e r - c o l o r ) ;
+                 b a c k g r o u n d :    v a r ( - - b g - p a n e l ) ;
+                 c o l o r :    v a r ( - - t e x t - p r i m a r y ) ;
+                 f o n t - f a m i l y :    ' F r e d o k a '  ,    s a n s - s e r i f ;
+                 f o n t - w e i g h t :    5 0 0 ;
+                 c u r s o r :    p o i n t e r ;
+                 t r a n s i t i o n :    a l l   0 . 3 s   c u b i c - b e z i e r ( 0 . 1 6 ,    1 ,    0 . 3 ,    1 ) ;
+                 d i s p l a y :    f l e x ;
+                 a l i g n - i t e m s :    c e n t e r ;
+                 g a p :    6 p x ;
+         
+}
+
+         . c o p y - l i n k - b t n : h o v e r    {
+                 b a c k g r o u n d :    v a r ( - - a c c e n t - c o l o r ) ;
+                 c o l o r :    w h i t e ;
+                 b o r d e r - c o l o r :    v a r ( - - a c c e n t - c o l o r ) ;
+                 t r a n s f o r m :    t r a n s l a t e Y ( - 1 p x ) ;
+         
+}
+
+         . c o p y - l i n k - b t n   i    {
+                 f o n t - s i z e :    1 6 p x ;
+         
+}
+
+         . l i n k - s t a t u s    {
+                 d i s p l a y :    b l o c k ;
+                 m a r g i n - t o p :    8 p x ;
+                 c o l o r :    v a r ( - - t e x t - s e c o n d a r y ) ;
+                 f o n t - s i z e :    1 2 p x ;
+         
+}
+
+         . l i n k - s t a t u s . p u b l i c    {
+                 c o l o r :    v a r ( - - c o l o r - g r e e n ) ;
+         
+}
+
+         . l i n k - s t a t u s . p r i v a t e    {
+                 c o l o r :    v a r ( - - c o l o r - o r a n g e ) ;
+         
+}
+
+     
