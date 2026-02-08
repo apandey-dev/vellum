@@ -128,6 +128,631 @@
     color: var(--color-red) !important;
 }
 
+/* --- INLINE FORMATTING COMMANDS STYLES --- */
+/* Color Classes for inline formatting */
+.text-color-red {
+    color: #ef4444 !important;
+}
+
+.text-color-tomato {
+    color: #ff6347 !important;
+}
+
+.text-color-blue {
+    color: #3b82f6 !important;
+}
+
+.text-color-green {
+    color: #10b981 !important;
+}
+
+.text-color-yellow {
+    color: #f59e0b !important;
+}
+
+.text-color-purple {
+    color: #8b5cf6 !important;
+}
+
+.text-color-pink {
+    color: #ec4899 !important;
+}
+
+.text-color-orange {
+    color: #f97316 !important;
+}
+
+.text-color-gray {
+    color: #6b7280 !important;
+}
+
+.text-color-black {
+    color: #000000 !important;
+}
+
+.text-color-white {
+    color: #ffffff !important;
+}
+
+.text-color-cyan {
+    color: #00ffff !important;
+}
+
+.text-color-magenta {
+    color: #ff00ff !important;
+}
+
+.text-color-brown {
+    color: #a52a2a !important;
+}
+
+.text-color-gold {
+    color: #ffd700 !important;
+}
+
+.text-color-silver {
+    color: #c0c0c0 !important;
+}
+
+.text-color-violet {
+    color: #ee82ee !important;
+}
+
+.text-color-indigo {
+    color: #4b0082 !important;
+}
+
+.text-color-teal {
+    color: #008080 !important;
+}
+
+.text-color-maroon {
+    color: #800000 !important;
+}
+
+.text-color-navy {
+    color: #000080 !important;
+}
+
+.text-color-olive {
+    color: #808000 !important;
+}
+
+.text-color-lime {
+    color: #00ff00 !important;
+}
+
+.text-color-aqua {
+    color: #00ffff !important;
+}
+
+.text-color-fuchsia {
+    color: #ff00ff !important;
+}
+
+.text-color-coral {
+    color: #ff7f50 !important;
+}
+
+.text-color-orangered {
+    color: #ff4500 !important;
+}
+
+.text-color-deeppink {
+    color: #ff1493 !important;
+}
+
+.text-color-mediumvioletred {
+    color: #c71585 !important;
+}
+
+.text-color-darkviolet {
+    color: #9400d3 !important;
+}
+
+.text-color-darkorchid {
+    color: #9932cc !important;
+}
+
+.text-color-darkmagenta {
+    color: #8b008b !important;
+}
+
+.text-color-darkred {
+    color: #8b0000 !important;
+}
+
+.text-color-darkgreen {
+    color: #006400 !important;
+}
+
+.text-color-darkblue {
+    color: #00008b !important;
+}
+
+.text-color-darkcyan {
+    color: #008b8b !important;
+}
+
+.text-color-darkgoldenrod {
+    color: #b8860b !important;
+}
+
+.text-color-darkgray {
+    color: #a9a9a9 !important;
+}
+
+.text-color-darkslategray {
+    color: #2f4f4f !important;
+}
+
+.text-color-lightslategray {
+    color: #778899 !important;
+}
+
+.text-color-lightgray {
+    color: #d3d3d3 !important;
+}
+
+.text-color-whitesmoke {
+    color: #f5f5f5 !important;
+}
+
+.text-color-snow {
+    color: #fffafa !important;
+}
+
+.text-color-ivory {
+    color: #fffff0 !important;
+}
+
+.text-color-honeydew {
+    color: #f0fff0 !important;
+}
+
+.text-color-mintcream {
+    color: #f5fffa !important;
+}
+
+.text-color-azure {
+    color: #f0ffff !important;
+}
+
+.text-color-aliceblue {
+    color: #f0f8ff !important;
+}
+
+.text-color-ghostwhite {
+    color: #f8f8ff !important;
+}
+
+.text-color-lavender {
+    color: #e6e6fa !important;
+}
+
+.text-color-lavenderblush {
+    color: #fff0f5 !important;
+}
+
+.text-color-mistyrose {
+    color: #ffe4e1 !important;
+}
+
+.text-color-seashell {
+    color: #fff5ee !important;
+}
+
+.text-color-oldlace {
+    color: #fdf5e6 !important;
+}
+
+.text-color-linen {
+    color: #faf0e6 !important;
+}
+
+.text-color-beige {
+    color: #f5f5dc !important;
+}
+
+.text-color-floralwhite {
+    color: #fffaf0 !important;
+}
+
+.text-color-cornsilk {
+    color: #fff8dc !important;
+}
+
+.text-color-lemonchiffon {
+    color: #fffacd !important;
+}
+
+.text-color-lightyellow {
+    color: #ffffe0 !important;
+}
+
+.text-color-lightgoldenrodyellow {
+    color: #fafad2 !important;
+}
+
+.text-color-papayawhip {
+    color: #ffefd5 !important;
+}
+
+.text-color-peachpuff {
+    color: #ffdab9 !important;
+}
+
+.text-color-bisque {
+    color: #ffe4c4 !important;
+}
+
+.text-color-antiquewhite {
+    color: #faebd7 !important;
+}
+
+.text-color-blanchedalmond {
+    color: #ffebcd !important;
+}
+
+.text-color-wheat {
+    color: #f5deb3 !important;
+}
+
+.text-color-navajowhite {
+    color: #ffdead !important;
+}
+
+.text-color-tan {
+    color: #d2b48c !important;
+}
+
+.text-color-burlywood {
+    color: #deb887 !important;
+}
+
+.text-color-sandybrown {
+    color: #f4a460 !important;
+}
+
+.text-color-peru {
+    color: #cd853f !important;
+}
+
+.text-color-chocolate {
+    color: #d2691e !important;
+}
+
+.text-color-saddlebrown {
+    color: #8b4513 !important;
+}
+
+.text-color-sienna {
+    color: #a0522d !important;
+}
+
+.text-color-rosybrown {
+    color: #bc8f8f !important;
+}
+
+.text-color-firebrick {
+    color: #b22222 !important;
+}
+
+.text-color-indianred {
+    color: #cd5c5c !important;
+}
+
+.text-color-salmon {
+    color: #fa8072 !important;
+}
+
+.text-color-lightsalmon {
+    color: #ffa07a !important;
+}
+
+.text-color-darksalmon {
+    color: #e9967a !important;
+}
+
+.text-color-lightcoral {
+    color: #f08080 !important;
+}
+
+.text-color-palevioletred {
+    color: #db7093 !important;
+}
+
+.text-color-hotpink {
+    color: #ff69b4 !important;
+}
+
+.text-color-lightpink {
+    color: #ffb6c1 !important;
+}
+
+.text-color-plum {
+    color: #dda0dd !important;
+}
+
+.text-color-thistle {
+    color: #d8bfd8 !important;
+}
+
+.text-color-orchid {
+    color: #da70d6 !important;
+}
+
+.text-color-mediumorchid {
+    color: #ba55d3 !important;
+}
+
+.text-color-mediumpurple {
+    color: #9370db !important;
+}
+
+.text-color-slateblue {
+    color: #6a5acd !important;
+}
+
+.text-color-mediumslateblue {
+    color: #7b68ee !important;
+}
+
+.text-color-darkslateblue {
+    color: #483d8b !important;
+}
+
+.text-color-midnightblue {
+    color: #191970 !important;
+}
+
+.text-color-royalblue {
+    color: #4169e1 !important;
+}
+
+.text-color-steelblue {
+    color: #4682b4 !important;
+}
+
+.text-color-dodgerblue {
+    color: #1e90ff !important;
+}
+
+.text-color-deepskyblue {
+    color: #00bfff !important;
+}
+
+.text-color-skyblue {
+    color: #87ceeb !important;
+}
+
+.text-color-lightskyblue {
+    color: #87cefa !important;
+}
+
+.text-color-lightblue {
+    color: #add8e6 !important;
+}
+
+.text-color-powderblue {
+    color: #b0e0e6 !important;
+}
+
+.text-color-paleturquoise {
+    color: #afeeee !important;
+}
+
+.text-color-lightcyan {
+    color: #e0ffff !important;
+}
+
+.text-color-cadetblue {
+    color: #5f9ea0 !important;
+}
+
+.text-color-darkturquoise {
+    color: #00ced1 !important;
+}
+
+.text-color-mediumturquoise {
+    color: #48d1cc !important;
+}
+
+.text-color-turquoise {
+    color: #40e0d0 !important;
+}
+
+.text-color-aquamarine {
+    color: #7fffd4 !important;
+}
+
+.text-color-seagreen {
+    color: #2e8b57 !important;
+}
+
+.text-color-mediumseagreen {
+    color: #3cb371 !important;
+}
+
+.text-color-springgreen {
+    color: #00ff7f !important;
+}
+
+.text-color-lawngreen {
+    color: #7cfc00 !important;
+}
+
+.text-color-chartreuse {
+    color: #7fff00 !important;
+}
+
+.text-color-greenyellow {
+    color: #adff2f !important;
+}
+
+.text-color-palegreen {
+    color: #98fb98 !important;
+}
+
+.text-color-lightgreen {
+    color: #90ee90 !important;
+}
+
+.text-color-mediumspringgreen {
+    color: #00fa9a !important;
+}
+
+.text-color-darkseagreen {
+    color: #8fbc8f !important;
+}
+
+.text-color-forestgreen {
+    color: #228b22 !important;
+}
+
+.text-color-olivedrab {
+    color: #6b8e23 !important;
+}
+
+.text-color-darkolivegreen {
+    color: #556b2f !important;
+}
+
+.text-color-yellowgreen {
+    color: #9acd32 !important;
+}
+
+.text-color-khaki {
+    color: #f0e68c !important;
+}
+
+.text-color-darkkhaki {
+    color: #bdb76b !important;
+}
+
+.text-color-rebeccapurple {
+    color: #663399 !important;
+}
+
+.text-color-cornflowerblue {
+    color: #6495ed !important;
+}
+
+.text-color-mediumaquamarine {
+    color: #66cdaa !important;
+}
+
+.text-color-darkslategrey {
+    color: #2f4f4f !important;
+}
+
+.text-color-dimgrey {
+    color: #696969 !important;
+}
+
+.text-color-grey {
+    color: #808080 !important;
+}
+
+.text-color-lightgrey {
+    color: #d3d3d3 !important;
+}
+
+.text-color-lightslategrey {
+    color: #778899 !important;
+}
+
+.text-color-slategrey {
+    color: #708090 !important;
+}
+
+/* Inline Heading Styles - VISUAL only, not semantic */
+.inline-head {
+    font-size: 32px !important;
+    font-weight: 600 !important;
+    display: inline !important;
+    line-height: 1.3 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.inline-subhead {
+    font-size: 24px !important;
+    font-weight: 600 !important;
+    display: inline !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Inline formatting base */
+.inline-format {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: inherit !important;
+    vertical-align: baseline !important;
+}
+
+/* Bold and Italic */
+.format-bold {
+    font-weight: 700 !important;
+    display: inline !important;
+}
+
+.format-italic {
+    font-style: italic !important;
+    display: inline !important;
+}
+
+/* Center alignment for inline elements */
+.format-center {
+    text-align: center !important;
+    display: inline-block !important;
+    width: 100% !important;
+}
+
+/* Code formatting */
+.format-code {
+    font-family: 'Courier New', monospace !important;
+    background-color: rgba(0, 0, 0, 0.1) !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    display: inline !important;
+    font-size: 0.9em !important;
+    margin: 0 !important;
+}
+
+[data-theme="light"] .format-code {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="dark"] .format-code {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Combined styles container */
+.combined-format {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Zero-width space for cursor positioning */
+.zwsp {
+    display: inline;
+    color: transparent;
+    font-size: 0;
+    line-height: 0;
+    width: 0;
+    height: 0;
+}
+
+/* Active formatting marker */
+.formatting-active {
+    outline: 1px dashed rgba(59, 130, 246, 0.5) !important;
+}
+
 * {
     margin: 0;
     padding: 0;

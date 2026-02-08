@@ -97,6 +97,391 @@ const formattingConfig = {
     }
 };
 
+// --- INLINE FORMATTING SYSTEM ---
+let isProcessingInlineCommand = false;
+let activeFormattingSpan = null;
+
+// Color name to class mapping
+const colorClassMap = {
+    'red': 'text-color-red',
+    'blue': 'text-color-blue',
+    'green': 'text-color-green',
+    'yellow': 'text-color-yellow',
+    'purple': 'text-color-purple',
+    'pink': 'text-color-pink',
+    'orange': 'text-color-orange',
+    'gray': 'text-color-gray',
+    'black': 'text-color-black',
+    'white': 'text-color-white',
+    'tomato': 'text-color-tomato',
+    'cyan': 'text-color-cyan',
+    'magenta': 'text-color-magenta',
+    'brown': 'text-color-brown',
+    'gold': 'text-color-gold',
+    'silver': 'text-color-silver',
+    'violet': 'text-color-violet',
+    'indigo': 'text-color-indigo',
+    'teal': 'text-color-teal',
+    'maroon': 'text-color-maroon',
+    'navy': 'text-color-navy',
+    'olive': 'text-color-olive',
+    'lime': 'text-color-lime',
+    'aqua': 'text-color-aqua',
+    'fuchsia': 'text-color-fuchsia',
+    'coral': 'text-color-coral',
+    'orangered': 'text-color-orangered',
+    'deeppink': 'text-color-deeppink',
+    'mediumvioletred': 'text-color-mediumvioletred',
+    'darkviolet': 'text-color-darkviolet',
+    'darkorchid': 'text-color-darkorchid',
+    'darkmagenta': 'text-color-darkmagenta',
+    'darkred': 'text-color-darkred',
+    'darkgreen': 'text-color-darkgreen',
+    'darkblue': 'text-color-darkblue',
+    'darkcyan': 'text-color-darkcyan',
+    'darkgoldenrod': 'text-color-darkgoldenrod',
+    'darkgray': 'text-color-darkgray',
+    'darkslategray': 'text-color-darkslategray',
+    'lightslategray': 'text-color-lightslategray',
+    'lightgray': 'text-color-lightgray',
+    'whitesmoke': 'text-color-whitesmoke',
+    'snow': 'text-color-snow',
+    'ivory': 'text-color-ivory',
+    'honeydew': 'text-color-honeydew',
+    'mintcream': 'text-color-mintcream',
+    'azure': 'text-color-azure',
+    'aliceblue': 'text-color-aliceblue',
+    'ghostwhite': 'text-color-ghostwhite',
+    'lavender': 'text-color-lavender',
+    'lavenderblush': 'text-color-lavenderblush',
+    'mistyrose': 'text-color-mistyrose',
+    'seashell': 'text-color-seashell',
+    'oldlace': 'text-color-oldlace',
+    'linen': 'text-color-linen',
+    'beige': 'text-color-beige',
+    'floralwhite': 'text-color-floralwhite',
+    'cornsilk': 'text-color-cornsilk',
+    'lemonchiffon': 'text-color-lemonchiffon',
+    'lightyellow': 'text-color-lightyellow',
+    'lightgoldenrodyellow': 'text-color-lightgoldenrodyellow',
+    'papayawhip': 'text-color-papayawhip',
+    'peachpuff': 'text-color-peachpuff',
+    'bisque': 'text-color-bisque',
+    'antiquewhite': 'text-color-antiquewhite',
+    'blanchedalmond': 'text-color-blanchedalmond',
+    'wheat': 'text-color-wheat',
+    'navajowhite': 'text-color-navajowhite',
+    'tan': 'text-color-tan',
+    'burlywood': 'text-color-burlywood',
+    'sandybrown': 'text-color-sandybrown',
+    'peru': 'text-color-peru',
+    'chocolate': 'text-color-chocolate',
+    'saddlebrown': 'text-color-saddlebrown',
+    'sienna': 'text-color-sienna',
+    'rosybrown': 'text-color-rosybrown',
+    'firebrick': 'text-color-firebrick',
+    'indianred': 'text-color-indianred',
+    'salmon': 'text-color-salmon',
+    'lightsalmon': 'text-color-lightsalmon',
+    'darksalmon': 'text-color-darksalmon',
+    'lightcoral': 'text-color-lightcoral',
+    'palevioletred': 'text-color-palevioletred',
+    'hotpink': 'text-color-hotpink',
+    'lightpink': 'text-color-lightpink',
+    'plum': 'text-color-plum',
+    'thistle': 'text-color-thistle',
+    'orchid': 'text-color-orchid',
+    'mediumorchid': 'text-color-mediumorchid',
+    'mediumpurple': 'text-color-mediumpurple',
+    'slateblue': 'text-color-slateblue',
+    'mediumslateblue': 'text-color-mediumslateblue',
+    'darkslateblue': 'text-color-darkslateblue',
+    'midnightblue': 'text-color-midnightblue',
+    'royalblue': 'text-color-royalblue',
+    'steelblue': 'text-color-steelblue',
+    'dodgerblue': 'text-color-dodgerblue',
+    'deepskyblue': 'text-color-deepskyblue',
+    'skyblue': 'text-color-skyblue',
+    'lightskyblue': 'text-color-lightskyblue',
+    'lightblue': 'text-color-lightblue',
+    'powderblue': 'text-color-powderblue',
+    'paleturquoise': 'text-color-paleturquoise',
+    'lightcyan': 'text-color-lightcyan',
+    'cadetblue': 'text-color-cadetblue',
+    'darkturquoise': 'text-color-darkturquoise',
+    'mediumturquoise': 'text-color-mediumturquoise',
+    'turquoise': 'text-color-turquoise',
+    'aquamarine': 'text-color-aquamarine',
+    'seagreen': 'text-color-seagreen',
+    'mediumseagreen': 'text-color-mediumseagreen',
+    'springgreen': 'text-color-springgreen',
+    'lawngreen': 'text-color-lawngreen',
+    'chartreuse': 'text-color-chartreuse',
+    'greenyellow': 'text-color-greenyellow',
+    'palegreen': 'text-color-palegreen',
+    'lightgreen': 'text-color-lightgreen',
+    'mediumspringgreen': 'text-color-mediumspringgreen',
+    'darkseagreen': 'text-color-darkseagreen',
+    'forestgreen': 'text-color-forestgreen',
+    'olivedrab': 'text-color-olivedrab',
+    'darkolivegreen': 'text-color-darkolivegreen',
+    'yellowgreen': 'text-color-yellowgreen',
+    'khaki': 'text-color-khaki',
+    'darkkhaki': 'text-color-darkkhaki',
+    'rebeccapurple': 'text-color-rebeccapurple',
+    'cornflowerblue': 'text-color-cornflowerblue',
+    'mediumaquamarine': 'text-color-mediumaquamarine',
+    'darkslategrey': 'text-color-darkslategrey',
+    'dimgrey': 'text-color-dimgrey',
+    'grey': 'text-color-grey',
+    'lightgrey': 'text-color-lightgrey',
+    'lightslategrey': 'text-color-lightslategrey',
+    'slategrey': 'text-color-slategrey'
+};
+
+// Check if a string is a valid CSS color
+function isValidColor(colorStr) {
+    // Test by setting to a temporary element
+    const s = new Option().style;
+    s.color = colorStr;
+    return s.color !== '';
+}
+
+// Parse inline formatting command
+function parseInlineCommand(command) {
+    const result = {
+        classes: ['inline-format'],
+        styles: {},
+        elementType: 'span'
+    };
+
+    // Remove @ or $ prefix
+    const cleanCommand = command.startsWith('@') ? command.substring(1) : command.substring(1);
+
+    // Handle $code separately
+    if (command.startsWith('$')) {
+        if (cleanCommand === 'code') {
+            result.classes.push('format-code');
+        }
+        return result;
+    }
+
+    // Split command parts
+    const parts = cleanCommand.split('.');
+
+    // Process each part
+    parts.forEach(part => {
+        const lowerPart = part.toLowerCase();
+
+        // Check for color
+        if (colorClassMap[lowerPart]) {
+            result.classes.push(colorClassMap[lowerPart]);
+        }
+        // Check if it's a hex or rgb color
+        else if (part.startsWith('#') || part.startsWith('rgb') || part.startsWith('hsl')) {
+            if (isValidColor(part)) {
+                result.styles.color = part;
+            }
+        }
+        // Check for other color names not in our map
+        else if (isValidColor(part)) {
+            result.styles.color = part;
+        }
+        // Check for formatting commands
+        else {
+            switch (lowerPart) {
+                case 'head':
+                    result.classes.push('inline-head');
+                    break;
+                case 'subhead':
+                    result.classes.push('inline-subhead');
+                    break;
+                case 'bold':
+                    result.classes.push('format-bold');
+                    break;
+                case 'italic':
+                    result.classes.push('format-italic');
+                    break;
+                case 'center':
+                    result.classes.push('format-center');
+                    break;
+                case 'align':
+                    // alignment is handled by center modifier
+                    break;
+                case 'color':
+                    // color prefix, ignore as colors are handled separately
+                    break;
+            }
+        }
+    });
+
+    return result;
+}
+
+// Apply inline formatting at cursor
+function applyInlineFormatting(command) {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return null;
+
+    const range = selection.getRangeAt(0);
+    const isCollapsed = range.collapsed;
+
+    // Parse the command
+    const formatInfo = parseInlineCommand(command);
+
+    // Create the formatting element
+    const formatElement = document.createElement(formatInfo.elementType);
+    formatElement.className = formatInfo.classes.join(' ');
+
+    // Apply inline styles
+    Object.keys(formatInfo.styles).forEach(styleKey => {
+        formatElement.style[styleKey] = formatInfo.styles[styleKey];
+    });
+
+    // Add zero-width space for cursor positioning
+    const zwsp = document.createTextNode('\u200B');
+    formatElement.appendChild(zwsp);
+
+    if (!isCollapsed) {
+        // There's a selection - wrap it
+        const selectedContent = range.extractContents();
+        formatElement.appendChild(selectedContent);
+        range.insertNode(formatElement);
+
+        // Move cursor to after the formatted element
+        const newRange = document.createRange();
+        newRange.setStartAfter(formatElement);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+    } else {
+        // No selection - insert format element at cursor
+        range.insertNode(formatElement);
+
+        // Move cursor inside the format element (after zero-width space)
+        const newRange = document.createRange();
+        newRange.setStart(zwsp, 1);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+    }
+
+    // Mark as active formatting span
+    activeFormattingSpan = formatElement;
+    formatElement.classList.add('formatting-active');
+
+    writingCanvas.focus();
+    return formatElement;
+}
+
+// Clean up zero-width space when user types
+function cleanupZeroWidthSpace(element) {
+    if (!element) return;
+
+    const textContent = element.textContent;
+    if (textContent.includes('\u200B')) {
+        // Remove zero-width space if there's actual content
+        if (textContent.replace(/\u200B/g, '').length > 0) {
+            element.innerHTML = element.innerHTML.replace(/\u200B/g, '');
+        }
+    }
+
+    // Remove formatting-active class
+    element.classList.remove('formatting-active');
+}
+
+// Detect and process inline formatting commands
+function detectInlineCommand(event) {
+    if (isProcessingInlineCommand) return false;
+
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return false;
+
+    const range = selection.getRangeAt(0);
+    const node = range.startContainer;
+
+    if (node.nodeType !== 3) return false; // Not a text node
+
+    const text = node.textContent;
+    const cursorPos = range.startOffset;
+
+    // Get text before cursor
+    const textBeforeCursor = text.substring(0, cursorPos);
+
+    // Look for command pattern: @ or $ followed by word characters and dots, followed by space
+    const commandMatch = textBeforeCursor.match(/(@[a-zA-Z.]+|\$[a-zA-Z]+)\s+$/);
+
+    if (commandMatch) {
+        const fullCommand = commandMatch[1];
+        const commandStart = commandMatch.index;
+
+        isProcessingInlineCommand = true;
+
+        // Remove the command and space from text
+        const newText = text.substring(0, commandStart) + text.substring(cursorPos);
+        node.textContent = newText;
+
+        // Adjust cursor position
+        range.setStart(node, commandStart);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        // Apply the formatting
+        const formatElement = applyInlineFormatting(fullCommand);
+
+        // Show feedback
+        showFormattingIndicator(`Formatting: ${fullCommand}`);
+
+        // Clean up processing flag
+        setTimeout(() => {
+            isProcessingInlineCommand = false;
+        }, 10);
+
+        // Start monitoring for typing to clean up zero-width space
+        if (formatElement) {
+            const monitorTyping = () => {
+                cleanupZeroWidthSpace(formatElement);
+                writingCanvas.removeEventListener('input', monitorTyping);
+            };
+
+            writingCanvas.addEventListener('input', monitorTyping);
+        }
+
+        saveCurrentNote();
+        return true;
+    }
+
+    return false;
+}
+
+// Handle key events for command detection
+function handleInlineCommandKey(event) {
+    // Space triggers command detection
+    if (event.key === ' ') {
+        setTimeout(() => {
+            detectInlineCommand(event);
+        }, 10);
+    }
+
+    // Enter key ends formatting
+    if (event.key === 'Enter') {
+        if (activeFormattingSpan) {
+            cleanupZeroWidthSpace(activeFormattingSpan);
+            activeFormattingSpan = null;
+        }
+    }
+
+    // Escape key ends formatting
+    if (event.key === 'Escape') {
+        if (activeFormattingSpan) {
+            cleanupZeroWidthSpace(activeFormattingSpan);
+            activeFormattingSpan = null;
+            showFormattingIndicator('Formatting ended');
+        }
+    }
+}
+
 // --- GLOBAL CURSOR-RANGE MANAGEMENT ---
 let savedCursorRange = null;
 
@@ -130,19 +515,19 @@ function clearSavedCursorRange() {
 }
 
 // --- HELPER FUNCTIONS ---
-function isValidColor(colorName) {
+function isValidColorOld(colorName) {
     // Check if it's a valid CSS color
     const testElement = document.createElement('div');
     testElement.style.color = colorName;
     const testElement2 = document.createElement('div');
     testElement2.style.color = '#' + colorName;
-    
+
     // Check for hex without #
     if (colorName.startsWith('#') || /^[0-9A-Fa-f]{3,6}$/.test(colorName)) {
         const hexColor = colorName.startsWith('#') ? colorName : '#' + colorName;
         testElement.style.color = hexColor;
     }
-    
+
     return testElement.style.color !== '' || testElement2.style.color !== '';
 }
 
@@ -157,7 +542,7 @@ function normalizeColor(colorName) {
             return '#' + hex.toLowerCase();
         }
     }
-    
+
     // Convert to lowercase for named colors (except proper case for CSS)
     const colorLower = colorName.toLowerCase();
     const colorMap = {
@@ -297,7 +682,7 @@ function normalizeColor(colorName) {
         'slategrey': '#708090',
         'darkslategrey': '#2f4f4f'
     };
-    
+
     return colorMap[colorLower] || colorName;
 }
 
@@ -344,9 +729,9 @@ function loadFromStorage() {
     if (notes.length === 0) {
         const firstNote = {
             id: generateId(),
-            name: 'Welcome Note',
+            name: 'Welcome to FocusPad',
             folderId: 'default',
-            content: 'Welcome to FocusPad! 🎨\n\nStart writing amazing notes with advanced formatting!\n\nTry these shortcuts:\n=== (thick line)\n--- (dashed line)\n@color.red: Make text red\n@head.blue.center: Colored centered heading',
+            content: 'Welcome to FocusPad! 🎨<br><br>Try these <strong>inline formatting commands</strong>:<br><br>Type <code>@head.center.yellow</code> then space for a yellow centered heading<br>Type <code>@color.blue</code> then space for blue text<br>Type <code>@bold</code> then space for bold text<br>Type <code>@italic</code> then space for italic text<br>Type <code>$code</code> then space for code formatting<br><br>Commands work from cursor position forward!',
             createdAt: Date.now(),
             updatedAt: Date.now(),
             isPinned: false
@@ -382,7 +767,7 @@ function updatePinButton() {
         pinBtn.innerHTML = '<i class="ph ph-push-pin"></i>';
         return;
     }
-    
+
     const note = notes.find(n => n.id === activeNoteId);
     if (note && note.isPinned) {
         pinBtn.classList.add('pinned');
@@ -398,7 +783,7 @@ function togglePinNote() {
         showFormattingIndicator('No active note to pin');
         return;
     }
-    
+
     const note = notes.find(n => n.id === activeNoteId);
     if (note) {
         note.isPinned = !note.isPinned;
@@ -551,7 +936,7 @@ function loadActiveNote() {
 
             // Disable delete button when no notes
             deleteBtn.classList.add('disabled');
-            
+
             // Reset pin button
             updatePinButton();
 
@@ -695,20 +1080,20 @@ function renderNoteChips() {
         if (note.isPinned) {
             chip.classList.add('pinned-chip');
         }
-        
+
         const chipContent = document.createElement('div');
         chipContent.className = 'chip-content';
-        
+
         if (note.isPinned) {
             const pinIcon = document.createElement('i');
             pinIcon.className = 'ph ph-push-pin gap';
             chipContent.appendChild(pinIcon);
         }
-        
+
         const textSpan = document.createElement('span');
         textSpan.textContent = note.name;
         chipContent.appendChild(textSpan);
-        
+
         chip.appendChild(chipContent);
         chip.onclick = () => switchNote(note.id);
         noteChips.appendChild(chip);
@@ -1497,7 +1882,7 @@ exportConfirmBtn.addEventListener('click', async () => {
     if (index > -1) {
         modalStack.splice(index, 1);
     }
-    
+
     showFormattingIndicator(`Exporting as ${selectedExportFormat.toUpperCase()}...`);
 
     switch (selectedExportFormat) {
@@ -1573,30 +1958,30 @@ async function exportAsPDF(fileName) {
                 const colorValue = colorMatch[1].trim();
                 // Ensure color is preserved exactly as is
                 el.style.color = colorValue;
-                
+
                 // For light theme PDF, adjust very dark colors
                 if (selectedTheme === 'light') {
                     // Check if color is very dark (black or near black)
-                    if (colorValue === 'black' || colorValue === '#000' || colorValue === '#000000' || 
+                    if (colorValue === 'black' || colorValue === '#000' || colorValue === '#000000' ||
                         colorValue === 'rgb(0,0,0)' || colorValue === 'rgba(0,0,0,1)') {
                         el.style.color = '#000000'; // Keep black for light theme
                     }
                     // Check if color is very light (white or near white)
-                    else if (colorValue === 'white' || colorValue === '#fff' || colorValue === '#ffffff' || 
-                            colorValue === 'rgb(255,255,255)' || colorValue === 'rgba(255,255,255,1)') {
+                    else if (colorValue === 'white' || colorValue === '#fff' || colorValue === '#ffffff' ||
+                        colorValue === 'rgb(255,255,255)' || colorValue === 'rgba(255,255,255,1)') {
                         el.style.color = '#333333'; // Change white to dark gray for light theme
                     }
                 }
                 // For dark theme PDF, adjust very light colors
                 else if (selectedTheme === 'dark') {
                     // Check if color is very light (white or near white)
-                    if (colorValue === 'white' || colorValue === '#fff' || colorValue === '#ffffff' || 
+                    if (colorValue === 'white' || colorValue === '#fff' || colorValue === '#ffffff' ||
                         colorValue === 'rgb(255,255,255)' || colorValue === 'rgba(255,255,255,1)') {
                         el.style.color = '#ffffff'; // Keep white for dark theme
                     }
                     // Check if color is very dark (black or near black)
-                    else if (colorValue === 'black' || colorValue === '#000' || colorValue === '#000000' || 
-                            colorValue === 'rgb(0,0,0)' || colorValue === 'rgba(0,0,0,1)') {
+                    else if (colorValue === 'black' || colorValue === '#000' || colorValue === '#000000' ||
+                        colorValue === 'rgb(0,0,0)' || colorValue === 'rgba(0,0,0,1)') {
                         el.style.color = '#cccccc'; // Change black to light gray for dark theme
                     }
                 }
@@ -2174,7 +2559,7 @@ function processLineFormatting(lineNode) {
         if (isValidColor(colorName) && content !== undefined) {
             // Normalize color (handle hex shorthand, convert named colors to hex for consistency)
             const normalizedColor = normalizeColor(colorName);
-            
+
             // Apply color via inline style - preserve formatting
             newHTML = `<span style="color: ${normalizedColor}" class="color-preserve">${content}</span>`;
             processed = true;
@@ -2199,10 +2584,10 @@ function processLineFormatting(lineNode) {
 
                 // Parse modifiers (could be color.alignment or just color)
                 const modParts = modifiers.split('.');
-                
+
                 modParts.forEach(mod => {
                     const modTrimmed = mod.trim();
-                    
+
                     // Check if it's a valid color
                     if (isValidColor(modTrimmed)) {
                         const normalizedColor = normalizeColor(modTrimmed);
@@ -2476,6 +2861,24 @@ writingCanvas.addEventListener('keydown', (e) => {
     }
 });
 
+// --- INLINE FORMATTING EVENT LISTENERS ---
+writingCanvas.addEventListener('input', (e) => {
+    // Let the inline command detection handle it
+    detectInlineCommand(e);
+});
+
+writingCanvas.addEventListener('keydown', (e) => {
+    handleInlineCommandKey(e);
+});
+
+// Click outside ends formatting
+writingCanvas.addEventListener('click', (e) => {
+    if (activeFormattingSpan && !activeFormattingSpan.contains(e.target)) {
+        cleanupZeroWidthSpace(activeFormattingSpan);
+        activeFormattingSpan = null;
+    }
+});
+
 // --- KEYBOARD SHORTCUTS ---
 document.addEventListener('keydown', (e) => {
     // Font selector shortcut
@@ -2512,13 +2915,13 @@ document.addEventListener('keydown', (e) => {
             e.preventDefault();
             return;
         }
-        
+
         if (activeDropdown) {
             closeAllDropdowns();
             e.preventDefault();
             return;
         }
-        
+
         // Then close modals in reverse order (LIFO - Last In First Out)
         if (modalStack.length > 0) {
             const modal = modalStack.pop();
@@ -2526,7 +2929,7 @@ document.addEventListener('keydown', (e) => {
             e.preventDefault();
             return;
         }
-        
+
         // If in focus mode, exit focus mode
         if (sidebar.classList.contains('hidden')) {
             toggleFocus();
