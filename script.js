@@ -1,5 +1,5 @@
 // ========================================
-// FOCUSPAD - COMPLETE NOTES APP
+// mindJournal - COMPLETE NOTES APP
 // ========================================
 
 // --- ELEMENT REFERENCES ---
