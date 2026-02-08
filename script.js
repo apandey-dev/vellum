@@ -252,11 +252,15 @@ function parseInlineCommand(command) {
     const result = {
         classes: ['inline-format'],
         styles: {},
-        elementType: 'span'
+        elementType: 'span',
+        attributes: {}
     };
 
     // Remove @ or $ prefix
     const cleanCommand = command.startsWith('@') ? command.substring(1) : command.substring(1);
+
+    // Add data attribute for PDF preservation
+    result.attributes['data-format'] = cleanCommand;
 
     // Handle $code separately
     if (command.startsWith('$')) {
@@ -337,6 +341,13 @@ function applyInlineFormatting(command) {
     Object.keys(formatInfo.styles).forEach(styleKey => {
         formatElement.style[styleKey] = formatInfo.styles[styleKey];
     });
+
+    // Add data attributes for PDF preservation
+    if (formatInfo.attributes) {
+        Object.keys(formatInfo.attributes).forEach(attr => {
+            formatElement.setAttribute(attr, formatInfo.attributes[attr]);
+        });
+    }
 
     // Add zero-width space for cursor positioning
     const zwsp = document.createTextNode('\u200B');
@@ -690,12 +701,22 @@ function generateId() {
     return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-function showFormattingIndicator(message) {
+function showFormattingIndicator(message, type = 'info') {
     formattingIndicator.textContent = message;
+    formattingIndicator.className = 'formatting-indicator';
     formattingIndicator.classList.add('show');
+
+    // Add type class for different message types
+    if (type === 'success') {
+        formattingIndicator.classList.add('success');
+    } else if (type === 'error') {
+        formattingIndicator.classList.add('error');
+    }
+
     setTimeout(() => {
         formattingIndicator.classList.remove('show');
-    }, 2000);
+        formattingIndicator.classList.remove('success', 'error');
+    }, 3000);
 }
 
 // --- STORAGE FUNCTIONS ---
@@ -1598,6 +1619,7 @@ document.querySelectorAll('#bulletsMenu .dropdown-item').forEach(item => {
     });
 });
 
+// ==================== FIXED BULLETS/NUMBERING FUNCTION ====================
 function insertBulletList(type) {
     // Don't allow insertion if no active note
     if (!activeNoteId) {
@@ -1614,9 +1636,14 @@ function insertBulletList(type) {
     }
 
     const range = selection.getRangeAt(0);
+    const isCollapsed = range.collapsed;
 
-    // Don't delete content, just insert at cursor
-    let bulletText = '';
+    // Create a list item div with proper styling
+    const listItem = document.createElement('div');
+    listItem.style.marginLeft = '40px';
+    listItem.style.padding = '2px 0';
+    listItem.style.position = 'relative';
+    listItem.classList.add('pdf-list-item');
 
     if (type === 'numbered') {
         // Smart numbering: Check if there's a number before cursor
@@ -1635,23 +1662,32 @@ function insertBulletList(type) {
             nextNumber = parseInt(numberMatch[1]) + 1;
         }
 
-        bulletText = `${nextNumber}. `;
+        listItem.textContent = `${nextNumber}. `;
+        listItem.classList.add('numbered');
     } else {
         // Regular bullet
-        bulletText = '• ';
+        listItem.textContent = '• ';
+        listItem.classList.add('bullet');
     }
 
-    // Insert bullet text inline
-    const textNode = document.createTextNode(bulletText);
-    range.insertNode(textNode);
+    if (!isCollapsed) {
+        // If text is selected, wrap it in the list item
+        const selectedText = range.toString();
+        listItem.textContent += selectedText;
+        range.deleteContents();
+        range.insertNode(listItem);
+    } else {
+        // Insert at cursor position
+        range.insertNode(listItem);
+    }
 
-    // Position cursor after bullet
-    range.setStartAfter(textNode);
+    // Position cursor after the bullet/number
+    range.setStart(listItem, listItem.textContent.length);
     range.collapse(true);
     selection.removeAllRanges();
     selection.addRange(range);
 
-    showFormattingIndicator(`${type === 'numbered' ? 'Number' : 'Bullet'} inserted`);
+    showFormattingIndicator(`${type === 'numbered' ? 'Numbered' : 'Bullet'} list inserted`);
     saveCurrentNote();
 }
 
@@ -1883,7 +1919,7 @@ exportConfirmBtn.addEventListener('click', async () => {
         modalStack.splice(index, 1);
     }
 
-    showFormattingIndicator(`Exporting as ${selectedExportFormat.toUpperCase()}...`);
+    showFormattingIndicator(`Exporting as ${selectedExportFormat.toUpperCase()}...`, 'info');
 
     switch (selectedExportFormat) {
         case 'pdf':
@@ -1898,24 +1934,31 @@ exportConfirmBtn.addEventListener('click', async () => {
     }
 });
 
-// --- EXPORT FUNCTIONS ---
+// ==================== FIXED PDF EXPORT FUNCTION ====================
 async function exportAsPDF(fileName) {
     try {
         const note = notes.find(n => n.id === activeNoteId);
         const content = writingCanvas.innerHTML;
         const selectedTheme = themeTogglePill.dataset.theme || 'dark';
-        const includeHeader = includeHeaderFooter.checked;
+        const currentFont = getCurrentFont();
 
         // Create a temporary container for PDF generation
         const tempContainer = document.createElement('div');
+        tempContainer.id = 'pdf-export-container';
+        tempContainer.setAttribute('data-theme', selectedTheme);
+        tempContainer.setAttribute('data-font', currentFont);
+
         tempContainer.style.position = 'absolute';
         tempContainer.style.left = '-9999px';
         tempContainer.style.top = '0';
-        tempContainer.style.width = '794px'; // A4 width in pixels
-        tempContainer.style.padding = '40px';
-        tempContainer.style.fontFamily = "'Fredoka', sans-serif";
+        tempContainer.style.width = '794px';
+        tempContainer.style.minHeight = '1123px';
+        tempContainer.style.padding = '60px 80px';
+        tempContainer.style.fontFamily = formattingConfig.fonts[currentFont] || "'Fredoka', sans-serif";
         tempContainer.style.lineHeight = '1.6';
-        tempContainer.style.fontSize = '14px';
+        tempContainer.style.fontSize = '16px';
+        tempContainer.style.wordBreak = 'break-word';
+        tempContainer.style.boxSizing = 'border-box';
 
         // Apply theme
         if (selectedTheme === 'dark') {
@@ -1926,116 +1969,18 @@ async function exportAsPDF(fileName) {
             tempContainer.style.color = '#000000';
         }
 
-        // Add header if enabled
-        if (includeHeader) {
-            const header = document.createElement('div');
-            header.style.textAlign = 'center';
-            header.style.marginBottom = '30px';
-            header.style.paddingBottom = '20px';
-            header.style.borderBottom = '1px solid #ddd';
-
-            const title = document.createElement('h1');
-            title.textContent = fileName;
-            title.style.margin = '0';
-            title.style.fontSize = '24px';
-            title.style.fontWeight = 'bold';
-
-            header.appendChild(title);
-            tempContainer.appendChild(header);
-        }
-
-        // Add content
+        // Preserve ALL formatting by cloning the actual content
         const contentDiv = document.createElement('div');
         contentDiv.innerHTML = content;
 
-        // Preserve ALL color styles from the note
-        const colorElements = contentDiv.querySelectorAll('[style*="color"]');
-        colorElements.forEach(el => {
-            const style = el.getAttribute('style');
-            // Extract color value from style
-            const colorMatch = style.match(/color:\s*([^;]+)/);
-            if (colorMatch) {
-                const colorValue = colorMatch[1].trim();
-                // Ensure color is preserved exactly as is
-                el.style.color = colorValue;
+        // Fix lists for PDF - convert to proper PDF list items
+        fixListsForPDF(contentDiv);
 
-                // For light theme PDF, adjust very dark colors
-                if (selectedTheme === 'light') {
-                    // Check if color is very dark (black or near black)
-                    if (colorValue === 'black' || colorValue === '#000' || colorValue === '#000000' ||
-                        colorValue === 'rgb(0,0,0)' || colorValue === 'rgba(0,0,0,1)') {
-                        el.style.color = '#000000'; // Keep black for light theme
-                    }
-                    // Check if color is very light (white or near white)
-                    else if (colorValue === 'white' || colorValue === '#fff' || colorValue === '#ffffff' ||
-                        colorValue === 'rgb(255,255,255)' || colorValue === 'rgba(255,255,255,1)') {
-                        el.style.color = '#333333'; // Change white to dark gray for light theme
-                    }
-                }
-                // For dark theme PDF, adjust very light colors
-                else if (selectedTheme === 'dark') {
-                    // Check if color is very light (white or near white)
-                    if (colorValue === 'white' || colorValue === '#fff' || colorValue === '#ffffff' ||
-                        colorValue === 'rgb(255,255,255)' || colorValue === 'rgba(255,255,255,1)') {
-                        el.style.color = '#ffffff'; // Keep white for dark theme
-                    }
-                    // Check if color is very dark (black or near black)
-                    else if (colorValue === 'black' || colorValue === '#000' || colorValue === '#000000' ||
-                        colorValue === 'rgb(0,0,0)' || colorValue === 'rgba(0,0,0,1)') {
-                        el.style.color = '#cccccc'; // Change black to light gray for dark theme
-                    }
-                }
-            }
-        });
+        // Preserve all formatting classes and styles
+        preserveFormattingForPDF(contentDiv, selectedTheme);
 
-        // Also preserve color classes
-        const colorClassElements = contentDiv.querySelectorAll('[class*="text-"]');
-        colorClassElements.forEach(el => {
-            const classes = el.className.split(' ');
-            classes.forEach(cls => {
-                if (cls.startsWith('text-')) {
-                    const colorName = cls.replace('text-', '');
-                    const colorMap = {
-                        'red': '#ef4444',
-                        'blue': '#3b82f6',
-                        'green': '#10b981',
-                        'yellow': '#f59e0b',
-                        'purple': '#8b5cf6',
-                        'pink': '#ec4899',
-                        'orange': '#f97316',
-                        'gray': '#6b7280'
-                    };
-                    if (colorMap[colorName]) {
-                        el.style.color = colorMap[colorName];
-                    }
-                }
-            });
-        });
-
+        // Add to temp container
         tempContainer.appendChild(contentDiv);
-
-        // Add footer if enabled
-        if (includeHeader) {
-            const footer = document.createElement('div');
-            footer.style.textAlign = 'center';
-            footer.style.marginTop = '40px';
-            footer.style.paddingTop = '20px';
-            footer.style.borderTop = '1px solid #ddd';
-            footer.style.fontSize = '12px';
-            footer.style.color = '#666';
-
-            const appName = document.createElement('div');
-            appName.textContent = 'Exported from FocusPad';
-            appName.style.marginBottom = '5px';
-
-            const date = document.createElement('div');
-            date.textContent = new Date().toLocaleDateString();
-
-            footer.appendChild(appName);
-            footer.appendChild(date);
-            tempContainer.appendChild(footer);
-        }
-
         document.body.appendChild(tempContainer);
 
         // Generate PDF with high quality
@@ -2045,7 +1990,15 @@ async function exportAsPDF(fileName) {
             backgroundColor: selectedTheme === 'dark' ? '#1a1a1a' : '#ffffff',
             logging: false,
             allowTaint: true,
-            letterRendering: true
+            letterRendering: true,
+            onclone: function (clonedDoc) {
+                // Ensure all styles are preserved in clone
+                const clonedContainer = clonedDoc.getElementById('pdf-export-container');
+                if (clonedContainer) {
+                    // Apply all necessary styles
+                    applyPDFStylesToClone(clonedContainer, selectedTheme, currentFont);
+                }
+            }
         });
 
         // Remove temp container
@@ -2056,21 +2009,189 @@ async function exportAsPDF(fileName) {
         const pdf = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
-            format: 'a4'
+            format: 'a4',
+            compress: true
         });
 
         const imgData = canvas.toDataURL('image/png', 1.0);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
         pdf.save(`${fileName}.pdf`);
 
-        showFormattingIndicator('PDF exported successfully!');
+        showFormattingIndicator('PDF exported successfully!', 'success');
     } catch (error) {
         console.error('PDF export error:', error);
-        showFormattingIndicator('Error exporting PDF');
+        showFormattingIndicator('Error exporting PDF', 'error');
     }
+}
+
+// Helper function to fix lists for PDF
+function fixListsForPDF(container) {
+    // Find all divs that look like list items
+    const divs = container.querySelectorAll('div');
+    const listItems = [];
+
+    divs.forEach(div => {
+        const text = div.textContent || '';
+        const style = div.getAttribute('style') || '';
+
+        // Check if it's a list item based on style or content
+        if (style.includes('margin-left') || text.match(/^[•\d]/)) {
+            listItems.push(div);
+        }
+    });
+
+    // Convert to PDF list items
+    listItems.forEach(item => {
+        const text = item.textContent || '';
+
+        // Add PDF list item classes
+        item.classList.add('pdf-list-item');
+
+        if (text.match(/^\d/)) {
+            item.classList.add('numbered');
+        } else if (text.includes('•')) {
+            item.classList.add('bullet');
+        }
+
+        // Ensure proper spacing
+        item.style.marginLeft = '40px';
+        item.style.padding = '2px 0';
+        item.style.position = 'relative';
+        item.style.display = 'block';
+    });
+}
+
+// Preserve all formatting for PDF
+function preserveFormattingForPDF(container, theme) {
+    // Preserve color classes
+    const colorElements = container.querySelectorAll('[class*="text-"]');
+    colorElements.forEach(el => {
+        const classes = Array.from(el.classList);
+        classes.forEach(cls => {
+            if (cls.startsWith('text-')) {
+                // Ensure color is applied via style for PDF
+                const computedColor = window.getComputedStyle(el).color;
+                el.style.color = computedColor;
+            }
+        });
+    });
+
+    // Preserve alignment
+    const alignElements = container.querySelectorAll('[class*="text-"]');
+    alignElements.forEach(el => {
+        if (el.classList.contains('text-center') || el.classList.contains('format-center')) {
+            el.style.textAlign = 'center';
+            el.style.display = 'block';
+            el.style.width = '100%';
+        } else if (el.classList.contains('text-left')) {
+            el.style.textAlign = 'left';
+        } else if (el.classList.contains('text-right')) {
+            el.style.textAlign = 'right';
+        }
+    });
+
+    // Preserve headings
+    const headings = container.querySelectorAll('.heading-main, .heading-sub, .inline-head, .inline-subhead');
+    headings.forEach(heading => {
+        if (heading.classList.contains('heading-main') || heading.classList.contains('inline-head')) {
+            heading.style.fontSize = '32px';
+            heading.style.fontWeight = '700';
+            heading.style.margin = '30px 0 15px 0';
+            heading.style.display = 'block';
+            heading.style.lineHeight = '1.3';
+        } else {
+            heading.style.fontSize = '24px';
+            heading.style.fontWeight = '600';
+            heading.style.margin = '25px 0 12px 0';
+            heading.style.display = 'block';
+            heading.style.lineHeight = '1.4';
+        }
+    });
+
+    // Preserve code blocks
+    const codeBlocks = container.querySelectorAll('.code-block, .format-code, code');
+    codeBlocks.forEach(block => {
+        block.style.fontFamily = "'Courier New', monospace";
+        block.style.backgroundColor = theme === 'dark' ? '#2d2d2d' : '#f5f5f5';
+        block.style.padding = '12px';
+        block.style.borderRadius = '6px';
+        block.style.borderLeft = '4px solid #3b82f6';
+        block.style.margin = '16px 0';
+        block.style.overflowX = 'auto';
+        block.style.whiteSpace = 'pre-wrap';
+        block.style.display = 'block';
+    });
+
+    // Preserve horizontal lines
+    const hrElements = container.querySelectorAll('.horizontal-line');
+    hrElements.forEach(hr => {
+        hr.style.height = '2px';
+        hr.style.background = 'currentColor';
+        hr.style.opacity = '0.3';
+        hr.style.margin = '30px 0';
+        hr.style.border = 'none';
+        hr.style.display = 'block';
+        hr.style.width = '100%';
+
+        if (hr.classList.contains('thick')) {
+            hr.style.height = '4px';
+        } else if (hr.classList.contains('dashed')) {
+            hr.style.background = 'none';
+            hr.style.borderTop = '2px dashed currentColor';
+        }
+    });
+
+    // Preserve bold/italic
+    const boldElements = container.querySelectorAll('.text-bold, .format-bold');
+    boldElements.forEach(el => {
+        el.style.fontWeight = '700';
+    });
+
+    const italicElements = container.querySelectorAll('.text-italic, .format-italic');
+    italicElements.forEach(el => {
+        el.style.fontStyle = 'italic';
+    });
+
+    // Preserve chip tags
+    const chipTags = container.querySelectorAll('.chip-tag');
+    chipTags.forEach(chip => {
+        chip.style.display = 'inline-block';
+        chip.style.padding = '4px 12px';
+        chip.style.borderRadius = '20px';
+        chip.style.fontSize = '12px';
+        chip.style.fontWeight = '500';
+        chip.style.margin = '0 4px';
+    });
+}
+
+// Apply styles to cloned container
+function applyPDFStylesToClone(container, theme, font) {
+    // Apply font
+    container.style.fontFamily = formattingConfig.fonts[font] || "'Fredoka', sans-serif";
+
+    // Apply theme
+    if (theme === 'dark') {
+        container.style.backgroundColor = '#1a1a1a';
+        container.style.color = '#ffffff';
+    } else {
+        container.style.backgroundColor = '#ffffff';
+        container.style.color = '#000000';
+    }
+
+    // Ensure all child elements have proper styles
+    const allElements = container.querySelectorAll('*');
+    allElements.forEach(el => {
+        // Ensure box-sizing
+        el.style.boxSizing = 'border-box';
+        el.style.maxWidth = '100%';
+
+        // Preserve computed styles
+        const computed = window.getComputedStyle(el);
+        el.style.cssText += computed.cssText;
+    });
 }
 
 function exportAsMarkdown(fileName) {
@@ -2115,7 +2236,7 @@ function exportAsMarkdown(fileName) {
     a.click();
     URL.revokeObjectURL(url);
 
-    showFormattingIndicator('Markdown exported successfully!');
+    showFormattingIndicator('Markdown exported successfully!', 'success');
 }
 
 function exportAsText(fileName) {
@@ -2135,7 +2256,7 @@ function exportAsText(fileName) {
     a.click();
     URL.revokeObjectURL(url);
 
-    showFormattingIndicator('Text exported successfully!');
+    showFormattingIndicator('Text exported successfully!', 'success');
 }
 
 // --- DELETE BUTTON ---
@@ -2488,6 +2609,7 @@ function getCurrentLine() {
 }
 
 // ENHANCED COLOR PROCESSING FUNCTION
+// ENHANCED COLOR PROCESSING FUNCTION
 function processLineFormatting(lineNode) {
     if (!lineNode) return false;
 
@@ -2507,13 +2629,7 @@ function processLineFormatting(lineNode) {
     }
 
     if (processed) {
-        // Don't process formatting if no active note
-        if (!activeNoteId) {
-            showFormattingIndicator('Please create a note first');
-            return false;
-        }
-
-        // Replace the line with horizontal line
+        // ... (existing hr logic kept same) ...
         const selection = window.getSelection();
         const range = selection.getRangeAt(0);
 
@@ -2527,7 +2643,6 @@ function processLineFormatting(lineNode) {
             lineNode.parentNode.replaceChild(newNode, lineNode);
         }
 
-        // Move cursor to after the horizontal line
         const newRange = document.createRange();
         newRange.setStartAfter(newNode);
         newRange.collapse(true);
@@ -2538,181 +2653,129 @@ function processLineFormatting(lineNode) {
         return true;
     }
 
-    // If no colon, don't process other formatting
-    if (!text.includes(':')) return false;
+    // --- ROBUST CUSTOM SHORTCUT PARSING ---
+    // Regex matches: @command(.param)?: content
+    // Supports: @head.red: Title, @color.#f00: Text, @align.center: Text
+    const commandRegex = /^@(head|color|bold|italic|align|setFont)(?:[\.\s]([\w#\-\(\),]+))?\s*:\s*(.*)$/i;
+    const match = text.match(commandRegex);
 
-    // Don't process formatting if no active note
-    if (!activeNoteId) {
-        showFormattingIndicator('Please create a note first');
-        return false;
-    }
+    if (match) {
+        const command = match[1].toLowerCase();
+        const param = match[2] ? match[2].trim() : null; // Parameter (e.g. red, center)
+        const content = match[3]; // Content
 
-    // ENHANCED: Process colors with ANY valid CSS color (named colors, hex, rgb, hsl, etc.)
-    // Support: @color.red:, @color.#ff0000:, @color.rgb(255,0,0):, @color.rebeccapurple:
-    const colorRegex = /@color\.([^:]+):(.*)$/i;
-    if (!processed && colorRegex.test(text)) {
-        const match = text.match(colorRegex);
-        const colorName = match[1].trim();
-        const content = match[2];
-
-        // Validate color using enhanced validation
-        if (isValidColor(colorName) && content !== undefined) {
-            // Normalize color (handle hex shorthand, convert named colors to hex for consistency)
-            const normalizedColor = normalizeColor(colorName);
-
-            // Apply color via inline style - preserve formatting
-            newHTML = `<span style="color: ${normalizedColor}" class="color-preserve">${content}</span>`;
+        // 1. @HEAD (Heading)
+        if (command === 'head') {
+            // Check if param is color or undefined
+            // If param exists, treat as color. 
+            // We use inline style for robust color support as requested
+            let style = '';
+            if (param) {
+                style = `style="color: ${param};"`;
+            }
+            newHTML = `<h1 class="inline-head" ${style}>${content}</h1>`;
             processed = true;
-            showFormattingIndicator(`Color applied: ${colorName}`);
-        } else {
-            showFormattingIndicator(`Invalid color: ${colorName}`);
         }
-    }
 
-    // ENHANCED: Process headings with colors and alignments
-    // Support: @head.red.center:, @head.#ff0000.left:, @head.rgb(255,0,0):, @head.rebeccapurple.right:
-    if (!processed) {
-        const headingRegex = /@(head|subHead)\.([^:]+):(.*)$/i;
-        const match = text.match(headingRegex);
-        if (match) {
-            const [, type, modifiers, content] = match;
-
-            // Process if content exists
-            if (content !== undefined) {
-                let className = type === 'head' ? 'heading-main' : 'heading-sub';
-                let inlineStyles = '';
-
-                // Parse modifiers (could be color.alignment or just color)
-                const modParts = modifiers.split('.');
-
-                modParts.forEach(mod => {
-                    const modTrimmed = mod.trim();
-
-                    // Check if it's a valid color
-                    if (isValidColor(modTrimmed)) {
-                        const normalizedColor = normalizeColor(modTrimmed);
-                        inlineStyles += `color: ${normalizedColor}; `;
-                    }
-                    // Check if it's an alignment
-                    else if (formattingConfig.alignments[modTrimmed.toLowerCase()]) {
-                        className += ` text-${modTrimmed.toLowerCase()}`;
-                    }
-                });
-
-                if (inlineStyles) {
-                    newHTML = `<div class="${className}" style="${inlineStyles}">${content}</div>`;
-                } else {
-                    newHTML = `<div class="${className}">${content}</div>`;
-                }
-                processed = true;
-                showFormattingIndicator(`${type === 'head' ? 'Heading' : 'Subheading'} with formatting applied`);
-            }
-        }
-    }
-
-    // Process styles
-    if (!processed) {
-        for (const [style, className] of Object.entries(formattingConfig.styles)) {
-            const regex = new RegExp(`@${style}:(.*)$`, 'i');
-            if (regex.test(text)) {
-                const match = text.match(regex);
-                const content = match[1];
-
-                // Only process if there's actual content
-                if (content !== undefined) {
-                    if (style === 'normal') {
-                        newHTML = content;
-                    } else {
-                        newHTML = `<span class="${className}">${content}</span>`;
-                    }
-                    processed = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    // Process alignments
-    if (!processed) {
-        for (const [align, className] of Object.entries(formattingConfig.alignments)) {
-            const regex = new RegExp(`@align\\.${align}:(.*)$`, 'i');
-            if (regex.test(text)) {
-                const match = text.match(regex);
-                const content = match[1];
-
-                if (content !== undefined) {
-                    newHTML = `<div class="${className}">${content}</div>`;
-                    processed = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    // Process code blocks
-    if (!processed) {
-        const codeRegex = /\$code:(.*)$/i;
-        if (codeRegex.test(text)) {
-            const match = text.match(codeRegex);
-            const content = match[1];
-
-            if (content.trim().length > 0) {
-                newHTML = `<div class="code-block">${content}</div>`;
+        // 2. @COLOR (Text Color)
+        else if (command === 'color') {
+            if (param) {
+                newHTML = `<span style="color: ${param};">${content}</span>`;
                 processed = true;
             }
         }
-    }
 
-    // Process @setFont shortcuts - Use unified cursor-based font application
-    if (!processed) {
-        for (const [fontName, fontFamily] of Object.entries(formattingConfig.fonts)) {
-            const regex = new RegExp(`@setFont\\.${fontName.replace(/\s+/g, '\\s+')}:(.*)$`, 'i');
-            if (regex.test(text)) {
-                const match = text.match(regex);
-                const content = match[1];
+        // 3. @BOLD (Bold Text)
+        else if (command === 'bold') {
+            // Optional param for color mapping if user tries @bold.red:
+            let style = '';
+            if (param) style = `style="color: ${param};"`;
+            newHTML = `<span class="format-bold" ${style}>${content}</span>`;
+            processed = true;
+        }
 
-                // Always process, even if content is empty (cursor-based application)
-                if (content !== undefined) {
-                    if (content.trim().length > 0) {
-                        // Has content - wrap it with font
-                        newHTML = `<span style="font-family: ${fontFamily}">${content}</span>`;
-                    } else {
-                        // No content - apply font at cursor for future typing
-                        // Remove command token and trigger cursor-based font application
-                        newHTML = '';
-                        // Trigger unified font application after removal
-                        setTimeout(() => applyFontAtCursor(fontName, true), 10);
-                    }
-                    processed = true;
+        // 4. @ITALIC (Italic Text)
+        else if (command === 'italic') {
+            newHTML = `<span class="format-italic">${content}</span>`;
+            processed = true;
+        }
+
+        // 5. @ALIGN (Alignment)
+        else if (command === 'align') {
+            const align = ['center', 'right', 'justify'].includes(param?.toLowerCase()) ? param : 'left';
+            newHTML = `<div style="text-align: ${align}; width: 100%; display: block;">${content}</div>`;
+            processed = true;
+        }
+
+        // 6. @SETFONT (Font Family)
+        else if (command === 'setfont') {
+            const fontMap = {
+                'kalam': "'Kalam', cursive",
+                'caveat': "'Caveat', cursive",
+                'sacramento': "'Sacramento', cursive",
+                'patrickhand': "'Patrick Hand', cursive",
+                'amaticsc': "'Amatic SC', cursive",
+                'playpensans': "'Playpen Sans', cursive",
+                'fredoka': "'Fredoka', sans-serif",
+                'comicsans': "'Comic Sans MS', 'Comic Sans', cursive",
+                'courier': "'Courier New', monospace"
+            };
+
+            // Normalize param key to lowercase
+            const key = param ? param.toLowerCase().replace(/\s+/g, '') : '';
+            // Try strict match or partial match keys
+            let family = 'inherit';
+            // Simple mapping
+            for (const k in fontMap) {
+                if (key.includes(k)) {
+                    family = fontMap[k];
                     break;
                 }
+            }
+
+            newHTML = `<span style="font-family: ${family};">${content}</span>`;
+            processed = true;
+
+            // If content is empty, apply to cursor (legacy behavior)
+            if (!content) {
+                newHTML = '';
+                setTimeout(() => {
+                    // find the key for the font map
+                    const fontKey = Object.keys(formattingConfig.fonts).find(k => k.toLowerCase().replace(/\s+/g, '') === key);
+                    if (fontKey) applyFontAtCursor(fontKey, true);
+                }, 10);
             }
         }
     }
 
-    if (processed && newHTML) {
-        // Save cursor position BEFORE replacement
+    // Legacy $code check
+    if (!processed && text.trim().startsWith('$code:')) {
+        const content = text.replace(/^\$code:\s*/i, '');
+        if (content.trim().length > 0) {
+            newHTML = `<div class="code-block">${content}</div>`;
+            processed = true;
+        }
+    }
+
+    if (processed && newHTML !== null) {
+        if (!activeNoteId) {
+            showFormattingIndicator('Please create a note first');
+            return false;
+        }
+
         const selection = window.getSelection();
-        let savedOffset = 0;
-
+        let currentRange = null;
         if (selection.rangeCount > 0) {
-            const currentRange = selection.getRangeAt(0);
-            const currentNode = currentRange.startContainer;
-            savedOffset = currentRange.startOffset;
+            currentRange = selection.getRangeAt(0);
+        }
 
-            // If cursor is in the line being replaced, save its offset
-            let walker = currentNode;
-            while (walker && walker !== writingCanvas) {
-                if (walker === lineNode) {
-                    // Calculate total offset from start of line
-                    if (currentNode.nodeType === 3) {
-                        // Text node - use the offset directly
-                        savedOffset = currentRange.startOffset;
-                    }
-                    break;
-                }
-                walker = walker.parentNode;
-            }
+        // Handle empty HTML (for non-rendering commands like font set)
+        if (newHTML === '') {
+            // Just clear the line text? 
+            // The logic above sets newHTML='' for setFont with empty content
+            // We should probably just clear the line content
+            lineNode.textContent = '';
+            return true;
         }
 
         const temp = document.createElement('div');
@@ -2720,36 +2783,36 @@ function processLineFormatting(lineNode) {
         const newNode = temp.firstChild;
 
         if (newNode) {
-            if (lineNode.nodeType === 3) {
-                lineNode.parentNode.replaceChild(newNode, lineNode);
-            } else {
+            if (lineNode.parentNode) {
                 lineNode.parentNode.replaceChild(newNode, lineNode);
             }
 
-            // Restore cursor to saved position
+            // Restore cursor
+            // Place cursor at the END of the inserted content
             const range = document.createRange();
-            const textNode = newNode.firstChild || newNode;
 
-            try {
-                if (textNode.nodeType === 3) {
-                    // Restore to exact saved offset in new text node
-                    const safeOffset = Math.min(savedOffset, textNode.length);
-                    range.setStart(textNode, safeOffset);
-                    range.collapse(true);
-                } else {
-                    // Fallback: place at end
-                    range.selectNodeContents(textNode);
-                    range.collapse(false);
+            // Helper to find last text node
+            function getLastTextNode(node) {
+                if (node.nodeType === 3) return node;
+                for (let i = node.childNodes.length - 1; i >= 0; i--) {
+                    const result = getLastTextNode(node.childNodes[i]);
+                    if (result) return result;
                 }
-                selection.removeAllRanges();
-                selection.addRange(range);
-            } catch (e) {
-                // Fallback: place at end of newNode
+                return null;
+            }
+
+            const lastText = getLastTextNode(newNode);
+            if (lastText) {
+                range.setStart(lastText, lastText.length);
+                range.collapse(true);
+            } else {
+                // If no text node (e.g. empty div), place inside
                 range.selectNodeContents(newNode);
                 range.collapse(false);
-                selection.removeAllRanges();
-                selection.addRange(range);
             }
+
+            selection.removeAllRanges();
+            selection.addRange(range);
 
             saveCurrentNote();
             return true;
@@ -2758,6 +2821,8 @@ function processLineFormatting(lineNode) {
 
     return false;
 }
+
+
 
 let processing = false;
 
