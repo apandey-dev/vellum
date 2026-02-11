@@ -4,40 +4,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- ========== PAGE TITLE ========== -->
     <title>Playful Notes</title>
 
-    <!-- Favicon - Brain Icon for MindJournal -->
+    <!-- ========== FAVICON – PLAYFUL NOTEPAD WITH PEN ========== -->
+    <!-- A custom, clean SVG icon: a blue notepad with writing lines and a small pen.
+         This replaces the old brain icon for a more relevant and cheerful look. -->
     <link rel="apple-touch-icon" sizes="180x180"
-        href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAzQzcuMDMyIDMgMyA3LjAzMiAzIDEyYzAgMS43NTIuNDcgMy40IDEuMjg0IDQuODJhMSAxIDAgMDAxLjcyOC0xLjA1NkE2Ljk4MyA2Ljk4MyAwIDAxNSAxMmMwLTMuODYgMy4xNC03IDctN3M3IDMuMTQgNyA3YTYuOTgzIDYuOTgzIDAgMDEtMS4wMTIgMy43NjRhMSAxIDAgMDAxLjcyOCAxLjA1NkMyMC41MyAxNS40IDIxIDEzLjc1MiAyMSAxMmMwLTQuOTY4LTMuMDMyLTktOS05em0wIDRhNSA1IDAgMTAwIDEwIDUgNSAwIDAwMC0xMHptMCAyYTMgMyAwIDExMCA2IDMgMyAwIDAxMC02em0tNC41IDNhLjUuNSAwIDAwMCAxSDh2LTFoLjVhLjUuNSAwIDAwLjUtLjVWMTJhLjUuNSAwIDAxLjUtLjVoMWEuNS41IDAgMDEuNS41djEuNWEuNS41IDAgMDAuNS41SDExLjVhLjUuNSAwIDAwLjUtLjVWMTJhMS41IDEuNSAwIDAwLTEuNS0xLjVIOGEyIDIgMCAwMC0yIDJ2MWEyIDIgMCAwMDIgMmgxLjVhLjUuNSAwIDAwLjUtLjVWMTVhLjUuNSAwIDAxLjUtLjVoMWEuNS41IDAgMDEuNS41djEuNWEuNS41IDAgMDAuNS41aDFhLjUuNSAwIDAwLjUtLjVWMTVhMS41IDEuNSAwIDAwLTEuNS0xLjVIMTB2LTFoLjVhLjUuNSAwIDAwLjUtLjVWMTJhMiAyIDAgMDAtMi0yaC0xeiIgZmlsbD0iIzNCODJGNiIvPjwvc3ZnPg==">
+        href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik01IDNDMy44OTU0MyAzIDMgMy44OTU0MyAzIDVWMTlDMzAyMC4xMDQ2IDMgMjAuMTA0NiAyMSAxOVY1QzIxIDMuODk1NDMgMjAuMTA0NiAzIDE5IDNINVoiIGZpbGw9IiMzQjgyRjYiLz48cGF0aCBkPSJNNyA4SDE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTcgMTJIMTciIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNNyAxNkgxMyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik0xNiAxNkwxOSAxMyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjE4LjUiIGN5PSIxNC41IiByPSIxLjUiIGZpbGw9IndoaXRlIi8+PC9zdmc+">
     <link rel="icon" type="image/png" sizes="32x32"
-        href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgM0M3LjAzMiAzIDMgNy4wMzIgMyAxMmMwIDEuNzUyLjQ3IDMuNCAxLjI4NCA0LjgyYTEmMTAwIDAgMDAxLjcyOC0xLjA1NkE2Ljk4MyA2Ljk4MyAwIDAxNSAxMmMwLTMuODYgMy4xNC03IDctN3M3IDMuMTQgNyA3YTYuOTgzIDYuOTgzIDAgMDEtMS4wMTIgMy43NjRhMSAxIDAgMDAxLjcyOCAxLjA1NkMyMC41MyAxNS40IDIxIDEzLjc1MiAyMSAxMmMwLTQuOTY4LTMuMDMyLTktOS05em0wIDRhNSA1IDAgMTAwIDEwIDUgNSAwIDAwMC0xMHptMCAyYTMgMyAwIDExMCA2IDMgMyAwIDAxMC02em0tNC41IDNhLjUuNSAwIDAwMCAxSDh2LTFoLjVhLjUuNSAwIDAwLjUtLjVWMTJhLjUuNSAwIDAxLjUtLjVoMWEuNS41IDAgMDEuNS41djEuNWEuNS41IDAgMDAuNS41SDExLjVhLjUuNSAwIDAwLjUtLjVWMTJhMS41IDEuNSAwIDAwLTEuNS0xLjVIOGEyIDIgMCAwMC0yIDJ2MWEyIDIgMCAwMDIgMmgxLjVhLjUuNSAwIDAwLjUtLjVWMTVhLjUuNSAwIDAxLjUtLjVoMWEuNS41IDAgMDEuNS41djEuNWEuNS41IDAgMDAuNS41aDFhLjUuNSAwIDAwLjUtLjVWMTVhMS41IDEuNSAwIDAwLTEuNS0xLjVIMTB2LTFoLjVhLjUuNSAwIDAwLjUtLjVWMTJhMiAyIDAgMDAtMi0yaC0xeiIgZmlsbD0iIzNCODJGNiIvPjwvc3ZnPg==">
+        href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSAzQzMuODk1NDMgMyAzIDMuODk1NDMgMyA1VjE5QzMwMjAuMTA0NiAzIDIwLjEwNDYgMjEgMTlWMzEzIDIxIDIwLjEwNDYgMjEgMTlWNUMyMSAzLjg5NTQzIDIwLjEwNDYgMyAxOSAzSDVaIiBmaWxsPSIjM0I4MkY2Ii8+PHBhdGggZD0iTTcgOEgxNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik03IDEySDE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTcgMTZIMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNMTYgMTZMMTkgMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxOC41IiBjeT0iMTQuNSIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==">
     <link rel="icon" type="image/png" sizes="16x16"
-        href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgM0M3LjAzMiAzIDMgNy4wMzIgMyAxMmMwIDEuNzUyLjQ3IDMuNCAxLjI4NCA0LjgyYTEmMTAwIDAgMDAxLjcyOC0xLjA1NkE2Ljk4MyA2Ljk4MyAwIDAxNSAxMmMwLTMuODYgMy4xNC03IDctN3M3IDMuMTQgNyA3YTYuOTgzIDYuOTgzIDAgMDEtMS4wMTIgMy43NjRhMSAxIDAgMDAxLjcyOCAxLjA1NkMyMC41MyAxNS40IDIxIDEzLjc1MiAyMSAxMmMwLTQuOTY4LTMuMDMyLTktOS05em0wIDRhNSA1IDAgMTAwIDEwIDUgNSAwIDAwMC0xMHptMCAyYTMgMyAwIDExMCA2IDMgMyAwIDAxMC02em0tNC41IDNhLjUuNSAwIDAwMCAxSDh2LTFoLjVhLjUuNSAwIDAwLjUtLjVWMTJhLjUuNSAwIDAxLjUtLjVoMWEuNS41IDAgMDEuNS41djEuNWEuNS41IDAgMDAuNS41SDExLjVhLjUuNSAwIDAwLjUtLjVWMTJhMS41IDEuNSAwIDAwLTEuNS0xLjVIOGEyIDIgMCAwMC0yIDJ2MWEyIDIgMCAwMDIgMmgxLjVhLjUuNSAwIDAwLjUtLjVWMTVhLjUuNSAwIDAxLjUtLjVoMWEuNS41IDAgMDEuNS41djEuNWEuNS41IDAgMDAuNS41aDFhLjUuNSAwIDAwLjUtLjVWMTVhMS41IDEuNSAwIDAwLTEuNS0xLjVIMTB2LTFoLjVhLjUuNSAwIDAwLjUtLjVWMTJhMiAyIDAgMDAtMi0yaC0xeiIgZmlsbD0iIzNCODJGNiIvPjwvc3ZnPg==">
+        href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSAzQzMuODk1NDMgMyAzIDMuODk1NDMgMyA1VjE5QzMwMjAuMTA0NiAzIDIwLjEwNDYgMjEgMTlWNUMyMSAzLjg5NTQzIDIwLjEwNDYgMyAxOSAzSDVaIiBmaWxsPSIjM0I4MkY2Ii8+PHBhdGggZD0iTTcgOEgxNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik03IDEySDE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTcgMTZIMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNMTYgMTZMMTkgMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxOC41IiBjeT0iMTQuNSIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==">
     <link rel="icon"
-        href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgM0M3LjAzMiAzIDMgNy4wMzIgMyAxMmMwIDEuNzUyLjQ3IDMuNCAxLjI4NCA0LjgyYTEmMTAwIDAgMDAxLjcyOC0xLjA1NkE2Ljk4MyA2Ljk4MyAwIDAxNSAxMmMwLTMuODYgMy4xNC03IDctN3M3IDMuMTQgNyA3YTYuOTgzIDYuOTgzIDAgMDEtMS4wMTIgMy43NjRhMSAxIDAgMDAxLjcyOCAxLjA1NkMyMC41MyAxNS40IDIxIDEzLjc1MiAyMSAxMmMwLTQuOTY4LTMuMDMyLTktOS05em0wIDRhNSA1IDAgMTAwIDEwIDUgNSAwIDAwMC0xMHptMCAyYTMgMyAwIDExMCA2IDMgMyAwIDAxMC02em0tNC41IDNhLjUuNSAwIDAwMCAxSDh2LTFoLjVhLjUuNSAwIDAwLjUtLjVWMTJhLjUuNSAwIDAxLjUtLjVoMWEuNS41IDAgMDEuNS41djEuNWEuNS41IDAgMDAuNS41SDExLjVhLjUuNSAwIDAwLjUtLjVWMTJhMS41IDEuNSAwIDAwLTEuNS0xLjVIOGEyIDIgMCAwMC0yIDJ2MWEyIDIgMCAwMDIgMmgxLjVhLjUuNSAwIDAwLjUtLjVWMTVhLjUuNSAwIDAxLjUtLjVoMWEuNS41IDAgMDEuNS41djEuNWEuNS41IDAgMDAuNS41aDFhLjUuNSAwIDAwLjUtLjVWMTVhMS41IDEuNSAwIDAwLTEuNS0xLjVIMTB2LTFoLjVhLjUuNSAwIDAwLjUtLjVWMTJhMiAyIDAgMDAtMi0yaC0xeiIgZmlsbD0iIzNCODJGNiIvPjwvc3ZnPg=="
+        href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSAzQzMuODk1NDMgMyAzIDMuODk1NDMgMyA1VjE5QzMwMjAuMTA0NiAzIDIwLjEwNDYgMjEgMTlWNUMyMSAzLjg5NTQzIDIwLjEwNDYgMyAxOSAzSDVaIiBmaWxsPSIjM0I4MkY2Ii8+PHBhdGggZD0iTTcgOEgxNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik03IDEySDE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTcgMTZIMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNMTYgMTZMMTkgMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxOC41IiBjeT0iMTQuNSIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg=="
         type="image/svg+xml">
 
-    <!-- Theme Color for Mobile Browsers -->
+    <!-- ========== THEME COLOR FOR MOBILE BROWSERS ========== -->
+    <!-- Ensures the browser UI matches the app’s primary color in both light/dark modes -->
     <meta name="theme-color" content="#3B82F6" media="(prefers-color-scheme: dark)">
     <meta name="theme-color" content="#3B82F6" media="(prefers-color-scheme: light)">
 
-    <!-- Google Fonts -->
+    <!-- ========== GOOGLE FONTS – PLAYFUL, HANDWRITTEN STYLES ========== -->
+    <!-- Multiple font options give users a choice of personal writing feel -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap"
         rel="stylesheet">
 
-    <!-- Phosphor Icons -->
+    <!-- ========== PHOSPHOR ICONS – MODERN, CLEAN ICON SET ========== -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <!-- External CSS -->
+    <!-- ========== EXTERNAL STYLESHEET ========== -->
+    <!-- Contains all layout, theme, and component-specific styling -->
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 
+    <!-- ========== SIDEBAR – MAIN TOOLBAR ========== -->
+    <!-- Houses primary actions: export, share, delete, bullet/chip insertion, theme toggle, and focus mode.
+         Remains fixed on the left. Uses `data-tooltip` for hover hints. -->
     <nav class="sidebar" id="sidebar">
+        <!-- App logo / home icon – currently a notepad symbol -->
         <div class="icon-circle">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" aria-hidden="true">
                 <path
@@ -45,7 +56,7 @@
             </svg>
         </div>
 
-
+        <!-- Group of core document actions -->
         <div class="tool-group">
             <div class="tool-btn" id="exportBtn" data-tooltip="Export">
                 <i class="ph ph-export"></i>
@@ -64,7 +75,8 @@
             </div>
         </div>
 
-        <!-- Dropdown Menus -->
+        <!-- ========== DROPDOWN MENUS ========== -->
+        <!-- Hidden by default; shown when corresponding toolbar button is clicked -->
         <div class="dropdown-menu" id="bulletsMenu">
             <div class="dropdown-item" data-type="bullet">
                 <span>Bullet</span>
@@ -75,6 +87,7 @@
         </div>
 
         <div class="dropdown-menu" id="chipsMenu">
+            <!-- Chips are colorful tags inserted into the note content -->
             <div class="dropdown-item" data-chip="red">
                 <i class="ph ph-fire" style="color: #ef4444"></i>
                 <span>Important</span>
@@ -103,6 +116,8 @@
 
         <div class="divider"></div>
 
+        <!-- ========== BOTTOM ACTIONS ========== -->
+        <!-- Always visible: theme switcher and Zen Mode (focus) -->
         <div class="bottom-actions">
             <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
                 <i class="ph ph-moon" id="themeIcon"></i>
@@ -114,14 +129,17 @@
         </div>
     </nav>
 
+    <!-- ========== TOP BAR / HEADER ========== -->
+    <!-- Contains note chips (quick filter/tags), font selector, and document actions.
+         The glass effect gives a modern, translucent appearance. -->
     <div class="top-bar-wrapper" id="topBar">
         <header class="glass-header">
-            <div class="chips" id="noteChips">
-                <!-- Notes will be dynamically added here -->
-            </div>
+            <!-- Dynamically populated chips representing different notes/folders -->
+            <div class="chips" id="noteChips"></div>
 
             <div class="header-actions">
-                <!-- Font Selector -->
+                <!-- ========== FONT SELECTOR ========== -->
+                <!-- Allows user to change the contenteditable font to any of the playful options -->
                 <div class="font-selector-wrapper">
                     <button class="font-selector-btn" id="fontSelectorBtn">
                         <span class="current-font-preview" id="currentFont">Fredoka</span>
@@ -159,6 +177,7 @@
                     </div>
                 </div>
 
+                <!-- Header quick-action buttons -->
                 <button class="action-btn" id="addNoteBtn" title="New Note"><i class="ph ph-plus"></i></button>
                 <button class="action-btn" id="pinBtn" title="Pin"><i class="ph ph-push-pin"></i></button>
                 <button class="action-btn" id="manageFoldersBtn" title="Manage Folders"><i
@@ -167,19 +186,31 @@
         </header>
     </div>
 
+    <!-- ========== MAIN WRITING AREA ========== -->
+    <!-- Contenteditable region where the user writes notes. 
+         All formatting, chips, and bullet lists are inserted here. -->
     <main class="workspace">
         <div class="writing-canvas" id="writingCanvas" contenteditable="true">
         </div>
     </main>
 
+    <!-- ========== FORMATTING INDICATOR ========== -->
+    <!-- Small pop-up that shows current formatting state (bold, italic, etc.) 
+         Not implemented in this static version but reserved for future use. -->
     <div class="formatting-indicator" id="formattingIndicator"></div>
 
+    <!-- ========== ZEN MODE RESTORE PILL ========== -->
+    <!-- Appears only when focus/zen mode is active. Clicking it exits focus mode. -->
     <div class="restore-pill" id="restoreBtn">
         <i class="ph ph-corners-in"></i>
         <span>Exit Focus</span>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- ========== MODALS ========== -->
+    <!-- All modal dialogs are hidden by default and toggled via JavaScript. 
+         They use a translucent backdrop and centered cards. -->
+
+    <!-- Delete Confirmation Modal – appears when user clicks delete button -->
     <div class="confirm-modal" id="confirmModal">
         <div class="confirm-box">
             <h3>Delete Note?</h3>
@@ -191,7 +222,7 @@
         </div>
     </div>
 
-    <!-- New Note Modal -->
+    <!-- New Note Modal – collects name and folder for a new note -->
     <div class="form-modal" id="newNoteModal">
         <div class="form-box">
             <h3>Create New Note</h3>
@@ -207,7 +238,7 @@
                         <i class="ph ph-caret-down"></i>
                     </div>
                     <div class="select-options" id="folderSelectOptions">
-                        <!-- Options will be dynamically added -->
+                        <!-- Folder options injected dynamically -->
                     </div>
                 </div>
             </div>
@@ -218,7 +249,7 @@
         </div>
     </div>
 
-    <!-- Manage Folders Modal -->
+    <!-- Manage Folders Modal – allows creating new folders and deleting existing ones -->
     <div class="form-modal" id="manageFoldersModal">
         <div class="form-box">
             <h3>Manage Folders</h3>
@@ -229,7 +260,7 @@
             <button class="form-btn primary" id="createFolderBtn">Create Folder</button>
 
             <div class="folder-list" id="folderList">
-                <!-- Folders will be dynamically added -->
+                <!-- Dynamically populated list of folders with delete buttons -->
             </div>
 
             <div class="form-actions">
@@ -238,7 +269,7 @@
         </div>
     </div>
 
-    <!-- Folder Delete Confirmation Modal -->
+    <!-- Folder Delete Confirmation Modal – shown before deleting a folder -->
     <div class="confirm-modal" id="confirmFolderDeleteModal">
         <div class="confirm-box">
             <div class="confirm-icon">
@@ -253,7 +284,7 @@
         </div>
     </div>
 
-    <!-- Share Modal -->
+    <!-- Share Modal – toggles note visibility (private/public) and shows shareable link -->
     <div class="form-modal" id="shareModal">
         <div class="form-box share-box">
             <h3>Share Note</h3>
@@ -267,6 +298,7 @@
                 </div>
             </div>
 
+            <!-- Public link section – shown only when public toggle is active -->
             <div class="share-link-section" id="shareLinkSection">
                 <label>Public Link</label>
                 <div class="link-input-wrapper">
@@ -278,6 +310,7 @@
                 <p class="share-info"><i class="ph ph-info"></i> Anyone with this link can view this note.</p>
             </div>
 
+            <!-- Private message – shown when note is private -->
             <div class="share-private-msg" id="sharePrivateMsg">
                 <i class="ph ph-lock-key"></i>
                 <p>This note is restricted to you only.</p>
@@ -289,7 +322,7 @@
         </div>
     </div>
 
-    <!-- Export Modal -->
+    <!-- Export Modal – allows exporting note as PDF, Markdown, or plain text -->
     <div class="form-modal" id="exportModal">
         <div class="form-box export-box">
             <h3>Export Note</h3>
@@ -300,6 +333,7 @@
             </div>
 
             <div class="export-options">
+                <!-- Export format cards: PDF, Markdown, Text -->
                 <div class="export-card" data-format="pdf">
                     <div class="export-card-icon">
                         <i class="ph ph-file-pdf"></i>
@@ -325,6 +359,7 @@
                 </div>
             </div>
 
+            <!-- PDF-specific options (theme, header/footer) -->
             <div class="pdf-options" id="pdfOptions">
                 <div class="form-group center">
                     <label>PDF Theme</label>
@@ -357,7 +392,8 @@
         </div>
     </div>
 
-    <!-- External JavaScript -->
+    <!-- ========== EXTERNAL JAVASCRIPT ========== -->
+    <!-- Libraries for PDF generation (jsPDF, html2canvas) and main application logic -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="script.js"></script>
