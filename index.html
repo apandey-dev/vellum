@@ -265,23 +265,17 @@
             </div>
             <div class="export-options">
                 <div class="export-card" data-format="pdf">
-                    <div class="export-card-icon">
-                        <i class="ph ph-file-pdf"></i>
-                    </div>
+                    <div class="export-card-icon"><i class="ph ph-file-pdf"></i></div>
                     <h4>PDF</h4>
                     <p>High-quality document</p>
                 </div>
                 <div class="export-card" data-format="markdown">
-                    <div class="export-card-icon">
-                        <i class="ph ph-file-text"></i>
-                    </div>
+                    <div class="export-card-icon"><i class="ph ph-file-text"></i></div>
                     <h4>Markdown</h4>
                     <p>.md format</p>
                 </div>
                 <div class="export-card" data-format="text">
-                    <div class="export-card-icon">
-                        <i class="ph ph-file"></i>
-                    </div>
+                    <div class="export-card-icon"><i class="ph ph-file"></i></div>
                     <h4>Text</h4>
                     <p>Plain text file</p>
                 </div>
@@ -291,12 +285,10 @@
                     <label>PDF Theme</label>
                     <div class="theme-toggle-pill">
                         <div class="theme-pill-option active" data-theme="dark">
-                            <i class="ph ph-moon"></i>
-                            <span>Dark</span>
+                            <i class="ph ph-moon"></i><span>Dark</span>
                         </div>
                         <div class="theme-pill-option" data-theme="light">
-                            <i class="ph ph-sun"></i>
-                            <span>Light</span>
+                            <i class="ph ph-sun"></i><span>Light</span>
                         </div>
                         <div class="theme-pill-slider"></div>
                     </div>
@@ -316,22 +308,16 @@
         </div>
     </div>
 
-    <!-- === NEW: MOVE FILE MODAL (added without removing anything) === -->
-    <div class="form-modal" id="moveFileModal">
-        <div class="form-box move-box">
+    <!-- ========== ADDED: MOVE TO FOLDER MODAL ========== -->
+    <div class="form-modal" id="moveFolderModal">
+        <div class="form-box move-folder-box">
             <h3>Move File</h3>
-            <div class="file-info">
-                <div class="file-name-row">
-                    <span class="file-label">File Name:</span>
-                    <span class="file-name" id="moveFileName"></span>
-                </div>
-                <div class="current-folder-row">
-                    <span class="folder-label">Current Folder:</span>
-                    <span class="current-folder" id="moveCurrentFolder"></span>
-                </div>
+            <div class="move-file-info">
+                <p><span class="move-file-label">File Name:</span> <strong id="moveFileName"></strong></p>
+                <p><span class="move-file-label">Current Folder:</span> <span id="moveCurrentFolder"></span></p>
             </div>
             <div class="form-group">
-                <label>Move To</label>
+                <label>Move To:</label>
                 <div class="custom-select" id="moveFolderSelectWrapper">
                     <div class="select-trigger" id="moveFolderSelectTrigger">
                         <span id="moveSelectedFolderName">Select folder</span>
@@ -340,14 +326,12 @@
                     <div class="select-options" id="moveFolderSelectOptions"></div>
                 </div>
             </div>
+            <div class="move-success" id="moveSuccessMessage" style="display: none;">
+                <i class="ph ph-check-circle"></i> Moved Successfully!
+            </div>
             <div class="form-actions">
                 <button class="form-btn secondary" id="cancelMoveBtn">Cancel</button>
-                <button class="form-btn primary" id="confirmMoveBtn">Move</button>
-            </div>
-            <!-- Success animation overlay -->
-            <div class="move-success" id="moveSuccess">
-                <div class="success-icon">✔</div>
-                <span>Moved Successfully</span>
+                <button class="form-btn primary" id="moveConfirmBtn">Move</button>
             </div>
         </div>
     </div>
