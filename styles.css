@@ -21,7 +21,6 @@
     --hover-bg: #27272a;
     --grid-color: #1f1f22;
 
-    /* Color Palette for Theme Compatibility */
     --color-red: #ef4444;
     --color-blue: #3b82f6;
     --color-green: #10b981;
@@ -33,13 +32,11 @@
     --color-black: #000000;
     --color-white: #ffffff;
 
-    /* Theme-aware colors */
     --theme-text: #ffffff;
     --theme-text-inverse: #000000;
     --theme-bg: #141415;
     --theme-border: #2a2a2a;
 
-    /* Tooltip Specific */
     --tooltip-bg: #ffffff;
     --tooltip-text: #000000;
 }
@@ -56,17 +53,14 @@
     --hover-bg: #f2f4f7;
     --grid-color: #e4e7ec;
 
-    /* Theme-aware colors for light mode */
     --theme-text: #101828;
     --theme-text-inverse: #ffffff;
     --theme-bg: #ffffff;
     --theme-border: #eaecf0;
 
-    /* Tooltip Specific */
     --tooltip-bg: #000000;
     --tooltip-text: #ffffff;
 
-    /* Adjust formatting colors for better contrast */
     --color-red: #dc2626;
     --color-blue: #1d4ed8;
     --color-green: #059669;
@@ -75,13 +69,10 @@
     --color-pink: #db2777;
     --color-orange: #ea580c;
     --color-gray: #4b5563;
-
-    /* Ensure black/white are visible in light mode */
     --color-black: #101828;
     --color-white: #f8fafc;
 }
 
-/* Theme-aware text color classes */
 .text-color-aware {
     color: var(--theme-text) !important;
 }
@@ -90,7 +81,6 @@
     color: var(--theme-text-inverse) !important;
 }
 
-/* Theme compatibility for color classes */
 [data-theme="light"] .text-white {
     color: var(--color-black) !important;
 }
@@ -99,7 +89,6 @@
     color: var(--color-white) !important;
 }
 
-/* Enhanced theme-aware color classes */
 .text-black,
 [data-theme="dark"] .text-black {
     color: var(--color-white) !important;
@@ -110,7 +99,6 @@
     color: var(--color-black) !important;
 }
 
-/* Dynamic color adjustment for all text */
 [data-theme="light"] .writing-canvas *:not([class*="text-"]) {
     color: var(--color-black) !important;
 }
@@ -119,7 +107,6 @@
     color: var(--color-white) !important;
 }
 
-/* Ensure formatted text is visible */
 [data-theme="light"] .writing-canvas .text-red {
     color: var(--color-red) !important;
 }
@@ -129,7 +116,6 @@
 }
 
 /* --- INLINE FORMATTING COMMANDS STYLES --- */
-/* Color Classes for inline formatting */
 .text-color-red {
     color: #ef4444 !important;
 }
@@ -666,7 +652,6 @@
     color: #708090 !important;
 }
 
-/* Inline Heading Styles - VISUAL only, not semantic */
 .inline-head {
     font-size: 32px !important;
     font-weight: 600 !important;
@@ -685,7 +670,6 @@
     padding: 0 !important;
 }
 
-/* Inline formatting base */
 .inline-format {
     display: inline !important;
     margin: 0 !important;
@@ -694,7 +678,6 @@
     vertical-align: baseline !important;
 }
 
-/* Bold and Italic */
 .format-bold {
     font-weight: 700 !important;
     display: inline !important;
@@ -705,14 +688,12 @@
     display: inline !important;
 }
 
-/* Center alignment for inline elements */
 .format-center {
     text-align: center !important;
     display: inline-block !important;
     width: 100% !important;
 }
 
-/* Code formatting */
 .format-code {
     font-family: 'Courier New', monospace !important;
     background-color: rgba(0, 0, 0, 0.1) !important;
@@ -731,14 +712,12 @@
     background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Combined styles container */
 .combined-format {
     display: inline !important;
     margin: 0 !important;
     padding: 0 !important;
 }
 
-/* Zero-width space for cursor positioning */
 .zwsp {
     display: inline;
     color: transparent;
@@ -748,7 +727,6 @@
     height: 0;
 }
 
-/* Active formatting marker */
 .formatting-active {
     outline: 1px dashed rgba(59, 130, 246, 0.5) !important;
 }
@@ -773,7 +751,6 @@ body {
     background-size: 24px 24px;
 }
 
-/* --- 1. Sidebar --- */
 .sidebar {
     width: 68px;
     height: 94vh;
@@ -810,7 +787,6 @@ body {
     font-size: 24px;
 }
 
-/* Tool Group */
 .tool-group {
     display: flex;
     flex-direction: column;
@@ -826,7 +802,6 @@ body {
     margin: 20px 0;
 }
 
-/* Tool Buttons */
 .tool-btn {
     position: relative;
     width: 42px;
@@ -852,7 +827,6 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-/* Tooltip Styling */
 .tool-btn[data-tooltip]::after {
     content: attr(data-tooltip);
     position: absolute;
@@ -900,7 +874,6 @@ body {
     transform: translateY(-50%) translateX(8px);
 }
 
-/* Bottom Actions */
 .bottom-actions {
     margin-top: auto;
     display: flex;
@@ -909,7 +882,6 @@ body {
     align-items: center;
 }
 
-/* --- 2. Top Bar --- */
 .top-bar-wrapper {
     position: absolute;
     top: 3vh;
@@ -933,7 +905,6 @@ body {
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
 }
 
-/* Chips */
 .chips {
     display: flex;
     gap: 6px;
@@ -958,6 +929,8 @@ body {
     transition: 0.2s;
     white-space: nowrap;
     flex-shrink: 0;
+    position: relative;
+    /* needed for absolute positioning of move button */
 }
 
 .chip:hover {
@@ -970,7 +943,37 @@ body {
     color: var(--bg-canvas);
 }
 
-/* Top Bar Actions */
+/* === NEW: Move button on note chips === */
+.chip .move-chip-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s, color 0.2s;
+    z-index: 5;
+}
+
+.chip:hover .move-chip-btn {
+    opacity: 1;
+}
+
+.chip .move-chip-btn:hover {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
 .header-actions {
     display: flex;
     gap: 12px;
@@ -979,7 +982,6 @@ body {
     align-items: center;
 }
 
-/* Font Selector Button */
 .font-selector-btn {
     min-width: 180px;
     height: 40px;
@@ -1019,7 +1021,6 @@ body {
     transform: rotate(180deg);
 }
 
-/* Font Dropdown Menu */
 .font-dropdown {
     position: absolute;
     top: 110%;
@@ -1083,7 +1084,6 @@ body {
     font-size: 16px;
 }
 
-/* Font Preview Styling */
 .font-option[data-font="Fredoka"] {
     font-family: 'Fredoka', sans-serif;
 }
@@ -1120,7 +1120,6 @@ body {
     text-align: left;
 }
 
-/* Other action buttons */
 .action-btn {
     background: transparent;
     border: none;
@@ -1141,7 +1140,6 @@ body {
     transform: translateY(-1px);
 }
 
-/* --- 3. Main Workspace --- */
 .workspace {
     flex: 1;
     display: flex;
@@ -1171,13 +1169,11 @@ body {
     color: var(--text-primary) !important;
 }
 
-/* Ensure all text in writing canvas has proper color */
 .writing-canvas,
 .writing-canvas * {
     color: inherit !important;
 }
 
-/* Theme-aware text color inheritance */
 [data-theme="light"] .writing-canvas {
     color: var(--color-black) !important;
 }
@@ -1186,7 +1182,6 @@ body {
     color: var(--color-white) !important;
 }
 
-/* Ensure all children respect width */
 .writing-canvas * {
     max-width: 100% !important;
     box-sizing: border-box !important;
@@ -1200,7 +1195,6 @@ body {
     white-space: pre-line;
 }
 
-/* --- Formatting Styles --- */
 .text-red {
     color: var(--color-red) !important;
 }
@@ -1300,7 +1294,6 @@ body {
     line-height: 1.5;
 }
 
-/* Horizontal Rule Styles */
 .horizontal-line {
     display: block;
     width: 100%;
@@ -1319,7 +1312,6 @@ body {
     border-top: 2px dashed var(--border-color);
 }
 
-/* Better spacing for formatted lines */
 .text-center,
 .text-left,
 .text-right {
@@ -1327,7 +1319,6 @@ body {
     line-height: 1.6;
 }
 
-/* Chip Styles */
 .chip-tag {
     display: inline-block;
     padding: 6px 14px;
@@ -1375,7 +1366,6 @@ body {
     border: 1px solid rgba(236, 72, 153, 0.3);
 }
 
-/* --- Formatting Indicator (Toast) --- */
 .formatting-indicator {
     position: fixed;
     bottom: 30px;
@@ -1402,7 +1392,6 @@ body {
     transform: translateX(-50%) translateY(0);
 }
 
-/* --- Dropdown Menus --- */
 .dropdown-menu {
     position: absolute;
     left: 80px;
@@ -1451,14 +1440,12 @@ body {
     font-size: 18px;
 }
 
-/* Font Marker Span */
 .font-marker,
 .active-font-span,
 .cursor-font-marker {
     display: inline;
 }
 
-/* Bullet List - Inline, No Extra Spacing */
 .bullet-list {
     display: inline;
     padding: 0;
@@ -1472,7 +1459,6 @@ body {
     padding: 0;
 }
 
-/* Custom Select Dropdown */
 .custom-select {
     position: relative;
     width: 100%;
@@ -1555,7 +1541,6 @@ body {
     width: 6px;
 }
 
-/* --- Share Modal Styling --- */
 .share-box {
     max-width: 450px !important;
     text-align: center;
@@ -1622,7 +1607,6 @@ body {
     z-index: 1;
 }
 
-/* Toggle Logic in CSS Class */
 .share-toggle.public .toggle-slider {
     transform: translateX(100%);
     background-color: var(--color-green);
@@ -1734,7 +1718,6 @@ body {
     background: var(--text-primary);
 }
 
-/* --- 4. Focus & Restore --- */
 .sidebar.hidden {
     transform: translateX(-180%);
 }
@@ -1743,7 +1726,6 @@ body {
     transform: translateY(-200%);
 }
 
-/* Focus mode - Fullscreen workspace */
 .workspace.focus-mode {
     position: fixed;
     top: 0;
@@ -1794,7 +1776,6 @@ body {
     box-shadow: 0 12px 50px rgba(0, 0, 0, 0.4);
 }
 
-/* --- Custom Confirmation Modal --- */
 .confirm-modal {
     position: fixed;
     top: 0;
@@ -1886,7 +1867,6 @@ body {
     transform: scale(1.05);
 }
 
-/* Form Modal Styles */
 .form-modal {
     position: fixed;
     top: 0;
@@ -2075,7 +2055,6 @@ body {
     color: white;
 }
 
-/* --- Export Modal Styling --- */
 .export-box {
     max-width: 500px !important;
     min-width: 450px !important;
@@ -2157,7 +2136,6 @@ body {
     animation: fadeIn 0.3s ease;
 }
 
-/* Pill-shaped theme toggle for PDF */
 .theme-toggle-pill {
     background: var(--bg-canvas);
     border: 1px solid var(--border-color);
@@ -2258,7 +2236,6 @@ body {
     margin-top: 24px;
 }
 
-/* Scrollbar Styling */
 .font-dropdown::-webkit-scrollbar,
 .dropdown-menu::-webkit-scrollbar,
 .folder-list::-webkit-scrollbar {
@@ -2285,7 +2262,6 @@ body {
     background: var(--text-primary);
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
     .workspace {
         margin-left: 0;
@@ -2324,7 +2300,6 @@ body {
     align-items: center;
 }
 
-/* --- Empty Folder Message Styles --- */
 .writing-canvas.empty-folder-message {
     display: flex;
     align-items: center;
@@ -2397,7 +2372,6 @@ body {
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-/* --- Disabled Button Styles --- */
 .tool-btn.disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -2409,7 +2383,6 @@ body {
     color: var(--text-secondary);
 }
 
-/* --- Empty Chip Styles --- */
 .chip.empty-chip {
     opacity: 0.6;
     cursor: default;
@@ -2426,18 +2399,14 @@ body {
     padding: 20px;
 }
 
-/* --- Enhanced Theme Compatibility for Inline Styles --- */
 [data-theme="light"] .writing-canvas span[style*="color"] {
-    /* For inline styles in light mode, ensure they're visible */
     filter: brightness(0.8);
 }
 
 [data-theme="dark"] .writing-canvas span[style*="color"] {
-    /* For inline styles in dark mode, ensure they're visible */
     filter: brightness(1.2);
 }
 
-/* Add to existing styles.css - Pin button styling */
 .action-btn.pinned {
     color: var(--color-yellow) !important;
     background-color: rgba(245, 158, 11, 0.15);
@@ -2448,18 +2417,15 @@ body {
     background-color: rgba(245, 158, 11, 0.25);
 }
 
-/* Enhanced color classes for better theme compatibility */
 .color-preserve {
     color: inherit !important;
 }
 
-/* For inline color styles to ensure they're preserved */
 .writing-canvas span[style*="color"],
 .writing-canvas div[style*="color"] {
     filter: none !important;
 }
 
-/* Ensure color styles are preserved in both themes */
 [data-theme="light"] .writing-canvas span[style*="color"] {
     filter: none !important;
 }
@@ -2473,8 +2439,6 @@ body {
     margin-right: 5px;
 }
 
-/* ==================== PDF EXPORT FIXES ==================== */
-/* PDF export container specific styles */
 #pdf-export-container {
     all: initial !important;
     font-family: inherit !important;
@@ -2494,7 +2458,6 @@ body {
     line-height: 1.6 !important;
 }
 
-/* Ensure all formatting is preserved in PDF */
 #pdf-export-container .text-red,
 #pdf-export-container .text-color-red {
     color: #ef4444 !important;
@@ -2545,7 +2508,6 @@ body {
     color: #ffffff !important;
 }
 
-/* Preserve bold/italic */
 #pdf-export-container .text-bold,
 #pdf-export-container .format-bold {
     font-weight: 700 !important;
@@ -2556,7 +2518,6 @@ body {
     font-style: italic !important;
 }
 
-/* Preserve alignment */
 #pdf-export-container .text-center,
 #pdf-export-container .format-center {
     text-align: center !important;
@@ -2572,7 +2533,6 @@ body {
     text-align: right !important;
 }
 
-/* Preserve headings */
 #pdf-export-container .heading-main,
 #pdf-export-container .inline-head {
     font-size: 32px !important;
@@ -2591,7 +2551,6 @@ body {
     display: block !important;
 }
 
-/* Preserve code blocks */
 #pdf-export-container .code-block,
 #pdf-export-container .format-code,
 #pdf-export-container code {
@@ -2606,7 +2565,6 @@ body {
     overflow-x: auto !important;
 }
 
-/* Preserve horizontal lines */
 #pdf-export-container .horizontal-line {
     height: 2px !important;
     background: currentColor !important;
@@ -2626,7 +2584,6 @@ body {
     border-top: 2px dashed currentColor !important;
 }
 
-/* Preserve chip tags */
 #pdf-export-container .chip-tag {
     display: inline-block !important;
     padding: 4px 12px !important;
@@ -2636,7 +2593,6 @@ body {
     margin: 0 4px !important;
 }
 
-/* PDF lists styling - FIXED */
 #pdf-export-container .pdf-list-item {
     margin-left: 40px !important;
     padding: 2px 0 !important;
@@ -2662,12 +2618,10 @@ body {
     color: inherit !important;
 }
 
-/* Ensure proper spacing */
 #pdf-export-container>* {
     margin: 8px 0 !important;
 }
 
-/* PDF-specific font styles */
 #pdf-export-container[data-font="Fredoka"] {
     font-family: 'Fredoka', sans-serif !important;
 }
@@ -2696,7 +2650,6 @@ body {
     font-family: 'Comic Sans MS', cursive, sans-serif !important;
 }
 
-/* PDF theme colors */
 #pdf-export-container[data-theme="dark"] {
     background-color: #1a1a1a !important;
     color: #ffffff !important;
@@ -2707,7 +2660,6 @@ body {
     color: #000000 !important;
 }
 
-/* Formatting indicator improvements */
 .formatting-indicator.success {
     background: linear-gradient(135deg, #10b981, #059669) !important;
     border-color: #10b981 !important;
@@ -2718,7 +2670,6 @@ body {
     border-color: #ef4444 !important;
 }
 
-/* Better bullet and number spacing in editor */
 .writing-canvas div[style*="margin-left"] {
     margin-left: 40px !important;
     padding: 2px 0 !important;
@@ -2750,25 +2701,20 @@ body {
     justify-content: center;
     margin-bottom: 10px;
     background: #f0f0f0;
-    /* light mode bg */
     color: #000;
-    /* icon color */
 }
 
 .icon-circle svg {
     width: 35px;
     height: 35px;
     fill: currentColor;
-    /* 🔥 icon color follows theme */
 }
 
-/* Dark mode */
 body.dark .icon-circle {
     background: #1f1f1f;
     color: #e3e3e3;
 }
 
-/* ==================== CUSTOM CONTEXT MENU ==================== */
 .context-menu {
     position: fixed;
     background: var(--bg-glass);
@@ -2832,4 +2778,104 @@ body.dark .icon-circle {
 
 .folder-option:hover {
     background-color: var(--hover-bg);
+}
+
+/* === NEW: Move Modal specific styling === */
+.move-box {
+    max-width: 450px !important;
+    min-width: 380px !important;
+}
+
+.file-info {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.file-name-row,
+.current-folder-row {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 8px;
+}
+
+.current-folder-row {
+    margin-bottom: 0;
+}
+
+.file-label,
+.folder-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    width: 110px;
+    flex-shrink: 0;
+}
+
+.file-name,
+.current-folder {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.move-success {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 20;
+}
+
+.move-success.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.success-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--color-green);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: bold;
+    animation: pop 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.2) forwards;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
+
+.move-success span {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes pop {
+    0% {
+        transform: scale(0.4);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
