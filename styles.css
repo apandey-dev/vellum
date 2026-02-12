@@ -2748,19 +2748,88 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-
-    background: #f0f0f0;   /* light mode bg */
-    color: #000;          /* icon color */
+    margin-bottom: 10px;
+    background: #f0f0f0;
+    /* light mode bg */
+    color: #000;
+    /* icon color */
 }
 
 .icon-circle svg {
     width: 35px;
     height: 35px;
-    fill: currentColor;   /* 🔥 icon color follows theme */
+    fill: currentColor;
+    /* 🔥 icon color follows theme */
 }
 
 /* Dark mode */
 body.dark .icon-circle {
     background: #1f1f1f;
     color: #e3e3e3;
+}
+
+/* ==================== CUSTOM CONTEXT MENU ==================== */
+.context-menu {
+    position: fixed;
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 6px 0;
+    min-width: 180px;
+    z-index: 10000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+}
+
+.context-menu.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.context-menu-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-primary);
+    transition: background 0.2s;
+}
+
+.context-menu-item:hover {
+    background-color: var(--hover-bg);
+}
+
+.context-menu-submenu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 6px 0;
+    min-width: 150px;
+    display: none;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.context-menu-submenu.show {
+    display: block;
+}
+
+.folder-option {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.folder-option:hover {
+    background-color: var(--hover-bg);
 }
