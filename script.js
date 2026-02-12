@@ -38,7 +38,6 @@ const includeHeaderFooter = document.getElementById('includeHeaderFooter');
 const exportBtn = document.getElementById('exportBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 const bulletsBtn = document.getElementById('bulletsBtn');
-const chipsBtn = document.getElementById('chipsBtn');
 const addNoteBtn = document.getElementById('addNoteBtn');
 const pinBtn = document.getElementById('pinBtn');
 const manageFoldersBtn = document.getElementById('manageFoldersBtn');
@@ -46,7 +45,6 @@ const shareBtn = document.getElementById('shareBtn');
 
 // Dropdown menus
 const bulletsMenu = document.getElementById('bulletsMenu');
-const chipsMenu = document.getElementById('chipsMenu');
 
 // Note chips container
 const noteChips = document.getElementById('noteChips');
@@ -1102,6 +1100,9 @@ function renderNoteChips() {
             chip.classList.add('pinned-chip');
         }
 
+        // Store note ID for context menu
+        chip.dataset.noteId = note.id;
+
         const chipContent = document.createElement('div');
         chipContent.className = 'chip-content';
 
@@ -1584,14 +1585,12 @@ let activeDropdown = null;
 
 function closeAllDropdowns() {
     bulletsMenu.classList.remove('active');
-    chipsMenu.classList.remove('active');
     activeDropdown = null;
     clearSavedCursorRange();
 }
 
 document.addEventListener('click', (e) => {
-    if (!bulletsBtn.contains(e.target) && !bulletsMenu.contains(e.target) &&
-        !chipsBtn.contains(e.target) && !chipsMenu.contains(e.target)) {
+    if (!bulletsBtn.contains(e.target) && !bulletsMenu.contains(e.target)) {
         closeAllDropdowns();
     }
 });
@@ -1688,103 +1687,6 @@ function insertBulletList(type) {
     selection.addRange(range);
 
     showFormattingIndicator(`${type === 'numbered' ? 'Numbered' : 'Bullet'} list inserted`);
-    saveCurrentNote();
-}
-
-// --- CHIPS BUTTON ---
-// Save cursor range before dropdown opens
-chipsBtn.addEventListener('mousedown', (e) => {
-    saveCursorRange();
-});
-
-chipsBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (activeDropdown === 'chips') {
-        closeAllDropdowns();
-    } else {
-        closeAllDropdowns();
-        chipsMenu.classList.add('active');
-        activeDropdown = 'chips';
-
-        const rect = chipsBtn.getBoundingClientRect();
-        chipsMenu.style.top = `${rect.top}px`;
-    }
-});
-
-document.querySelectorAll('#chipsMenu .dropdown-item').forEach(item => {
-    item.addEventListener('click', () => {
-        const chipType = item.getAttribute('data-chip');
-        insertChip(chipType);
-        closeAllDropdowns();
-    });
-});
-
-// IMPROVED CHIP INSERTION - Inserts at cursor position correctly
-function insertChip(type) {
-    // Don't allow insertion if no active note
-    if (!activeNoteId) {
-        showFormattingIndicator('Please create a note first');
-        return;
-    }
-
-    const chipTexts = {
-        'red': 'Important',
-        'blue': 'Note',
-        'green': 'Success',
-        'yellow': 'Warning',
-        'purple': 'Idea',
-        'pink': 'Reminder'
-    };
-
-    // Restore saved cursor range if dropdown stole focus
-    if (savedCursorRange) {
-        restoreCursorRange();
-    } else {
-        writingCanvas.focus();
-    }
-
-    const selection = window.getSelection();
-    if (!selection.rangeCount) {
-        showFormattingIndicator('Please click in the editor first');
-        return;
-    }
-
-    const range = selection.getRangeAt(0);
-
-    // Ensure we're in the writing canvas
-    if (!writingCanvas.contains(range.commonAncestorContainer)) {
-        writingCanvas.focus();
-        return;
-    }
-
-    // Delete any selected content
-    if (!range.collapsed) {
-        range.deleteContents();
-    }
-
-    // Create chip element
-    const chip = document.createElement('span');
-    chip.className = `chip-tag chip-${type}`;
-    chip.textContent = chipTexts[type];
-    chip.contentEditable = 'false';
-
-    // Create space after chip
-    const spaceAfter = document.createTextNode(' ');
-
-    // Insert chip and space at cursor position
-    range.insertNode(spaceAfter);
-    range.insertNode(chip);
-
-    // Position cursor after the space
-    range.setStartAfter(spaceAfter);
-    range.setEndAfter(spaceAfter);
-    selection.removeAllRanges();
-    selection.addRange(range);
-
-    showFormattingIndicator(`${chipTexts[type]} chip inserted`);
-    clearSavedCursorRange();
-
-    // Auto-save
     saveCurrentNote();
 }
 
@@ -2608,18 +2510,19 @@ function getCurrentLine() {
     return node;
 }
 
-// ENHANCED COLOR PROCESSING FUNCTION
-// ENHANCED COLOR PROCESSING FUNCTION
+// ==================== ENHANCED SHORTCUT PARSING (BEGINNING OF LINE) ====================
 function processLineFormatting(lineNode) {
     if (!lineNode) return false;
+
+    // Guard: do not process if the user is pasting
+    if (window.pasteInProgress) return false;
 
     let text = lineNode.textContent || '';
     let processed = false;
     let newHTML = '';
 
-    // Check for horizontal line shortcuts
+    // ========== HORIZONTAL LINE SHORTCUTS ==========
     const trimmedText = text.trim();
-
     if (trimmedText === '===') {
         newHTML = '<div class="horizontal-line thick"></div>';
         processed = true;
@@ -2629,7 +2532,6 @@ function processLineFormatting(lineNode) {
     }
 
     if (processed) {
-        // ... (existing hr logic kept same) ...
         const selection = window.getSelection();
         const range = selection.getRangeAt(0);
 
@@ -2653,102 +2555,166 @@ function processLineFormatting(lineNode) {
         return true;
     }
 
-    // --- ROBUST CUSTOM SHORTCUT PARSING ---
-    // Regex matches: @command(.param)?: content
-    // Supports: @head.red: Title, @color.#f00: Text, @align.center: Text
-    const commandRegex = /^@(head|color|bold|italic|align|setFont)(?:[\.\s]([\w#\-\(\),]+))?\s*:\s*(.*)$/i;
-    const match = text.match(commandRegex);
+    // ========== NEW BEGINNING-OF-LINE SHORTCUTS ==========
+    // Patterns: 
+    //   #head.COLOR                 → <div class="heading-main" style="color: COLOR;">content</div>
+    //   #head.center.COLOR         → <div class="heading-main" style="text-align:center; color:COLOR;">content</div>
+    //   #subhead.COLOR            → <div class="heading-sub" style="color: COLOR;">content</div>
+    //   #subhead.center.COLOR    → <div class="heading-sub" style="text-align:center; color:COLOR;">content</div>
+    //   @color.COLOR             → <div style="color: COLOR;">content</div>
+    //   @align.center           → <div style="text-align: center;">content</div>
 
-    if (match) {
-        const command = match[1].toLowerCase();
-        const param = match[2] ? match[2].trim() : null; // Parameter (e.g. red, center)
-        const content = match[3]; // Content
+    // Match command + space + content
+    const headPattern = /^(#head|#subhead)((?:\.\w+)*)(?:\s+)(.*)$/i;
+    const colorPattern = /^@color\.([\w#]+)(?:\s+)(.*)$/i;
+    const alignPattern = /^@align\.(center|left|right|justify)(?:\s+)(.*)$/i;
 
-        // 1. @HEAD (Heading)
-        if (command === 'head') {
-            // Check if param is color or undefined
-            // If param exists, treat as color. 
-            // We use inline style for robust color support as requested
-            let style = '';
-            if (param) {
-                style = `style="color: ${param};"`;
+    let match;
+
+    // ---- #head / #subhead ----
+    if (match = text.match(headPattern)) {
+        const type = match[1].toLowerCase(); // #head or #subhead
+        const dots = match[2]; // e.g. ".center.red"
+        const content = match[3];
+
+        // Skip if no content
+        if (!content.trim()) return false;
+
+        // Parse dot-separated parts
+        const parts = dots.split('.').filter(p => p);
+        let color = null;
+        let center = false;
+
+        parts.forEach(part => {
+            if (part.toLowerCase() === 'center') {
+                center = true;
+            } else if (isValidColor(part)) {
+                color = part; // last color wins
             }
-            newHTML = `<h1 class="inline-head" ${style}>${content}</h1>`;
-            processed = true;
+        });
+
+        // Build HTML
+        const className = type === '#head' ? 'heading-main' : 'heading-sub';
+        let styles = '';
+        if (color) styles += `color: ${color}; `;
+        if (center) styles += 'text-align: center; ';
+
+        if (styles) {
+            newHTML = `<div class="${className}" style="${styles}">${content}</div>`;
+        } else {
+            newHTML = `<div class="${className}">${content}</div>`;
+        }
+        processed = true;
+    }
+
+    // ---- @color.COLOR ----
+    else if (match = text.match(colorPattern)) {
+        const color = match[1];
+        const content = match[2];
+
+        if (!isValidColor(color)) {
+            // Invalid color – ignore silently
+            return false;
         }
 
-        // 2. @COLOR (Text Color)
-        else if (command === 'color') {
-            if (param) {
-                newHTML = `<span style="color: ${param};">${content}</span>`;
+        if (!content.trim()) return false;
+
+        newHTML = `<div style="color: ${color};">${content}</div>`;
+        processed = true;
+    }
+
+    // ---- @align.center ----
+    else if (match = text.match(alignPattern)) {
+        const align = match[1].toLowerCase();
+        const content = match[2];
+
+        if (!content.trim()) return false;
+
+        newHTML = `<div style="text-align: ${align};">${content}</div>`;
+        processed = true;
+    }
+
+    // --- Legacy @head:, @color:, @bold:, @italic:, @setFont:, $code: shortcuts (keep unchanged) ---
+    if (!processed) {
+        const commandRegex = /^@(head|color|bold|italic|align|setFont)(?:[\.\s]([\w#\-\(\),]+))?\s*:\s*(.*)$/i;
+        const legacyMatch = text.match(commandRegex);
+        if (legacyMatch) {
+            const command = legacyMatch[1].toLowerCase();
+            const param = legacyMatch[2] ? legacyMatch[2].trim() : null;
+            const content = legacyMatch[3];
+
+            // 1. @HEAD (Heading)
+            if (command === 'head') {
+                let style = '';
+                if (param) {
+                    style = `style="color: ${param};"`;
+                }
+                newHTML = `<h1 class="inline-head" ${style}>${content}</h1>`;
                 processed = true;
             }
-        }
-
-        // 3. @BOLD (Bold Text)
-        else if (command === 'bold') {
-            // Optional param for color mapping if user tries @bold.red:
-            let style = '';
-            if (param) style = `style="color: ${param};"`;
-            newHTML = `<span class="format-bold" ${style}>${content}</span>`;
-            processed = true;
-        }
-
-        // 4. @ITALIC (Italic Text)
-        else if (command === 'italic') {
-            newHTML = `<span class="format-italic">${content}</span>`;
-            processed = true;
-        }
-
-        // 5. @ALIGN (Alignment)
-        else if (command === 'align') {
-            const align = ['center', 'right', 'justify'].includes(param?.toLowerCase()) ? param : 'left';
-            newHTML = `<div style="text-align: ${align}; width: 100%; display: block;">${content}</div>`;
-            processed = true;
-        }
-
-        // 6. @SETFONT (Font Family)
-        else if (command === 'setfont') {
-            const fontMap = {
-                'kalam': "'Kalam', cursive",
-                'caveat': "'Caveat', cursive",
-                'sacramento': "'Sacramento', cursive",
-                'patrickhand': "'Patrick Hand', cursive",
-                'amaticsc': "'Amatic SC', cursive",
-                'playpensans': "'Playpen Sans', cursive",
-                'fredoka': "'Fredoka', sans-serif",
-                'comicsans': "'Comic Sans MS', 'Comic Sans', cursive",
-                'courier': "'Courier New', monospace"
-            };
-
-            // Normalize param key to lowercase
-            const key = param ? param.toLowerCase().replace(/\s+/g, '') : '';
-            // Try strict match or partial match keys
-            let family = 'inherit';
-            // Simple mapping
-            for (const k in fontMap) {
-                if (key.includes(k)) {
-                    family = fontMap[k];
-                    break;
+            // 2. @COLOR (Text Color)
+            else if (command === 'color') {
+                if (param) {
+                    newHTML = `<span style="color: ${param};">${content}</span>`;
+                    processed = true;
                 }
             }
+            // 3. @BOLD (Bold Text)
+            else if (command === 'bold') {
+                let style = '';
+                if (param) style = `style="color: ${param};"`;
+                newHTML = `<span class="format-bold" ${style}>${content}</span>`;
+                processed = true;
+            }
+            // 4. @ITALIC (Italic Text)
+            else if (command === 'italic') {
+                newHTML = `<span class="format-italic">${content}</span>`;
+                processed = true;
+            }
+            // 5. @ALIGN (Alignment)
+            else if (command === 'align') {
+                const align = ['center', 'right', 'justify'].includes(param?.toLowerCase()) ? param : 'left';
+                newHTML = `<div style="text-align: ${align}; width: 100%; display: block;">${content}</div>`;
+                processed = true;
+            }
+            // 6. @SETFONT (Font Family)
+            else if (command === 'setfont') {
+                const fontMap = {
+                    'kalam': "'Kalam', cursive",
+                    'caveat': "'Caveat', cursive",
+                    'sacramento': "'Sacramento', cursive",
+                    'patrickhand': "'Patrick Hand', cursive",
+                    'amaticsc': "'Amatic SC', cursive",
+                    'playpensans': "'Playpen Sans', cursive",
+                    'fredoka': "'Fredoka', sans-serif",
+                    'comicsans': "'Comic Sans MS', 'Comic Sans', cursive",
+                    'courier': "'Courier New', monospace"
+                };
 
-            newHTML = `<span style="font-family: ${family};">${content}</span>`;
-            processed = true;
+                const key = param ? param.toLowerCase().replace(/\s+/g, '') : '';
+                let family = 'inherit';
+                for (const k in fontMap) {
+                    if (key.includes(k)) {
+                        family = fontMap[k];
+                        break;
+                    }
+                }
 
-            // If content is empty, apply to cursor (legacy behavior)
-            if (!content) {
-                newHTML = '';
-                setTimeout(() => {
-                    // find the key for the font map
-                    const fontKey = Object.keys(formattingConfig.fonts).find(k => k.toLowerCase().replace(/\s+/g, '') === key);
-                    if (fontKey) applyFontAtCursor(fontKey, true);
-                }, 10);
+                newHTML = `<span style="font-family: ${family};">${content}</span>`;
+                processed = true;
+
+                if (!content) {
+                    newHTML = '';
+                    setTimeout(() => {
+                        const fontKey = Object.keys(formattingConfig.fonts).find(k => k.toLowerCase().replace(/\s+/g, '') === key);
+                        if (fontKey) applyFontAtCursor(fontKey, true);
+                    }, 10);
+                }
             }
         }
     }
 
-    // Legacy $code check
+    // --- Legacy $code: shortcut ---
     if (!processed && text.trim().startsWith('$code:')) {
         const content = text.replace(/^\$code:\s*/i, '');
         if (content.trim().length > 0) {
@@ -2771,9 +2737,6 @@ function processLineFormatting(lineNode) {
 
         // Handle empty HTML (for non-rendering commands like font set)
         if (newHTML === '') {
-            // Just clear the line text? 
-            // The logic above sets newHTML='' for setFont with empty content
-            // We should probably just clear the line content
             lineNode.textContent = '';
             return true;
         }
@@ -2787,11 +2750,9 @@ function processLineFormatting(lineNode) {
                 lineNode.parentNode.replaceChild(newNode, lineNode);
             }
 
-            // Restore cursor
-            // Place cursor at the END of the inserted content
+            // Restore cursor at the end of the inserted content
             const range = document.createRange();
 
-            // Helper to find last text node
             function getLastTextNode(node) {
                 if (node.nodeType === 3) return node;
                 for (let i = node.childNodes.length - 1; i >= 0; i--) {
@@ -2806,7 +2767,6 @@ function processLineFormatting(lineNode) {
                 range.setStart(lastText, lastText.length);
                 range.collapse(true);
             } else {
-                // If no text node (e.g. empty div), place inside
                 range.selectNodeContents(newNode);
                 range.collapse(false);
             }
@@ -2822,12 +2782,13 @@ function processLineFormatting(lineNode) {
     return false;
 }
 
-
-
 let processing = false;
 
 writingCanvas.addEventListener('keyup', (e) => {
     if (processing) return;
+
+    // Do not trigger on paste
+    if (e.inputType === 'insertFromPaste') return;
 
     if (e.key === ':' || e.key === ' ' || e.key === 'Enter') {
         processing = true;
@@ -2987,6 +2948,13 @@ document.addEventListener('keydown', (e) => {
             return;
         }
 
+        // Then close any visible context menu
+        if (noteContextMenu.classList.contains('show')) {
+            hideContextMenu();
+            e.preventDefault();
+            return;
+        }
+
         // Then close modals in reverse order (LIFO - Last In First Out)
         if (modalStack.length > 0) {
             const modal = modalStack.pop();
@@ -3024,6 +2992,143 @@ document.addEventListener('keydown', (e) => {
         exportConfirmBtn.click();
     }
 });
+
+// ==================== NOTE CHIP CONTEXT MENU ====================
+const noteContextMenu = document.getElementById('noteContextMenu');
+const moveToFolderItem = document.getElementById('moveToFolderItem');
+const folderSubmenu = document.getElementById('folderSubmenu');
+
+let contextMenuNoteId = null;
+
+function showContextMenu(x, y) {
+    // Position the menu
+    noteContextMenu.style.left = x + 'px';
+    noteContextMenu.style.top = y + 'px';
+    noteContextMenu.classList.add('show');
+    contextMenuVisible = true;
+
+    // Ensure menu stays within viewport
+    const rect = noteContextMenu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+        noteContextMenu.style.left = (window.innerWidth - rect.width - 5) + 'px';
+    }
+    if (rect.bottom > window.innerHeight) {
+        noteContextMenu.style.top = (window.innerHeight - rect.height - 5) + 'px';
+    }
+
+    // Hide submenu when main menu opens
+    folderSubmenu.classList.remove('show');
+}
+
+function hideContextMenu() {
+    noteContextMenu.classList.remove('show');
+    folderSubmenu.classList.remove('show');
+    contextMenuNoteId = null;
+    contextMenuVisible = false;
+}
+
+// Context menu on note chips (delegation)
+noteChips.addEventListener('contextmenu', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+
+    e.preventDefault();
+
+    // Store note ID from the chip's data attribute
+    contextMenuNoteId = chip.dataset.noteId;
+
+    // Hide any existing menu
+    hideContextMenu();
+
+    // Show menu at mouse position
+    showContextMenu(e.pageX, e.pageY);
+});
+
+// Click on "Move to Folder" – populate and show submenu
+moveToFolderItem.addEventListener('click', () => {
+    if (!contextMenuNoteId) {
+        hideContextMenu();
+        return;
+    }
+
+    // Build folder list
+    folderSubmenu.innerHTML = '';
+    folders.forEach(folder => {
+        const option = document.createElement('div');
+        option.className = 'folder-option';
+        option.textContent = folder.name;
+        option.dataset.folderId = folder.id;
+        folderSubmenu.appendChild(option);
+    });
+
+    // Show submenu
+    folderSubmenu.classList.add('show');
+});
+
+// Move note when folder option is clicked (event delegation)
+folderSubmenu.addEventListener('click', (e) => {
+    const option = e.target.closest('.folder-option');
+    if (!option) return;
+
+    const targetFolderId = option.dataset.folderId;
+    if (!contextMenuNoteId || !targetFolderId) return;
+
+    moveNoteToFolder(contextMenuNoteId, targetFolderId);
+    hideContextMenu();
+});
+
+// Close menu on outside click
+document.addEventListener('click', (e) => {
+    if (noteContextMenu.classList.contains('show') && !noteContextMenu.contains(e.target)) {
+        hideContextMenu();
+    }
+});
+
+// Close menu on scroll (optional, but good UX)
+window.addEventListener('scroll', () => {
+    if (noteContextMenu.classList.contains('show')) {
+        hideContextMenu();
+    }
+}, { passive: true });
+
+let contextMenuVisible = false;
+
+// --- Move note to another folder ---
+function moveNoteToFolder(noteId, targetFolderId) {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+
+    const oldFolderId = note.folderId;
+    if (oldFolderId === targetFolderId) {
+        showFormattingIndicator('Note already in this folder', 'info');
+        return;
+    }
+
+    // Update note folder
+    note.folderId = targetFolderId;
+    saveToStorage();
+
+    // Handle active note switching if necessary
+    if (noteId === activeNoteId) {
+        if (oldFolderId === activeFolderId) {
+            // The note was moved out of the current active folder
+            const folderNotes = getNotesInFolder(activeFolderId);
+            if (folderNotes.length > 0) {
+                activeNoteId = folderNotes[0].id;
+            } else {
+                activeNoteId = null;
+            }
+        }
+        // If moved into current active folder, activeNoteId stays the same
+    }
+
+    // Refresh UI
+    renderNoteChips();
+    loadActiveNote();
+
+    const folderName = folders.find(f => f.id === targetFolderId)?.name || 'Default';
+    showFormattingIndicator(`Note moved to "${folderName}"`, 'success');
+}
 
 // --- INITIALIZATION ---
 function init() {
