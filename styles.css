@@ -10,14 +10,21 @@
 
 /* --- CSS VARIABLES --- */
 :root {
-    /* LIGHT Mode (Default Now) */
+    /* LIGHT Mode (Default) */
     --bg-canvas: #f2f4f7;
     --bg-panel: #ffffff;
     --bg-glass: rgba(255, 255, 255, 0.95);
+
+    /* Text Colors */
     --text-primary: #101828;
+    /* Dark Blue/Black for text */
     --text-secondary: #667085;
+    /* Grey for secondary text */
+
+    /* UI Colors */
     --border-color: #eaecf0;
     --accent-color: #000000;
+    /* Black Accent in Light Mode */
     --hover-bg: #f2f4f7;
     --grid-color: #e4e7ec;
 
@@ -41,10 +48,13 @@
     --bg-canvas: #09090b;
     --bg-panel: #141415;
     --bg-glass: rgba(20, 20, 21, 0.95);
+
     --text-primary: #ffffff;
     --text-secondary: #888888;
+
     --border-color: #2a2a2a;
     --accent-color: #3b82f6;
+    /* Blue Accent in Dark Mode */
     --hover-bg: #27272a;
     --grid-color: #1f1f22;
 
@@ -766,7 +776,7 @@ body {
     background: var(--text-primary);
 }
 
-/* --- Share Modal Styling --- */
+/* --- Share Modal Styling (FIXED TOGGLE VISIBILITY) --- */
 .share-box {
     max-width: 450px !important;
     text-align: center;
@@ -785,8 +795,10 @@ body {
     margin-bottom: 30px;
 }
 
+/* FIXED: Toggle Container */
 .share-toggle {
-    background: var(--bg-canvas);
+    background: var(--hover-bg);
+    /* Use a slightly greyish bg in light mode */
     border: 1px solid var(--border-color);
     border-radius: 12px;
     display: flex;
@@ -797,6 +809,7 @@ body {
     height: 48px;
 }
 
+/* FIXED: Toggle Text Options */
 .toggle-option {
     flex: 1;
     z-index: 2;
@@ -806,21 +819,23 @@ body {
     font-size: 14px;
     font-weight: 500;
     color: var(--text-secondary);
+    /* Grey text for inactive */
     transition: color 0.3s;
 }
 
+/* FIXED: Active Toggle Text (Matches background panel for contrast against slider) */
 .toggle-option.active {
-    color: var(--bg-canvas);
+    color: var(--bg-panel);
+    /* White in Light Mode, Dark in Dark Mode - assuming simple contrast */
+    font-weight: 600;
 }
 
-[data-theme="dark"] .toggle-option.active {
-    color: #ffffff;
-}
-
+/* Specific overwrite for Light Mode to ensure text is white on black slider */
 [data-theme="light"] .toggle-option.active {
     color: #ffffff;
 }
 
+/* FIXED: Toggle Slider */
 .toggle-slider {
     position: absolute;
     top: 4px;
@@ -828,6 +843,7 @@ body {
     width: calc(50% - 4px);
     height: calc(100% - 8px);
     background: var(--text-primary);
+    /* Dark in Light Mode, Light in Dark Mode */
     border-radius: 8px;
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 1;
@@ -836,11 +852,17 @@ body {
 .share-toggle.public .toggle-slider {
     transform: translateX(100%);
     background-color: var(--color-green);
+    /* Green for Public */
+}
+
+/* Ensure text is white when Green */
+.share-toggle.public .toggle-option.active {
+    color: #ffffff;
 }
 
 .share-toggle.private .toggle-slider {
     transform: translateX(0);
-    background-color: var(--text-secondary);
+    /* Keeps var(--text-primary) or can be specific grey */
 }
 
 .share-link-section {

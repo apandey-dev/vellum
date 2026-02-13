@@ -121,13 +121,13 @@ function loadFromStorage() {
         activeFolderId = folders[0].id;
     }
 
-    // Create first note if none exists - CHANGED TO NewNote
+    // Create first note if none exists - FIXED PLACEHOLDER ISSUE
     if (notes.length === 0) {
         const firstNote = {
             id: generateId(),
-            name: 'NewNote', // Set as default name
+            name: 'NewNote',
             folderId: activeFolderId,
-            content: 'Start typing here...',
+            content: '', // Empty string so placeholder CSS works
             createdAt: Date.now(),
             updatedAt: Date.now(),
             isPinned: false
@@ -628,7 +628,6 @@ function updateShareUI(isPublic) {
         shareLinkSection.classList.add('visible');
         sharePrivateMsg.classList.remove('visible');
         const noteId = activeNoteId || 'default';
-        // UPDATED: Share path to Vercel/share.html
         document.getElementById('shareLinkInput').value = `https://apandey-mindjournal.vercel.app/share.html?id=${noteId}`;
     } else {
         shareToggle.classList.add('private');
@@ -826,15 +825,14 @@ function exportAsText(fileName) {
 
 // --- THEME ---
 function loadTheme() {
-    // Default to 'light' instead of 'dark'
     const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
     html.setAttribute('data-theme', savedTheme);
     if (savedTheme === 'light') {
         themeIcon.classList.remove('ph-sun');
-        themeIcon.classList.add('ph-moon'); // Show moon to switch to dark
+        themeIcon.classList.add('ph-moon');
     } else {
         themeIcon.classList.remove('ph-moon');
-        themeIcon.classList.add('ph-sun'); // Show sun to switch to light
+        themeIcon.classList.add('ph-sun');
     }
 }
 
