@@ -15,11 +15,13 @@
     --bg-panel: #ffffff;
     --bg-glass: rgba(255, 255, 255, 0.95);
 
+
     /* Text Colors */
     --text-primary: #101828;
     /* Dark Blue/Black for text */
     --text-secondary: #667085;
     /* Grey for secondary text */
+    --toggle-text: black;
 
     /* UI Colors */
     --border-color: #eaecf0;
@@ -63,6 +65,7 @@
     --theme-text-inverse: #000000;
     --theme-bg: #141415;
     --theme-border: #2a2a2a;
+    --toggle-text: white;
 
     /* Tooltip Specific */
     --tooltip-bg: #ffffff;
@@ -832,7 +835,7 @@ body {
 
 /* Specific overwrite for Light Mode to ensure text is white on black slider */
 [data-theme="light"] .toggle-option.active {
-    color: #ffffff;
+    color: var(toggle-text);
 }
 
 /* FIXED: Toggle Slider */
@@ -857,7 +860,7 @@ body {
 
 /* Ensure text is white when Green */
 .share-toggle.public .toggle-option.active {
-    color: #ffffff;
+    color: var(--toggle-text);
 }
 
 .share-toggle.private .toggle-slider {
