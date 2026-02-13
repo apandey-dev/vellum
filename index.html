@@ -4,11 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- ========== PAGE TITLE ========== -->
     <title>Playful Notes</title>
 
-    <!-- ========== FAVICON – PLAYFUL NOTEPAD WITH PEN ========== -->
     <link rel="apple-touch-icon" sizes="180x180"
         href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik01IDNDMy44OTU0MyAzIDMgMy44OTU0MyAzIDVWMTlDMzAyMC4xMDQ2IDMgMjAuMTA0NiAyMSAxOVY1QzIxIDMuODk1NDMgMjAuMTA0NiAzIDE5IDNINVoiIGZpbGw9IiMzQjgyRjYiLz48cGF0aCBkPSJNNyA4SDE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTcgMTJIMTciIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNNyAxNkgxMyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik0xNiAxNkwxOSAxMyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjE4LjUiIGN5PSIxNC41IiByPSIxLjUiIGZpbGw9IndoaXRlIi8+PC9zdmc+">
     <link rel="icon" type="image/png" sizes="32x32"
@@ -19,27 +16,21 @@
         href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSAzQzMuODk1NDMgMyAzIDMuODk1NDMgMyA1VjE5QzMwMjAuMTA0NiAzIDIwLjEwNDYgMjEgMTlWNUMyMSAzLjg5NTQzIDIwLjEwNDYgMyAxOSAzSDVaIiBmaWxsPSIjM0I4MkY2Ii8+PHBhdGggZD0iTTcgOEgxNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik03IDEySDE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTcgMTZIMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNMTYgMTZMMTkgMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxOC41IiBjeT0iMTQuNSIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg=="
         type="image/svg+xml">
 
-    <!-- ========== THEME COLOR FOR MOBILE BROWSERS ========== -->
     <meta name="theme-color" content="#3B82F6" media="(prefers-color-scheme: dark)">
     <meta name="theme-color" content="#3B82F6" media="(prefers-color-scheme: light)">
 
-    <!-- ========== GOOGLE FONTS – PLAYFUL, HANDWRITTEN STYLES ========== -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap"
         rel="stylesheet">
-
-    <!-- ========== PHOSPHOR ICONS – MODERN, CLEAN ICON SET ========== -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <!-- ========== EXTERNAL STYLESHEET ========== -->
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 
-    <!-- ========== SIDEBAR – MAIN TOOLBAR ========== -->
     <nav class="sidebar" id="sidebar">
         <div class="icon-circle">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" aria-hidden="true">
@@ -78,16 +69,17 @@
             <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
                 <i class="ph ph-moon" id="themeIcon"></i>
             </div>
+
             <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode">
                 <i class="ph ph-corners-out"></i>
             </div>
         </div>
     </nav>
 
-    <!-- ========== TOP BAR / HEADER ========== -->
     <div class="top-bar-wrapper" id="topBar">
         <header class="glass-header">
             <div class="chips" id="noteChips"></div>
+
             <div class="header-actions">
                 <div class="font-selector-wrapper">
                     <button class="font-selector-btn" id="fontSelectorBtn">
@@ -125,6 +117,7 @@
                         </div>
                     </div>
                 </div>
+
                 <button class="action-btn" id="addNoteBtn" title="New Note"><i class="ph ph-plus"></i></button>
                 <button class="action-btn" id="pinBtn" title="Pin"><i class="ph ph-push-pin"></i></button>
                 <button class="action-btn" id="manageFoldersBtn" title="Manage Folders"><i
@@ -133,29 +126,23 @@
         </header>
     </div>
 
-    <!-- ========== MAIN WRITING AREA ========== -->
     <main class="workspace">
-        <div class="writing-canvas" id="writingCanvas" contenteditable="true"></div>
+        <div class="writing-canvas" id="writingCanvas" contenteditable="true">
+        </div>
     </main>
 
-    <!-- ========== FORMATTING INDICATOR ========== -->
     <div class="formatting-indicator" id="formattingIndicator"></div>
 
-    <!-- ========== ZEN MODE RESTORE PILL ========== -->
     <div class="restore-pill" id="restoreBtn">
         <i class="ph ph-corners-in"></i>
         <span>Exit Focus</span>
     </div>
 
-    <!-- ========== CUSTOM CONTEXT MENU FOR NOTE CHIPS ========== -->
     <div class="context-menu" id="noteContextMenu">
         <div class="context-menu-item" id="moveToFolderItem">Move to Folder</div>
         <div class="context-menu-submenu" id="folderSubmenu"></div>
     </div>
 
-    <!-- ========== MODALS ========== -->
-
-    <!-- Delete Confirmation Modal -->
     <div class="confirm-modal" id="confirmModal">
         <div class="confirm-box">
             <h3>Delete Note?</h3>
@@ -167,7 +154,6 @@
         </div>
     </div>
 
-    <!-- New Note Modal -->
     <div class="form-modal" id="newNoteModal">
         <div class="form-box">
             <h3>Create New Note</h3>
@@ -192,7 +178,6 @@
         </div>
     </div>
 
-    <!-- Manage Folders Modal -->
     <div class="form-modal" id="manageFoldersModal">
         <div class="form-box">
             <h3>Manage Folders</h3>
@@ -201,14 +186,15 @@
                 <input type="text" id="newFolderName" placeholder="Folder name...">
             </div>
             <button class="form-btn primary" id="createFolderBtn">Create Folder</button>
+
             <div class="folder-list" id="folderList"></div>
+
             <div class="form-actions">
                 <button class="form-btn secondary" id="closeFoldersModal">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Folder Delete Confirmation Modal -->
     <div class="confirm-modal" id="confirmFolderDeleteModal">
         <div class="confirm-box">
             <div class="confirm-icon">
@@ -223,11 +209,11 @@
         </div>
     </div>
 
-    <!-- Share Modal -->
     <div class="form-modal" id="shareModal">
         <div class="form-box share-box">
             <h3>Share Note</h3>
             <p class="share-subtitle">Control who can view this note</p>
+
             <div class="share-toggle-wrapper">
                 <div class="share-toggle" id="shareToggle">
                     <div class="toggle-option active" data-value="private">Private</div>
@@ -235,6 +221,7 @@
                     <div class="toggle-slider"></div>
                 </div>
             </div>
+
             <div class="share-link-section" id="shareLinkSection">
                 <label>Public Link</label>
                 <div class="link-input-wrapper">
@@ -245,54 +232,69 @@
                 </div>
                 <p class="share-info"><i class="ph ph-info"></i> Anyone with this link can view this note.</p>
             </div>
+
             <div class="share-private-msg" id="sharePrivateMsg">
                 <i class="ph ph-lock-key"></i>
                 <p>This note is restricted to you only.</p>
             </div>
+
             <div class="form-actions">
                 <button class="form-btn secondary" id="closeShareModal">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Export Modal -->
     <div class="form-modal" id="exportModal">
         <div class="form-box export-box">
             <h3>Export Note</h3>
+
             <div class="form-group">
                 <label>File Name</label>
                 <input type="text" id="exportFileName" placeholder="Enter file name..." value="note">
             </div>
+
             <div class="export-options">
                 <div class="export-card" data-format="pdf">
-                    <div class="export-card-icon"><i class="ph ph-file-pdf"></i></div>
+                    <div class="export-card-icon">
+                        <i class="ph ph-file-pdf"></i>
+                    </div>
                     <h4>PDF</h4>
                     <p>High-quality document</p>
                 </div>
+
                 <div class="export-card" data-format="markdown">
-                    <div class="export-card-icon"><i class="ph ph-file-text"></i></div>
+                    <div class="export-card-icon">
+                        <i class="ph ph-file-text"></i>
+                    </div>
                     <h4>Markdown</h4>
                     <p>.md format</p>
                 </div>
+
                 <div class="export-card" data-format="text">
-                    <div class="export-card-icon"><i class="ph ph-file"></i></div>
+                    <div class="export-card-icon">
+                        <i class="ph ph-file"></i>
+                    </div>
                     <h4>Text</h4>
                     <p>Plain text file</p>
                 </div>
             </div>
+
             <div class="pdf-options" id="pdfOptions">
                 <div class="form-group center">
                     <label>PDF Theme</label>
                     <div class="theme-toggle-pill">
                         <div class="theme-pill-option active" data-theme="dark">
-                            <i class="ph ph-moon"></i><span>Dark</span>
+                            <i class="ph ph-moon"></i>
+                            <span>Dark</span>
                         </div>
                         <div class="theme-pill-option" data-theme="light">
-                            <i class="ph ph-sun"></i><span>Light</span>
+                            <i class="ph ph-sun"></i>
+                            <span>Light</span>
                         </div>
                         <div class="theme-pill-slider"></div>
                     </div>
                 </div>
+
                 <div class="form-group hidden">
                     <label>Include Header/Footer</label>
                     <div class="toggle-switch">
@@ -301,6 +303,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="form-actions export-actions">
                 <button class="form-btn secondary" id="closeExportModal">Cancel</button>
                 <button class="form-btn primary" id="exportConfirmBtn" disabled>Export</button>
@@ -308,38 +311,11 @@
         </div>
     </div>
 
-    <!-- ========== ADDED: MOVE TO FOLDER MODAL ========== -->
-    <div class="form-modal" id="moveFolderModal">
-        <div class="form-box move-folder-box">
-            <h3>Move File</h3>
-            <div class="move-file-info">
-                <p><span class="move-file-label">File Name:</span> <strong id="moveFileName"></strong></p>
-                <p><span class="move-file-label">Current Folder:</span> <span id="moveCurrentFolder"></span></p>
-            </div>
-            <div class="form-group">
-                <label>Move To:</label>
-                <div class="custom-select" id="moveFolderSelectWrapper">
-                    <div class="select-trigger" id="moveFolderSelectTrigger">
-                        <span id="moveSelectedFolderName">Select folder</span>
-                        <i class="ph ph-caret-down"></i>
-                    </div>
-                    <div class="select-options" id="moveFolderSelectOptions"></div>
-                </div>
-            </div>
-            <div class="move-success" id="moveSuccessMessage" style="display: none;">
-                <i class="ph ph-check-circle"></i> Moved Successfully!
-            </div>
-            <div class="form-actions">
-                <button class="form-btn secondary" id="cancelMoveBtn">Cancel</button>
-                <button class="form-btn primary" id="moveConfirmBtn">Move</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========== EXTERNAL JAVASCRIPT ========== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="script.js"></script>
+
+    <script src="app-core.js"></script>
+    <script src="app-editor.js"></script>
 </body>
 
 </html>
