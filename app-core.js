@@ -117,7 +117,7 @@ function loadFromStorage() {
             id: generateId(),
             name: 'Welcome to FocusPad',
             folderId: 'default',
-            content: 'Welcome to FocusPad! 🎨<br><br>Try these <strong>inline formatting commands</strong>:<br><br>Type <code>@head.center.yellow</code> then space for a yellow centered heading<br>Type <code>@color.blue</code> then space for blue text<br>Type <code>@bold</code> then space for bold text<br>Type <code>@italic</code> then space for italic text<br>Type <code>$code</code> then space for code formatting<br><br>Commands work from cursor position forward!',
+            content: 'Welcome to FocusPad! 🎨<br><br>Type freely and use <code>---</code> for a divider line.',
             createdAt: Date.now(),
             updatedAt: Date.now(),
             isPinned: false
@@ -691,9 +691,6 @@ exportConfirmBtn.addEventListener('click', async () => {
 // PDF Generation
 async function exportAsPDF(fileName) {
     try {
-        // Need getCurrentFont from editor file, assuming global scope access or passed logic
-        // For simplicity in split, we access DOM or rely on variable if available.
-        // We will assume default font if function not ready, but it should be.
         const fontName = document.getElementById('currentFont').textContent || 'Fredoka';
         const note = notes.find(n => n.id === activeNoteId);
         const content = writingCanvas.innerHTML;
@@ -719,11 +716,6 @@ async function exportAsPDF(fileName) {
         const contentDiv = document.createElement('div');
         contentDiv.innerHTML = content;
 
-        // Helper to be defined in Editor or copied here.
-        // Since fixListsForPDF is logic-heavy on DOM, we'll implement a basic version here to ensure standalone stability
-        // or expect it in global scope if loaded. 
-        // We will duplicate critical PDF helpers here to ensure robustness of Core.
-
         // Fix Lists
         const divs = contentDiv.querySelectorAll('div');
         divs.forEach(div => {
@@ -738,13 +730,6 @@ async function exportAsPDF(fileName) {
                 div.style.position = 'relative';
                 div.style.display = 'block';
             }
-        });
-
-        // Preserve colors
-        const colorElements = contentDiv.querySelectorAll('[class*="text-"]');
-        colorElements.forEach(el => {
-            const computedColor = window.getComputedStyle(el).color; // This won't work on detached elements easily
-            // Logic: we trust classes are handled by CSS styles.css which has #pdf-export-container rules
         });
 
         tempContainer.appendChild(contentDiv);
@@ -808,33 +793,6 @@ function loadTheme() {
         themeIcon.classList.remove('ph-sun');
         themeIcon.classList.add('ph-moon');
     }
-    // Apply theme compatibility logic logic
-    applyThemeCompatibility(savedTheme);
-}
-
-function applyThemeCompatibility(theme) {
-    const allElements = writingCanvas.querySelectorAll('*');
-    allElements.forEach(el => {
-        const style = el.style;
-        if (style.color && style.color.startsWith('rgb')) {
-            // Simple logic: if light mode and color is very light, darken it. Vice versa.
-            // This relies on visual calculation, keeping simple for core.
-        }
-    });
-    // Specific class flipping
-    if (theme === 'light') {
-        writingCanvas.querySelectorAll('.text-white').forEach(el => {
-            el.style.color = '#101828';
-            el.classList.remove('text-white');
-            el.classList.add('text-color-aware');
-        });
-    } else {
-        writingCanvas.querySelectorAll('.text-black').forEach(el => {
-            el.style.color = '#ffffff';
-            el.classList.remove('text-black');
-            el.classList.add('text-color-aware');
-        });
-    }
 }
 
 themeToggle.addEventListener('click', () => {
@@ -849,7 +807,6 @@ themeToggle.addEventListener('click', () => {
         themeIcon.classList.add('ph-moon');
     }
     localStorage.setItem(THEME_KEY, newTheme);
-    applyThemeCompatibility(newTheme);
 });
 
 // --- FOCUS MODE ---

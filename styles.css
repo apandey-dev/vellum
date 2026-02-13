@@ -21,18 +21,6 @@
     --hover-bg: #27272a;
     --grid-color: #1f1f22;
 
-    /* Color Palette for Theme Compatibility */
-    --color-red: #ef4444;
-    --color-blue: #3b82f6;
-    --color-green: #10b981;
-    --color-yellow: #f59e0b;
-    --color-purple: #8b5cf6;
-    --color-pink: #ec4899;
-    --color-orange: #f97316;
-    --color-gray: #6b7280;
-    --color-black: #000000;
-    --color-white: #ffffff;
-
     /* Theme-aware colors */
     --theme-text: #ffffff;
     --theme-text-inverse: #000000;
@@ -56,24 +44,15 @@
     --hover-bg: #f2f4f7;
     --grid-color: #e4e7ec;
 
+    /* Theme-aware colors for light mode */
     --theme-text: #101828;
     --theme-text-inverse: #ffffff;
     --theme-bg: #ffffff;
     --theme-border: #eaecf0;
 
+    /* Tooltip Specific */
     --tooltip-bg: #000000;
     --tooltip-text: #ffffff;
-
-    --color-red: #dc2626;
-    --color-blue: #1d4ed8;
-    --color-green: #059669;
-    --color-yellow: #d97706;
-    --color-purple: #7c3aed;
-    --color-pink: #db2777;
-    --color-orange: #ea580c;
-    --color-gray: #4b5563;
-    --color-black: #101828;
-    --color-white: #f8fafc;
 }
 
 /* Theme-aware text color classes */
@@ -83,658 +62,6 @@
 
 .text-color-inverse {
     color: var(--theme-text-inverse) !important;
-}
-
-[data-theme="light"] .text-white {
-    color: var(--color-black) !important;
-}
-
-[data-theme="dark"] .text-black {
-    color: var(--color-white) !important;
-}
-
-.text-black,
-[data-theme="dark"] .text-black {
-    color: var(--color-white) !important;
-}
-
-.text-white,
-[data-theme="light"] .text-white {
-    color: var(--color-black) !important;
-}
-
-[data-theme="light"] .writing-canvas *:not([class*="text-"]) {
-    color: var(--color-black) !important;
-}
-
-[data-theme="dark"] .writing-canvas *:not([class*="text-"]) {
-    color: var(--color-white) !important;
-}
-
-[data-theme="light"] .writing-canvas .text-red {
-    color: var(--color-red) !important;
-}
-
-[data-theme="dark"] .writing-canvas .text-red {
-    color: var(--color-red) !important;
-}
-
-/* --- INLINE FORMATTING COMMANDS STYLES --- */
-/* Color Classes for inline formatting */
-.text-color-red {
-    color: #ef4444 !important;
-}
-
-.text-color-tomato {
-    color: #ff6347 !important;
-}
-
-.text-color-blue {
-    color: #3b82f6 !important;
-}
-
-.text-color-green {
-    color: #10b981 !important;
-}
-
-.text-color-yellow {
-    color: #f59e0b !important;
-}
-
-.text-color-purple {
-    color: #8b5cf6 !important;
-}
-
-.text-color-pink {
-    color: #ec4899 !important;
-}
-
-.text-color-orange {
-    color: #f97316 !important;
-}
-
-.text-color-gray {
-    color: #6b7280 !important;
-}
-
-.text-color-black {
-    color: #000000 !important;
-}
-
-.text-color-white {
-    color: #ffffff !important;
-}
-
-.text-color-cyan {
-    color: #00ffff !important;
-}
-
-.text-color-magenta {
-    color: #ff00ff !important;
-}
-
-.text-color-brown {
-    color: #a52a2a !important;
-}
-
-.text-color-gold {
-    color: #ffd700 !important;
-}
-
-.text-color-silver {
-    color: #c0c0c0 !important;
-}
-
-.text-color-violet {
-    color: #ee82ee !important;
-}
-
-.text-color-indigo {
-    color: #4b0082 !important;
-}
-
-.text-color-teal {
-    color: #008080 !important;
-}
-
-.text-color-maroon {
-    color: #800000 !important;
-}
-
-.text-color-navy {
-    color: #000080 !important;
-}
-
-.text-color-olive {
-    color: #808000 !important;
-}
-
-.text-color-lime {
-    color: #00ff00 !important;
-}
-
-.text-color-aqua {
-    color: #00ffff !important;
-}
-
-.text-color-fuchsia {
-    color: #ff00ff !important;
-}
-
-.text-color-coral {
-    color: #ff7f50 !important;
-}
-
-.text-color-orangered {
-    color: #ff4500 !important;
-}
-
-.text-color-deeppink {
-    color: #ff1493 !important;
-}
-
-.text-color-mediumvioletred {
-    color: #c71585 !important;
-}
-
-.text-color-darkviolet {
-    color: #9400d3 !important;
-}
-
-.text-color-darkorchid {
-    color: #9932cc !important;
-}
-
-.text-color-darkmagenta {
-    color: #8b008b !important;
-}
-
-.text-color-darkred {
-    color: #8b0000 !important;
-}
-
-.text-color-darkgreen {
-    color: #006400 !important;
-}
-
-.text-color-darkblue {
-    color: #00008b !important;
-}
-
-.text-color-darkcyan {
-    color: #008b8b !important;
-}
-
-.text-color-darkgoldenrod {
-    color: #b8860b !important;
-}
-
-.text-color-darkgray {
-    color: #a9a9a9 !important;
-}
-
-.text-color-darkslategray {
-    color: #2f4f4f !important;
-}
-
-.text-color-lightslategray {
-    color: #778899 !important;
-}
-
-.text-color-lightgray {
-    color: #d3d3d3 !important;
-}
-
-.text-color-whitesmoke {
-    color: #f5f5f5 !important;
-}
-
-.text-color-snow {
-    color: #fffafa !important;
-}
-
-.text-color-ivory {
-    color: #fffff0 !important;
-}
-
-.text-color-honeydew {
-    color: #f0fff0 !important;
-}
-
-.text-color-mintcream {
-    color: #f5fffa !important;
-}
-
-.text-color-azure {
-    color: #f0ffff !important;
-}
-
-.text-color-aliceblue {
-    color: #f0f8ff !important;
-}
-
-.text-color-ghostwhite {
-    color: #f8f8ff !important;
-}
-
-.text-color-lavender {
-    color: #e6e6fa !important;
-}
-
-.text-color-lavenderblush {
-    color: #fff0f5 !important;
-}
-
-.text-color-mistyrose {
-    color: #ffe4e1 !important;
-}
-
-.text-color-seashell {
-    color: #fff5ee !important;
-}
-
-.text-color-oldlace {
-    color: #fdf5e6 !important;
-}
-
-.text-color-linen {
-    color: #faf0e6 !important;
-}
-
-.text-color-beige {
-    color: #f5f5dc !important;
-}
-
-.text-color-floralwhite {
-    color: #fffaf0 !important;
-}
-
-.text-color-cornsilk {
-    color: #fff8dc !important;
-}
-
-.text-color-lemonchiffon {
-    color: #fffacd !important;
-}
-
-.text-color-lightyellow {
-    color: #ffffe0 !important;
-}
-
-.text-color-lightgoldenrodyellow {
-    color: #fafad2 !important;
-}
-
-.text-color-papayawhip {
-    color: #ffefd5 !important;
-}
-
-.text-color-peachpuff {
-    color: #ffdab9 !important;
-}
-
-.text-color-bisque {
-    color: #ffe4c4 !important;
-}
-
-.text-color-antiquewhite {
-    color: #faebd7 !important;
-}
-
-.text-color-blanchedalmond {
-    color: #ffebcd !important;
-}
-
-.text-color-wheat {
-    color: #f5deb3 !important;
-}
-
-.text-color-navajowhite {
-    color: #ffdead !important;
-}
-
-.text-color-tan {
-    color: #d2b48c !important;
-}
-
-.text-color-burlywood {
-    color: #deb887 !important;
-}
-
-.text-color-sandybrown {
-    color: #f4a460 !important;
-}
-
-.text-color-peru {
-    color: #cd853f !important;
-}
-
-.text-color-chocolate {
-    color: #d2691e !important;
-}
-
-.text-color-saddlebrown {
-    color: #8b4513 !important;
-}
-
-.text-color-sienna {
-    color: #a0522d !important;
-}
-
-.text-color-rosybrown {
-    color: #bc8f8f !important;
-}
-
-.text-color-firebrick {
-    color: #b22222 !important;
-}
-
-.text-color-indianred {
-    color: #cd5c5c !important;
-}
-
-.text-color-salmon {
-    color: #fa8072 !important;
-}
-
-.text-color-lightsalmon {
-    color: #ffa07a !important;
-}
-
-.text-color-darksalmon {
-    color: #e9967a !important;
-}
-
-.text-color-lightcoral {
-    color: #f08080 !important;
-}
-
-.text-color-palevioletred {
-    color: #db7093 !important;
-}
-
-.text-color-hotpink {
-    color: #ff69b4 !important;
-}
-
-.text-color-lightpink {
-    color: #ffb6c1 !important;
-}
-
-.text-color-plum {
-    color: #dda0dd !important;
-}
-
-.text-color-thistle {
-    color: #d8bfd8 !important;
-}
-
-.text-color-orchid {
-    color: #da70d6 !important;
-}
-
-.text-color-mediumorchid {
-    color: #ba55d3 !important;
-}
-
-.text-color-mediumpurple {
-    color: #9370db !important;
-}
-
-.text-color-slateblue {
-    color: #6a5acd !important;
-}
-
-.text-color-mediumslateblue {
-    color: #7b68ee !important;
-}
-
-.text-color-darkslateblue {
-    color: #483d8b !important;
-}
-
-.text-color-midnightblue {
-    color: #191970 !important;
-}
-
-.text-color-royalblue {
-    color: #4169e1 !important;
-}
-
-.text-color-steelblue {
-    color: #4682b4 !important;
-}
-
-.text-color-dodgerblue {
-    color: #1e90ff !important;
-}
-
-.text-color-deepskyblue {
-    color: #00bfff !important;
-}
-
-.text-color-skyblue {
-    color: #87ceeb !important;
-}
-
-.text-color-lightskyblue {
-    color: #87cefa !important;
-}
-
-.text-color-lightblue {
-    color: #add8e6 !important;
-}
-
-.text-color-powderblue {
-    color: #b0e0e6 !important;
-}
-
-.text-color-paleturquoise {
-    color: #afeeee !important;
-}
-
-.text-color-lightcyan {
-    color: #e0ffff !important;
-}
-
-.text-color-cadetblue {
-    color: #5f9ea0 !important;
-}
-
-.text-color-darkturquoise {
-    color: #00ced1 !important;
-}
-
-.text-color-mediumturquoise {
-    color: #48d1cc !important;
-}
-
-.text-color-turquoise {
-    color: #40e0d0 !important;
-}
-
-.text-color-aquamarine {
-    color: #7fffd4 !important;
-}
-
-.text-color-seagreen {
-    color: #2e8b57 !important;
-}
-
-.text-color-mediumseagreen {
-    color: #3cb371 !important;
-}
-
-.text-color-springgreen {
-    color: #00ff7f !important;
-}
-
-.text-color-lawngreen {
-    color: #7cfc00 !important;
-}
-
-.text-color-chartreuse {
-    color: #7fff00 !important;
-}
-
-.text-color-greenyellow {
-    color: #adff2f !important;
-}
-
-.text-color-palegreen {
-    color: #98fb98 !important;
-}
-
-.text-color-lightgreen {
-    color: #90ee90 !important;
-}
-
-.text-color-mediumspringgreen {
-    color: #00fa9a !important;
-}
-
-.text-color-darkseagreen {
-    color: #8fbc8f !important;
-}
-
-.text-color-forestgreen {
-    color: #228b22 !important;
-}
-
-.text-color-olivedrab {
-    color: #6b8e23 !important;
-}
-
-.text-color-darkolivegreen {
-    color: #556b2f !important;
-}
-
-.text-color-yellowgreen {
-    color: #9acd32 !important;
-}
-
-.text-color-khaki {
-    color: #f0e68c !important;
-}
-
-.text-color-darkkhaki {
-    color: #bdb76b !important;
-}
-
-.text-color-rebeccapurple {
-    color: #663399 !important;
-}
-
-.text-color-cornflowerblue {
-    color: #6495ed !important;
-}
-
-.text-color-mediumaquamarine {
-    color: #66cdaa !important;
-}
-
-.text-color-darkslategrey {
-    color: #2f4f4f !important;
-}
-
-.text-color-dimgrey {
-    color: #696969 !important;
-}
-
-.text-color-grey {
-    color: #808080 !important;
-}
-
-.text-color-lightgrey {
-    color: #d3d3d3 !important;
-}
-
-.text-color-lightslategrey {
-    color: #778899 !important;
-}
-
-.text-color-slategrey {
-    color: #708090 !important;
-}
-
-/* Inline Heading Styles - VISUAL only, not semantic */
-.inline-head {
-    font-size: 32px !important;
-    font-weight: 600 !important;
-    display: inline !important;
-    line-height: 1.3 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-.inline-subhead {
-    font-size: 24px !important;
-    font-weight: 600 !important;
-    display: inline !important;
-    line-height: 1.4 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-.inline-format {
-    display: inline !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: inherit !important;
-    vertical-align: baseline !important;
-}
-
-.format-bold {
-    font-weight: 700 !important;
-    display: inline !important;
-}
-
-.format-italic {
-    font-style: italic !important;
-    display: inline !important;
-}
-
-.format-center {
-    text-align: center !important;
-    display: inline-block !important;
-    width: 100% !important;
-}
-
-.format-code {
-    font-family: 'Courier New', monospace !important;
-    background-color: rgba(0, 0, 0, 0.1) !important;
-    padding: 2px 6px !important;
-    border-radius: 4px !important;
-    display: inline !important;
-    font-size: 0.9em !important;
-    margin: 0 !important;
-}
-
-[data-theme="light"] .format-code {
-    background-color: rgba(0, 0, 0, 0.05) !important;
-}
-
-[data-theme="dark"] .format-code {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-.combined-format {
-    display: inline !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-.zwsp {
-    display: inline;
-    color: transparent;
-    font-size: 0;
-    line-height: 0;
-    width: 0;
-    height: 0;
-}
-
-.formatting-active {
-    outline: 1px dashed rgba(59, 130, 246, 0.5) !important;
 }
 
 * {
@@ -794,6 +121,7 @@ body {
     font-size: 24px;
 }
 
+/* Tool Group */
 .tool-group {
     display: flex;
     flex-direction: column;
@@ -809,6 +137,7 @@ body {
     margin: 20px 0;
 }
 
+/* Tool Buttons */
 .tool-btn {
     position: relative;
     width: 42px;
@@ -834,6 +163,7 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* Tooltip Styling */
 .tool-btn[data-tooltip]::after {
     content: attr(data-tooltip);
     position: absolute;
@@ -881,6 +211,7 @@ body {
     transform: translateY(-50%) translateX(8px);
 }
 
+/* Bottom Actions */
 .bottom-actions {
     margin-top: auto;
     display: flex;
@@ -913,6 +244,7 @@ body {
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
 }
 
+/* Chips */
 .chips {
     display: flex;
     gap: 6px;
@@ -927,7 +259,6 @@ body {
     display: none;
 }
 
-/* --- MODIFIED: chip now positioned relative for move button, added right padding --- */
 .chip {
     position: relative;
     padding: 8px 30px 8px 16px;
@@ -953,7 +284,7 @@ body {
     color: var(--bg-canvas);
 }
 
-/* --- ADDED: Move button inside chip (top-right) --- */
+/* Move button inside chip (top-right) */
 .chip .move-chip-btn {
     position: absolute;
     top: 5px;
@@ -991,7 +322,6 @@ body {
     cursor: not-allowed;
 }
 
-/* --- End move button --- */
 .chip-content {
     display: flex;
     align-items: center;
@@ -1006,6 +336,7 @@ body {
     align-items: center;
 }
 
+/* Font Selector Button */
 .font-selector-btn {
     min-width: 180px;
     height: 40px;
@@ -1045,6 +376,7 @@ body {
     transform: rotate(180deg);
 }
 
+/* Font Dropdown Menu */
 .font-dropdown {
     position: absolute;
     top: 110%;
@@ -1108,6 +440,7 @@ body {
     font-size: 16px;
 }
 
+/* Font Preview Styling */
 .font-option[data-font="Fredoka"] {
     font-family: 'Fredoka', sans-serif;
 }
@@ -1144,6 +477,7 @@ body {
     text-align: left;
 }
 
+/* Other action buttons */
 .action-btn {
     background: transparent;
     border: none;
@@ -1200,13 +534,14 @@ body {
 }
 
 [data-theme="light"] .writing-canvas {
-    color: var(--color-black) !important;
+    color: var(--text-primary) !important;
 }
 
 [data-theme="dark"] .writing-canvas {
-    color: var(--color-white) !important;
+    color: var(--text-primary) !important;
 }
 
+/* Ensure all children respect width */
 .writing-canvas * {
     max-width: 100% !important;
     box-sizing: border-box !important;
@@ -1220,106 +555,7 @@ body {
     white-space: pre-line;
 }
 
-/* --- Formatting Styles --- */
-.text-red {
-    color: var(--color-red) !important;
-}
-
-.text-blue {
-    color: var(--color-blue) !important;
-}
-
-.text-green {
-    color: var(--color-green) !important;
-}
-
-.text-yellow {
-    color: var(--color-yellow) !important;
-}
-
-.text-purple {
-    color: var(--color-purple) !important;
-}
-
-.text-pink {
-    color: var(--color-pink) !important;
-}
-
-.text-orange {
-    color: var(--color-orange) !important;
-}
-
-.text-gray {
-    color: var(--color-gray) !important;
-}
-
-.text-black {
-    color: var(--text-primary) !important;
-}
-
-.text-white {
-    color: var(--text-primary) !important;
-}
-
-.text-bold {
-    font-weight: bold;
-}
-
-.text-italic {
-    font-style: italic;
-}
-
-.text-underline {
-    text-decoration: underline;
-}
-
-.text-strike {
-    text-decoration: line-through;
-}
-
-.text-left {
-    text-align: left;
-}
-
-.text-center {
-    text-align: center;
-    display: block;
-}
-
-.text-right {
-    text-align: right;
-    display: block;
-}
-
-.heading-main {
-    font-size: 32px;
-    font-weight: bold;
-    margin: 24px 0 16px 0;
-    display: block;
-    line-height: 1.3;
-}
-
-.heading-sub {
-    font-size: 24px;
-    font-weight: bold;
-    margin: 20px 0 12px 0;
-    display: block;
-    line-height: 1.4;
-}
-
-.code-block {
-    font-family: 'Courier New', monospace;
-    background: rgba(0, 0, 0, 0.1);
-    padding: 16px;
-    border-radius: 8px;
-    border-left: 4px solid var(--accent-color);
-    margin: 16px 0;
-    white-space: pre-wrap;
-    word-break: break-all;
-    display: block;
-    line-height: 1.5;
-}
-
+/* Horizontal Rule Styles */
 .horizontal-line {
     display: block;
     width: 100%;
@@ -1336,60 +572,6 @@ body {
 .horizontal-line.dashed {
     background: none;
     border-top: 2px dashed var(--border-color);
-}
-
-.text-center,
-.text-left,
-.text-right {
-    margin: 8px 0;
-    line-height: 1.6;
-}
-
-.chip-tag {
-    display: inline-block;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
-    margin: 0 4px;
-    user-select: none;
-    transition: all 0.2s;
-}
-
-.chip-red {
-    background-color: rgba(239, 68, 68, 0.15);
-    color: var(--color-red) !important;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.chip-blue {
-    background-color: rgba(59, 130, 246, 0.15);
-    color: var(--color-blue) !important;
-    border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-.chip-green {
-    background-color: rgba(16, 185, 129, 0.15);
-    color: var(--color-green) !important;
-    border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.chip-yellow {
-    background-color: rgba(245, 158, 11, 0.15);
-    color: var(--color-yellow) !important;
-    border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.chip-purple {
-    background-color: rgba(139, 92, 246, 0.15);
-    color: var(--color-purple) !important;
-    border: 1px solid rgba(139, 92, 246, 0.3);
-}
-
-.chip-pink {
-    background-color: rgba(236, 72, 153, 0.15);
-    color: var(--color-pink) !important;
-    border: 1px solid rgba(236, 72, 153, 0.3);
 }
 
 /* --- Formatting Indicator (Toast) --- */
@@ -1478,12 +660,7 @@ body {
     font-size: 18px;
 }
 
-.font-marker,
-.active-font-span,
-.cursor-font-marker {
-    display: inline;
-}
-
+/* Bullet List - Inline, No Extra Spacing */
 .bullet-list {
     display: inline;
     padding: 0;
@@ -2355,9 +1532,7 @@ body {
     }
 }
 
-/* ==================================================================================== */
-
-/* Font Dropdown Scrollbar */
+/* Scrollbar Styling */
 .font-dropdown::-webkit-scrollbar,
 .dropdown-menu::-webkit-scrollbar,
 .folder-list::-webkit-scrollbar {
@@ -2578,7 +1753,113 @@ body {
     line-height: 1.6 !important;
 }
 
-/* ... (all PDF export styles remain unchanged) ... */
+#pdf-export-container .horizontal-line {
+    height: 2px !important;
+    background: currentColor !important;
+    opacity: 0.3 !important;
+    margin: 30px 0 !important;
+    border: none !important;
+    display: block !important;
+    width: 100% !important;
+}
+
+#pdf-export-container .horizontal-line.thick {
+    height: 4px !important;
+}
+
+#pdf-export-container .horizontal-line.dashed {
+    background: none !important;
+    border-top: 2px dashed currentColor !important;
+}
+
+#pdf-export-container .pdf-list-item {
+    margin-left: 40px !important;
+    padding: 2px 0 !important;
+    position: relative !important;
+    display: block !important;
+}
+
+#pdf-export-container .pdf-list-item.bullet:before {
+    content: '•' !important;
+    position: absolute !important;
+    left: -20px !important;
+    color: inherit !important;
+}
+
+#pdf-export-container .pdf-list-item.numbered {
+    counter-increment: list-item !important;
+}
+
+#pdf-export-container .pdf-list-item.numbered:before {
+    content: counter(list-item) '. ' !important;
+    position: absolute !important;
+    left: -30px !important;
+    color: inherit !important;
+}
+
+#pdf-export-container>* {
+    margin: 8px 0 !important;
+}
+
+#pdf-export-container[data-font="Fredoka"] {
+    font-family: 'Fredoka', sans-serif !important;
+}
+
+#pdf-export-container[data-font="Kalam"] {
+    font-family: 'Kalam', cursive !important;
+}
+
+#pdf-export-container[data-font="Playpen Sans"] {
+    font-family: 'Playpen Sans', cursive !important;
+}
+
+#pdf-export-container[data-font="Patrick Hand"] {
+    font-family: 'Patrick Hand', cursive !important;
+}
+
+#pdf-export-container[data-font="Baloo 2"] {
+    font-family: 'Baloo 2', cursive !important;
+}
+
+#pdf-export-container[data-font="Comic Neue"] {
+    font-family: 'Comic Neue', cursive !important;
+}
+
+#pdf-export-container[data-font="Comic Sans MS"] {
+    font-family: 'Comic Sans MS', cursive, sans-serif !important;
+}
+
+#pdf-export-container[data-theme="dark"] {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+}
+
+#pdf-export-container[data-theme="light"] {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+
+.writing-canvas div[style*="margin-left"] {
+    margin-left: 40px !important;
+    padding: 2px 0 !important;
+    position: relative !important;
+}
+
+.writing-canvas div[style*="margin-left"]:before {
+    content: '•' !important;
+    position: absolute !important;
+    left: -20px !important;
+    color: var(--text-primary) !important;
+}
+
+.writing-canvas div[style*="margin-left"]:has(> text:first-child[value*="."]) {
+    counter-increment: list-item !important;
+}
+
+.writing-canvas div[style*="margin-left"]:has(> text:first-child[value*="."]):before {
+    content: counter(list-item) '. ' !important;
+    counter-increment: list-item !important;
+}
 
 /* ==================== CUSTOM CONTEXT MENU ==================== */
 .context-menu {
