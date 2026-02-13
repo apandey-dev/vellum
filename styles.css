@@ -10,7 +10,34 @@
 
 /* --- CSS VARIABLES --- */
 :root {
-    /* Dark Mode (Default) */
+    /* LIGHT Mode (Default Now) */
+    --bg-canvas: #f2f4f7;
+    --bg-panel: #ffffff;
+    --bg-glass: rgba(255, 255, 255, 0.95);
+    --text-primary: #101828;
+    --text-secondary: #667085;
+    --border-color: #eaecf0;
+    --accent-color: #000000;
+    --hover-bg: #f2f4f7;
+    --grid-color: #e4e7ec;
+
+    /* Theme-aware colors */
+    --theme-text: #101828;
+    --theme-text-inverse: #ffffff;
+    --theme-bg: #ffffff;
+    --theme-border: #eaecf0;
+
+    /* Tooltip Specific */
+    --tooltip-bg: #000000;
+    --tooltip-text: #ffffff;
+
+    /* Pinned Note Colors */
+    --pinned-border: #f59e0b;
+    --pinned-bg: rgba(245, 158, 11, 0.1);
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] {
     --bg-canvas: #09090b;
     --bg-panel: #141415;
     --bg-glass: rgba(20, 20, 21, 0.95);
@@ -30,33 +57,6 @@
     /* Tooltip Specific */
     --tooltip-bg: #ffffff;
     --tooltip-text: #000000;
-
-    /* Pinned Note Colors */
-    --pinned-border: #f59e0b;
-    --pinned-bg: rgba(245, 158, 11, 0.1);
-}
-
-/* Light Mode */
-[data-theme="light"] {
-    --bg-canvas: #f2f4f7;
-    --bg-panel: #ffffff;
-    --bg-glass: rgba(255, 255, 255, 0.95);
-    --text-primary: #101828;
-    --text-secondary: #667085;
-    --border-color: #eaecf0;
-    --accent-color: #000000;
-    --hover-bg: #f2f4f7;
-    --grid-color: #e4e7ec;
-
-    /* Theme-aware colors for light mode */
-    --theme-text: #101828;
-    --theme-text-inverse: #ffffff;
-    --theme-bg: #ffffff;
-    --theme-border: #eaecf0;
-
-    /* Tooltip Specific */
-    --tooltip-bg: #000000;
-    --tooltip-text: #ffffff;
 }
 
 /* Theme-aware text color classes */

@@ -738,7 +738,7 @@ async function exportAsPDF(fileName) {
         const fontName = document.getElementById('currentFont').textContent || 'Fredoka';
         const note = notes.find(n => n.id === activeNoteId);
         const content = writingCanvas.innerHTML;
-        const selectedTheme = themeTogglePill.dataset.theme || 'dark';
+        const selectedTheme = themeTogglePill.dataset.theme || 'light';
 
         const tempContainer = document.createElement('div');
         tempContainer.id = 'pdf-export-container';
@@ -826,14 +826,15 @@ function exportAsText(fileName) {
 
 // --- THEME ---
 function loadTheme() {
-    const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+    // Default to 'light' instead of 'dark'
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
     html.setAttribute('data-theme', savedTheme);
     if (savedTheme === 'light') {
-        themeIcon.classList.remove('ph-moon');
-        themeIcon.classList.add('ph-sun');
-    } else {
         themeIcon.classList.remove('ph-sun');
-        themeIcon.classList.add('ph-moon');
+        themeIcon.classList.add('ph-moon'); // Show moon to switch to dark
+    } else {
+        themeIcon.classList.remove('ph-moon');
+        themeIcon.classList.add('ph-sun'); // Show sun to switch to light
     }
 }
 
@@ -842,11 +843,11 @@ themeToggle.addEventListener('click', () => {
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', newTheme);
     if (newTheme === 'light') {
-        themeIcon.classList.remove('ph-moon');
-        themeIcon.classList.add('ph-sun');
-    } else {
         themeIcon.classList.remove('ph-sun');
         themeIcon.classList.add('ph-moon');
+    } else {
+        themeIcon.classList.remove('ph-moon');
+        themeIcon.classList.add('ph-sun');
     }
     localStorage.setItem(THEME_KEY, newTheme);
 });
@@ -911,3 +912,17 @@ setupEnterKeySubmission('newNoteName', 'createNewNote');       // New Note
 setupEnterKeySubmission('newFolderName', 'createFolderBtn');   // New Folder
 setupEnterKeySubmission('renameNoteInput', 'confirmRenameBtn'); // Rename Note
 setupEnterKeySubmission('exportFileName', 'exportConfirmBtn'); // Export File
+
+// --- INITIALIZATION CALL ---
+function init() {
+    loadTheme();
+    loadFromStorage();
+    renderFolderList();
+    renderNoteChips();
+    loadActiveNote();
+    // Default Font Setup
+    const current = getCurrentFont();
+    document.getElementById('currentFont').textContent = current;
+}
+
+init();
