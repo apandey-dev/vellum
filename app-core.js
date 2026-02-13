@@ -121,13 +121,13 @@ function loadFromStorage() {
         activeFolderId = folders[0].id;
     }
 
-    // Create first note if none exists
+    // Create first note if none exists - CHANGED TO NewNote
     if (notes.length === 0) {
         const firstNote = {
             id: generateId(),
-            name: 'Welcome to FocusPad',
+            name: 'NewNote', // Set as default name
             folderId: activeFolderId,
-            content: 'Welcome to FocusPad! 🎨<br><br>Type freely and use <code>---</code> for a divider line.',
+            content: 'Start typing here...',
             createdAt: Date.now(),
             updatedAt: Date.now(),
             isPinned: false
@@ -628,7 +628,8 @@ function updateShareUI(isPublic) {
         shareLinkSection.classList.add('visible');
         sharePrivateMsg.classList.remove('visible');
         const noteId = activeNoteId || 'default';
-        document.getElementById('shareLinkInput').value = `https://focuspad.app/share/${noteId}`;
+        // UPDATED: Share path to Vercel/share.html
+        document.getElementById('shareLinkInput').value = `https://apandey-mindjournal.vercel.app/share.html?id=${noteId}`;
     } else {
         shareToggle.classList.add('private');
         shareToggle.classList.remove('public');
