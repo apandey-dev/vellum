@@ -874,3 +874,39 @@ document.addEventListener('fullscreenchange', () => {
         toggleFocus();
     }
 });
+
+// --- GLOBAL SHORTCUTS: ESC & ENTER ---
+
+// 1. ESC to Close Modals
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalStack.length > 0) {
+        const topModal = modalStack.pop(); // Remove from stack
+        if (topModal) {
+            topModal.classList.remove('show');
+            // Cleanup specific modals if needed
+            if (topModal.id === 'confirmFolderDeleteModal') {
+                delete topModal.dataset.pendingFolderId;
+            }
+        }
+    }
+});
+
+// 2. Enter to Submit in Modals
+function setupEnterKeySubmission(inputId, buttonId) {
+    const input = document.getElementById(inputId);
+    const btn = document.getElementById(buttonId);
+    if (input && btn) {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btn.click();
+            }
+        });
+    }
+}
+
+// Setup Enter keys for specific inputs
+setupEnterKeySubmission('newNoteName', 'createNewNote');       // New Note
+setupEnterKeySubmission('newFolderName', 'createFolderBtn');   // New Folder
+setupEnterKeySubmission('renameNoteInput', 'confirmRenameBtn'); // Rename Note
+setupEnterKeySubmission('exportFileName', 'exportConfirmBtn'); // Export File

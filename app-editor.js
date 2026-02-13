@@ -412,4 +412,15 @@ function moveNoteToFolder(nId, fId) {
 
 // --- INITIALIZATION CALL ---
 // This runs after both scripts are loaded and core functions are available
+function init() {
+    loadTheme();
+    loadFromStorage();
+    renderFolderList();
+    renderNoteChips();
+    loadActiveNote();
+    // Default Font Setup
+    const current = getCurrentFont();
+    document.getElementById('currentFont').textContent = current;
+}
+
 init();
