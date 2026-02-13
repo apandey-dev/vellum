@@ -32,6 +32,10 @@ const includeHeaderFooter = document.getElementById('includeHeaderFooter');
 const confirmFolderDeleteModal = document.getElementById('confirmFolderDeleteModal');
 const cancelFolderDeleteBtn = document.getElementById('cancelFolderDelete');
 const confirmFolderDeleteBtn = document.getElementById('confirmFolderDelete');
+const renameNoteModal = document.getElementById('renameNoteModal');
+const renameNoteInput = document.getElementById('renameNoteInput');
+const confirmRenameBtn = document.getElementById('confirmRenameBtn');
+const cancelRenameBtn = document.getElementById('cancelRenameBtn');
 
 // Button elements
 const exportBtn = document.getElementById('exportBtn');
@@ -108,7 +112,13 @@ function loadFromStorage() {
 
     // Initialize default folder if none exists
     if (folders.length === 0) {
-        folders.push({ id: 'default', name: 'Default', isDefault: true });
+        folders.push({ id: 'folder_general', name: 'General', isDefault: true });
+        activeFolderId = 'folder_general';
+    }
+
+    // Ensure active folder exists in data
+    if (!folders.find(f => f.id === activeFolderId)) {
+        activeFolderId = folders[0].id;
     }
 
     // Create first note if none exists
@@ -116,7 +126,7 @@ function loadFromStorage() {
         const firstNote = {
             id: generateId(),
             name: 'Welcome to FocusPad',
-            folderId: 'default',
+            folderId: activeFolderId,
             content: 'Welcome to FocusPad! 🎨<br><br>Type freely and use <code>---</code> for a divider line.',
             createdAt: Date.now(),
             updatedAt: Date.now(),
@@ -184,6 +194,16 @@ function deleteNote(noteId) {
         saveToStorage();
         renderNoteChips();
         loadActiveNote();
+    }
+}
+
+function renameNote(noteId, newName) {
+    const note = notes.find(n => n.id === noteId);
+    if (note) {
+        note.name = newName;
+        saveToStorage();
+        renderNoteChips();
+        showFormattingIndicator('Note renamed');
     }
 }
 
@@ -268,6 +288,7 @@ function togglePinNote() {
         note.isPinned = !note.isPinned;
         saveToStorage();
         updatePinButton();
+        renderNoteChips(); // Re-render to show visual pin on chip
         showFormattingIndicator(note.isPinned ? 'Note pinned' : 'Note unpinned');
     }
 }
@@ -284,11 +305,11 @@ function createFolder(name) {
 }
 
 function deleteFolder(folderId) {
-    if (folderId === 'default') {
+    const folder = folders.find(f => f.id === folderId);
+    if (folder.isDefault) {
         showFormattingIndicator('Cannot delete default folder!');
         return;
     }
-    const folder = folders.find(f => f.id === folderId);
     const folderNotes = notes.filter(n => n.folderId === folderId);
     const modal = document.getElementById('confirmFolderDeleteModal');
     const titleEl = document.getElementById('folderDeleteTitle');
@@ -296,7 +317,7 @@ function deleteFolder(folderId) {
 
     titleEl.textContent = `Delete "${folder.name}"?`;
     if (folderNotes.length > 0) {
-        messageEl.textContent = `${folderNotes.length} note(s) will be moved to Default folder.`;
+        messageEl.textContent = `${folderNotes.length} note(s) will be moved to General folder.`;
     } else {
         messageEl.textContent = 'This folder will be deleted.';
     }
@@ -337,11 +358,15 @@ function renderNoteChips() {
         noteChips.appendChild(emptyChip);
         return;
     }
+
+    // Sort pinned notes first
+    folderNotes.sort((a, b) => (b.isPinned === true) - (a.isPinned === true));
+
     folderNotes.forEach(note => {
         const chip = document.createElement('div');
         chip.className = 'chip';
         if (note.id === activeNoteId) chip.classList.add('active');
-        if (note.isPinned) chip.classList.add('pinned-chip');
+        if (note.isPinned) chip.classList.add('pinned');
 
         chip.dataset.noteId = note.id; // For context menu
 
@@ -480,6 +505,22 @@ newNoteModal.addEventListener('click', (e) => {
     }
 });
 
+// Rename Note
+confirmRenameBtn.addEventListener('click', () => {
+    const newName = renameNoteInput.value.trim();
+    if (newName && window.contextMenuNoteId) {
+        renameNote(window.contextMenuNoteId, newName);
+        renameNoteModal.classList.remove('show');
+        const index = modalStack.indexOf(renameNoteModal);
+        if (index > -1) modalStack.splice(index, 1);
+    }
+});
+cancelRenameBtn.addEventListener('click', () => {
+    renameNoteModal.classList.remove('show');
+    const index = modalStack.indexOf(renameNoteModal);
+    if (index > -1) modalStack.splice(index, 1);
+});
+
 // Delete Note
 deleteBtn.addEventListener('click', () => {
     if (!activeNoteId) { showFormattingIndicator('No note to delete'); return; }
@@ -546,10 +587,12 @@ cancelFolderDeleteBtn.addEventListener('click', () => {
 confirmFolderDeleteBtn.addEventListener('click', () => {
     const folderId = confirmFolderDeleteModal.dataset.pendingFolderId;
     if (folderId) {
-        notes.forEach(note => { if (note.folderId === folderId) note.folderId = 'default'; });
+        // Move notes to default folder (which is guaranteed to exist as 'folder_general' or first in list)
+        const defaultFolderId = folders[0].id;
+        notes.forEach(note => { if (note.folderId === folderId) note.folderId = defaultFolderId; });
         const index = folders.findIndex(f => f.id === folderId);
         if (index > -1) folders.splice(index, 1);
-        if (activeFolderId === folderId) activeFolderId = 'default';
+        if (activeFolderId === folderId) activeFolderId = defaultFolderId;
         saveToStorage();
         renderFolderList();
         renderNoteChips();
@@ -716,7 +759,6 @@ async function exportAsPDF(fileName) {
         const contentDiv = document.createElement('div');
         contentDiv.innerHTML = content;
 
-        // Fix Lists
         const divs = contentDiv.querySelectorAll('div');
         divs.forEach(div => {
             const text = div.textContent || '';
@@ -757,12 +799,11 @@ async function exportAsPDF(fileName) {
 
 function exportAsMarkdown(fileName) {
     let content = writingCanvas.innerHTML;
-    // Basic replacements
     let markdown = content
         .replace(/<div[^>]*class="horizontal-line"[^>]*>/gi, '\n---\n\n')
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<div[^>]*>(.*?)<\/div>/gi, '$1\n')
-        .replace(/<[^>]+>/g, '') // Strip remaining tags
+        .replace(/<[^>]+>/g, '')
         .trim();
     const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);

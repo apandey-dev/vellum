@@ -13,7 +13,7 @@
     /* Dark Mode (Default) */
     --bg-canvas: #09090b;
     --bg-panel: #141415;
-    --bg-glass: rgba(20, 20, 21, 0.85);
+    --bg-glass: rgba(20, 20, 21, 0.95);
     --text-primary: #ffffff;
     --text-secondary: #888888;
     --border-color: #2a2a2a;
@@ -30,13 +30,17 @@
     /* Tooltip Specific */
     --tooltip-bg: #ffffff;
     --tooltip-text: #000000;
+
+    /* Pinned Note Colors */
+    --pinned-border: #f59e0b;
+    --pinned-bg: rgba(245, 158, 11, 0.1);
 }
 
 /* Light Mode */
 [data-theme="light"] {
     --bg-canvas: #f2f4f7;
     --bg-panel: #ffffff;
-    --bg-glass: rgba(255, 255, 255, 0.9);
+    --bg-glass: rgba(255, 255, 255, 0.95);
     --text-primary: #101828;
     --text-secondary: #667085;
     --border-color: #eaecf0;
@@ -261,17 +265,18 @@ body {
 
 .chip {
     position: relative;
-    padding: 8px 30px 8px 16px;
+    padding: 8px 16px;
     border-radius: 8px;
     font-size: 13px;
     font-weight: 500;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: 0.2s;
+    transition: all 0.2s;
     white-space: nowrap;
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
+    border: 1px solid transparent;
 }
 
 .chip:hover {
@@ -284,48 +289,23 @@ body {
     color: var(--bg-canvas);
 }
 
-/* Move button inside chip (top-right) */
-.chip .move-chip-btn {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg-panel);
-    color: var(--text-secondary);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    opacity: 0.7;
-    border: 1px solid var(--border-color);
-    z-index: 5;
-}
-
-.chip .move-chip-btn:hover {
-    background: var(--hover-bg);
+/* Pinned Chip Style */
+.chip.pinned {
+    border-color: var(--pinned-border);
+    background-color: var(--pinned-bg);
     color: var(--text-primary);
-    opacity: 1;
-    transform: scale(1.05);
 }
 
-.chip .move-chip-btn i {
-    pointer-events: none;
-}
-
-.chip .move-chip-btn.disabled {
-    opacity: 0.3;
-    pointer-events: none;
-    cursor: not-allowed;
+.chip.pinned.active {
+    background-color: var(--text-primary);
+    color: var(--bg-canvas);
+    border-color: transparent;
 }
 
 .chip-content {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
 }
 
 .header-actions {
@@ -496,6 +476,17 @@ body {
 .action-btn:hover {
     background-color: var(--hover-bg);
     transform: translateY(-1px);
+}
+
+/* Pin button styling */
+.action-btn.pinned {
+    color: #f59e0b !important;
+    background-color: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.action-btn.pinned:hover {
+    background-color: rgba(245, 158, 11, 0.25);
 }
 
 /* --- 3. Main Workspace --- */
@@ -1468,126 +1459,6 @@ body {
     margin-top: 24px;
 }
 
-/* ==================== ADDED: MOVE TO FOLDER MODAL SPECIFIC STYLES ==================== */
-.move-folder-box {
-    max-width: 420px !important;
-    min-width: 380px !important;
-}
-
-.move-file-info {
-    background: var(--bg-panel);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 24px;
-}
-
-.move-file-info p {
-    margin: 6px 0;
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-}
-
-.move-file-label {
-    color: var(--text-secondary);
-    font-size: 14px;
-    min-width: 100px;
-}
-
-.move-file-info strong {
-    color: var(--text-primary);
-    font-weight: 600;
-}
-
-#moveCurrentFolder {
-    color: var(--text-secondary);
-    font-size: 14px;
-}
-
-.move-success {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 12px;
-    margin-bottom: 16px;
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    border-radius: 10px;
-    color: #10b981;
-    font-weight: 500;
-    animation: pop 0.3s ease forwards;
-}
-
-@keyframes pop {
-    0% {
-        transform: scale(0.6);
-        opacity: 0;
-    }
-
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-/* Scrollbar Styling */
-.font-dropdown::-webkit-scrollbar,
-.dropdown-menu::-webkit-scrollbar,
-.folder-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.font-dropdown::-webkit-scrollbar-track,
-.dropdown-menu::-webkit-scrollbar-track,
-.folder-list::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
-}
-
-.font-dropdown::-webkit-scrollbar-thumb,
-.dropdown-menu::-webkit-scrollbar-thumb,
-.folder-list::-webkit-scrollbar-thumb {
-    background: var(--text-secondary);
-    border-radius: 3px;
-}
-
-.font-dropdown::-webkit-scrollbar-thumb:hover,
-.dropdown-menu::-webkit-scrollbar-thumb:hover,
-.folder-list::-webkit-scrollbar-thumb:hover {
-    background: var(--text-primary);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .workspace {
-        margin-left: 0;
-        padding: 100px 20px 20px 20px;
-    }
-
-    .sidebar.hidden+.workspace {
-        margin-left: 0;
-    }
-
-    .font-selector-btn {
-        min-width: 150px;
-    }
-
-    .export-options {
-        grid-template-columns: 1fr;
-    }
-
-    .export-box {
-        min-width: 300px !important;
-    }
-
-    .theme-toggle-pill {
-        width: 180px;
-        height: 46px;
-    }
-}
-
 .hidden {
     display: none;
 }
@@ -1693,39 +1564,6 @@ body {
 .chip.empty-chip:hover {
     background: transparent;
     color: var(--text-secondary);
-}
-
-.abc {
-    padding: 20px;
-}
-
-/* --- Enhanced Theme Compatibility for Inline Styles --- */
-[data-theme="light"] .writing-canvas span[style*="color"] {
-    filter: none !important;
-}
-
-[data-theme="dark"] .writing-canvas span[style*="color"] {
-    filter: none !important;
-}
-
-/* Pin button styling */
-.action-btn.pinned {
-    color: var(--color-yellow) !important;
-    background-color: rgba(245, 158, 11, 0.15);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.action-btn.pinned:hover {
-    background-color: rgba(245, 158, 11, 0.25);
-}
-
-.color-preserve {
-    color: inherit !important;
-}
-
-.writing-canvas span[style*="color"],
-.writing-canvas div[style*="color"] {
-    filter: none !important;
 }
 
 .gap {
@@ -1868,14 +1706,17 @@ body {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 6px 0;
+    border-radius: 12px;
+    padding: 6px;
     min-width: 180px;
     z-index: 10000;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s, visibility 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .context-menu.show {
@@ -1884,31 +1725,65 @@ body {
 }
 
 .context-menu-item {
-    padding: 10px 16px;
+    padding: 10px 12px;
     cursor: pointer;
     font-size: 14px;
+    font-weight: 500;
     color: var(--text-primary);
     transition: background 0.2s;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .context-menu-item:hover {
     background-color: var(--hover-bg);
 }
 
+.context-menu-item i {
+    font-size: 18px;
+    color: var(--text-secondary);
+}
+
+.context-menu-item:hover i {
+    color: var(--text-primary);
+}
+
+/* Separator inside context menu */
+.divider-h {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 4px 0;
+}
+
+.context-menu-item.delete-item {
+    color: var(--color-red);
+}
+
+.context-menu-item.delete-item:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.context-menu-item.delete-item i {
+    color: var(--color-red);
+}
+
 .context-menu-submenu {
     position: absolute;
-    left: 100%;
+    left: calc(100% + 5px);
     top: 0;
     background: var(--bg-glass);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 6px 0;
+    border-radius: 12px;
+    padding: 6px;
     min-width: 150px;
     display: none;
     max-height: 300px;
     overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
 .context-menu-submenu.show {
@@ -1916,11 +1791,12 @@ body {
 }
 
 .folder-option {
-    padding: 10px 16px;
+    padding: 10px 12px;
     cursor: pointer;
     font-size: 14px;
     color: var(--text-primary);
     white-space: nowrap;
+    border-radius: 8px;
 }
 
 .folder-option:hover {

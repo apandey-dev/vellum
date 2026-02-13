@@ -156,9 +156,6 @@ function applyFontAtCursor(fontName) {
     else writingCanvas.focus();
 
     document.execCommand('fontName', false, fontName);
-    // Basic font fallback using legacy execCommand as requested in previous iterations for simplicity
-    // More robust implementations use CSS spans, but for "no changes/breaks" we stick to basics where possible
-    // unless specific logic for spans was required. Given the removal of formatting shortcuts, simpler is safer here.
 
     // To ensure specific fonts apply correctly since execCommand fontName uses system fonts usually:
     const selection = window.getSelection();
@@ -262,46 +259,135 @@ writingCanvas.addEventListener('click', () => {
     updateFontDisplay();
 });
 
-// --- CONTEXT MENU ---
+// --- ENHANCED CONTEXT MENU (RENAME, MOVE, PIN) ---
 const noteContextMenu = document.getElementById('noteContextMenu');
+const ctxRename = document.getElementById('ctxRename');
+const ctxPin = document.getElementById('ctxPin');
+const ctxDelete = document.getElementById('ctxDelete');
 const moveToFolderItem = document.getElementById('moveToFolderItem');
 const folderSubmenu = document.getElementById('folderSubmenu');
-let contextMenuNoteId = null;
+
+// Global variable to track which note was right-clicked
+window.contextMenuNoteId = null;
 
 function hideContextMenu() {
     noteContextMenu.classList.remove('show');
     folderSubmenu.classList.remove('show');
-    contextMenuNoteId = null;
+    window.contextMenuNoteId = null;
 }
 
+// 1. Open Context Menu
 noteChips.addEventListener('contextmenu', (e) => {
     const chip = e.target.closest('.chip');
     if (!chip) return;
+
     e.preventDefault();
-    contextMenuNoteId = chip.dataset.noteId;
-    hideContextMenu();
-    noteContextMenu.style.left = `${e.pageX}px`;
-    noteContextMenu.style.top = `${e.pageY}px`;
+    window.contextMenuNoteId = chip.dataset.noteId;
+
+    // Update Pin text
+    const note = notes.find(n => n.id === window.contextMenuNoteId);
+    if (note) {
+        ctxPin.innerHTML = note.isPinned ? '<i class="ph ph-push-pin-slash"></i> Unpin Note' : '<i class="ph ph-push-pin"></i> Pin Note';
+    }
+
+    hideContextMenu(); // Clear previous state
+
+    // Position menu
+    // Calculate position to keep it on screen
+    let x = e.pageX;
+    let y = e.pageY;
+
+    // Slight adjustment to not spawn directly under cursor pointer
+    noteContextMenu.style.left = `${x}px`;
+    noteContextMenu.style.top = `${y}px`;
     noteContextMenu.classList.add('show');
 });
 
-moveToFolderItem.addEventListener('click', () => {
-    if (!contextMenuNoteId) return hideContextMenu();
+// 2. Action: Rename
+ctxRename.addEventListener('click', () => {
+    if (!window.contextMenuNoteId) return;
+    const note = notes.find(n => n.id === window.contextMenuNoteId);
+    if (note) {
+        document.getElementById('renameNoteInput').value = note.name;
+        document.getElementById('renameNoteModal').classList.add('show');
+        pushToModalStack(document.getElementById('renameNoteModal'));
+        setTimeout(() => document.getElementById('renameNoteInput').focus(), 100);
+    }
+    hideContextMenu();
+});
+
+// 3. Action: Pin
+ctxPin.addEventListener('click', () => {
+    if (!window.contextMenuNoteId) return;
+    const note = notes.find(n => n.id === window.contextMenuNoteId);
+    if (note) {
+        note.isPinned = !note.isPinned;
+        saveToStorage();
+        renderNoteChips();
+        // If this note is currently active, update the main toolbar pin button too
+        if (note.id === activeNoteId) updatePinButton();
+        showFormattingIndicator(note.isPinned ? 'Note pinned' : 'Note unpinned');
+    }
+    hideContextMenu();
+});
+
+// 4. Action: Delete
+ctxDelete.addEventListener('click', () => {
+    if (!window.contextMenuNoteId) return;
+    // We reuse the existing delete logic but set the active ID temporarily or handle ID passing
+    // Simpler: Just trigger the confirm modal and store the ID to delete
+    // But existing delete logic relies on 'activeNoteId'. 
+    // Let's modify delete logic to handle a specific ID or default to active.
+
+    // Hack for consistency: Switch to that note then click delete? No, jarring.
+    // Better: We invoke the modal, but logic needs to know WHICH note.
+    // Since `deleteNote` function takes an ID, we just need to pass it.
+
+    // However, the confirm modal buttons are hardwired to delete `activeNoteId`.
+    // Let's switch active note to this one first, it's safer UI behavior.
+    switchNote(window.contextMenuNoteId);
+    document.getElementById('deleteBtn').click(); // Trigger main delete flow
+    hideContextMenu();
+});
+
+// 5. Action: Move (Submenu)
+moveToFolderItem.addEventListener('mouseenter', () => {
+    if (!window.contextMenuNoteId) return;
     folderSubmenu.innerHTML = '';
     folders.forEach(f => {
+        // Don't show current folder
+        const note = notes.find(n => n.id === window.contextMenuNoteId);
+        if (note && note.folderId === f.id) return;
+
         const opt = document.createElement('div');
         opt.className = 'folder-option';
         opt.textContent = f.name;
         opt.dataset.folderId = f.id;
         folderSubmenu.appendChild(opt);
     });
+
+    if (folderSubmenu.children.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'folder-option';
+        empty.style.opacity = '0.5';
+        empty.style.cursor = 'default';
+        empty.textContent = 'No other folders';
+        folderSubmenu.appendChild(empty);
+    }
+
     folderSubmenu.classList.add('show');
+});
+
+noteContextMenu.addEventListener('mouseleave', () => {
+    // Optional: Auto hide if mouse leaves area? 
+    // Standard context menus don't usually do this, they wait for click.
+    // We will keep it open until clicked elsewhere.
 });
 
 folderSubmenu.addEventListener('click', (e) => {
     const opt = e.target.closest('.folder-option');
-    if (!opt || !contextMenuNoteId) return;
-    moveNoteToFolder(contextMenuNoteId, opt.dataset.folderId);
+    if (!opt || !window.contextMenuNoteId || opt.textContent === 'No other folders') return;
+    moveNoteToFolder(window.contextMenuNoteId, opt.dataset.folderId);
     hideContextMenu();
 });
 
@@ -325,5 +411,5 @@ function moveNoteToFolder(nId, fId) {
 }
 
 // --- INITIALIZATION CALL ---
-
+// This runs after both scripts are loaded and core functions are available
 init();
