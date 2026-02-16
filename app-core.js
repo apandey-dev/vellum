@@ -38,6 +38,7 @@ const confirmRenameBtn = document.getElementById('confirmRenameBtn');
 const cancelRenameBtn = document.getElementById('cancelRenameBtn');
 
 // Button elements
+const searchBtn = document.getElementById('searchBtn');          // NEW
 const exportBtn = document.getElementById('exportBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 const addNoteBtn = document.getElementById('addNoteBtn');
@@ -47,6 +48,12 @@ const shareBtn = document.getElementById('shareBtn');
 
 // Note chips container
 const noteChips = document.getElementById('noteChips');
+
+// Search Modal elements (NEW)
+const searchModal = document.getElementById('searchModal');
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+const closeSearchModalBtn = document.getElementById('closeSearchModal');
 
 // --- STORAGE KEYS ---
 const THEME_KEY = 'focuspad_theme';
@@ -78,10 +85,8 @@ function showFormattingIndicator(message, type = 'info') {
     formattingIndicator.textContent = message;
     formattingIndicator.className = 'formatting-indicator';
     formattingIndicator.classList.add('show');
-
     if (type === 'success') formattingIndicator.classList.add('success');
     else if (type === 'error') formattingIndicator.classList.add('error');
-
     setTimeout(() => {
         formattingIndicator.classList.remove('show');
         formattingIndicator.classList.remove('success', 'error');
@@ -115,19 +120,17 @@ function loadFromStorage() {
         folders.push({ id: 'folder_general', name: 'General', isDefault: true });
         activeFolderId = 'folder_general';
     }
-
-    // Ensure active folder exists in data
+    // Ensure active folder exists
     if (!folders.find(f => f.id === activeFolderId)) {
         activeFolderId = folders[0].id;
     }
-
-    // Create first note if none exists - FIXED PLACEHOLDER ISSUE
+    // Create first note if none exists
     if (notes.length === 0) {
         const firstNote = {
             id: generateId(),
             name: 'NewNote',
             folderId: activeFolderId,
-            content: '', // Empty string so placeholder CSS works
+            content: '',
             createdAt: Date.now(),
             updatedAt: Date.now(),
             isPinned: false
@@ -180,7 +183,6 @@ function deleteNote(noteId) {
     if (index > -1) {
         notes.splice(index, 1);
         const folderNotes = getNotesInFolder(activeFolderId);
-
         if (folderNotes.length === 0) {
             activeNoteId = null;
             showFormattingIndicator('Note deleted! No notes in this folder.');
@@ -190,7 +192,6 @@ function deleteNote(noteId) {
         } else {
             showFormattingIndicator('Note deleted!');
         }
-
         saveToStorage();
         renderNoteChips();
         loadActiveNote();
@@ -217,7 +218,6 @@ function switchNote(noteId) {
 
 function loadActiveNote() {
     const note = notes.find(n => n.id === activeNoteId);
-
     if (note) {
         writingCanvas.innerHTML = note.content || '';
         writingCanvas.contentEditable = 'true';
@@ -231,7 +231,7 @@ function loadActiveNote() {
         if (folderNotes.length === 0) {
             writingCanvas.innerHTML = `
                 <div class="empty-folder-message">
-                    <div class="empty-folder-icon"><i class="ph ph-note-blank"></i></div>
+                    <div class="empty-folder-icon"><i class="fas fa-note-sticky"></i></div>
                     <h3>No Notes in This Folder</h3>
                     <p>This folder is empty. Create a new note to get started!</p>
                     <button class="create-note-btn abc" id="createNoteFromEmpty">Create New Note</button>
@@ -265,19 +265,18 @@ function loadActiveNote() {
 function updatePinButton() {
     if (!activeNoteId) {
         pinBtn.classList.remove('pinned');
-        pinBtn.innerHTML = '<i class="ph ph-push-pin"></i>';
+        pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
         return;
     }
     const note = notes.find(n => n.id === activeNoteId);
     if (note && note.isPinned) {
         pinBtn.classList.add('pinned');
-        pinBtn.innerHTML = '<i class="ph ph-push-pin-slash"></i>';
+        pinBtn.innerHTML = '<i class="fas fa-thumbtack-slash"></i>';
     } else {
         pinBtn.classList.remove('pinned');
-        pinBtn.innerHTML = '<i class="ph ph-push-pin"></i>';
+        pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
     }
 }
-
 function togglePinNote() {
     if (!activeNoteId) {
         showFormattingIndicator('No active note to pin');
@@ -288,7 +287,7 @@ function togglePinNote() {
         note.isPinned = !note.isPinned;
         saveToStorage();
         updatePinButton();
-        renderNoteChips(); // Re-render to show visual pin on chip
+        renderNoteChips();
         showFormattingIndicator(note.isPinned ? 'Note pinned' : 'Note unpinned');
     }
 }
@@ -303,7 +302,6 @@ function createFolder(name) {
     updateFolderDropdown();
     showFormattingIndicator('Folder created!');
 }
-
 function deleteFolder(folderId) {
     const folder = folders.find(f => f.id === folderId);
     if (folder.isDefault) {
@@ -314,7 +312,6 @@ function deleteFolder(folderId) {
     const modal = document.getElementById('confirmFolderDeleteModal');
     const titleEl = document.getElementById('folderDeleteTitle');
     const messageEl = document.getElementById('folderDeleteMessage');
-
     titleEl.textContent = `Delete "${folder.name}"?`;
     if (folderNotes.length > 0) {
         messageEl.textContent = `${folderNotes.length} note(s) will be moved to General folder.`;
@@ -325,7 +322,6 @@ function deleteFolder(folderId) {
     pushToModalStack(modal);
     modal.dataset.pendingFolderId = folderId;
 }
-
 function setActiveFolder(folderId) {
     if (activeNoteId) {
         saveCurrentNote();
@@ -358,23 +354,19 @@ function renderNoteChips() {
         noteChips.appendChild(emptyChip);
         return;
     }
-
     // Sort pinned notes first
     folderNotes.sort((a, b) => (b.isPinned === true) - (a.isPinned === true));
-
     folderNotes.forEach(note => {
         const chip = document.createElement('div');
         chip.className = 'chip';
         if (note.id === activeNoteId) chip.classList.add('active');
         if (note.isPinned) chip.classList.add('pinned');
-
-        chip.dataset.noteId = note.id; // For context menu
-
+        chip.dataset.noteId = note.id;
         const chipContent = document.createElement('div');
         chipContent.className = 'chip-content';
         if (note.isPinned) {
             const pinIcon = document.createElement('i');
-            pinIcon.className = 'ph ph-push-pin gap';
+            pinIcon.className = 'fas fa-thumbtack gap';
             chipContent.appendChild(pinIcon);
         }
         const textSpan = document.createElement('span');
@@ -408,7 +400,7 @@ function renderFolderList() {
         if (!folder.isDefault) {
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'folder-action-btn';
-            deleteBtn.innerHTML = '<i class="ph ph-trash"></i>';
+            deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
             deleteBtn.onclick = (e) => {
                 e.stopPropagation();
                 deleteFolder(folder.id);
@@ -464,6 +456,7 @@ function getSelectedFolderId() {
 }
 
 // --- MODAL EVENT LISTENERS ---
+
 // New Note
 addNoteBtn.addEventListener('click', () => {
     updateFolderDropdown();
@@ -587,7 +580,7 @@ cancelFolderDeleteBtn.addEventListener('click', () => {
 confirmFolderDeleteBtn.addEventListener('click', () => {
     const folderId = confirmFolderDeleteModal.dataset.pendingFolderId;
     if (folderId) {
-        // Move notes to default folder (which is guaranteed to exist as 'folder_general' or first in list)
+        // Move notes to default folder
         const defaultFolderId = folders[0].id;
         notes.forEach(note => { if (note.folderId === folderId) note.folderId = defaultFolderId; });
         const index = folders.findIndex(f => f.id === folderId);
@@ -613,13 +606,12 @@ confirmFolderDeleteModal.addEventListener('click', (e) => {
     }
 });
 
-// Share Modal logic...
+// Share Modal logic
 function updateShareUI(isPublic) {
     const options = document.querySelectorAll('#shareToggle .toggle-option');
     const shareToggle = document.getElementById('shareToggle');
     const shareLinkSection = document.getElementById('shareLinkSection');
     const sharePrivateMsg = document.getElementById('sharePrivateMsg');
-
     if (isPublic) {
         shareToggle.classList.add('public');
         shareToggle.classList.remove('private');
@@ -663,7 +655,7 @@ document.getElementById('copyLinkBtn').addEventListener('click', () => {
     document.execCommand('copy');
     const btn = document.getElementById('copyLinkBtn');
     const original = btn.innerHTML;
-    btn.innerHTML = '<i class="ph ph-check"></i>';
+    btn.innerHTML = '<i class="fas fa-check"></i>';
     setTimeout(() => btn.innerHTML = original, 2000);
 });
 document.getElementById('shareModal').addEventListener('click', (e) => {
@@ -674,7 +666,7 @@ document.getElementById('shareModal').addEventListener('click', (e) => {
     }
 });
 
-// --- EXPORT & PDF ---
+// --- EXPORT & PDF (updated with multi-page) ---
 exportBtn.addEventListener('click', () => {
     if (!activeNoteId) { showFormattingIndicator('No note to export'); return; }
     const note = notes.find(n => n.id === activeNoteId);
@@ -688,6 +680,7 @@ exportBtn.addEventListener('click', () => {
         opt.classList.remove('active');
         if (opt.dataset.theme === currentTheme) opt.classList.add('active');
     });
+    pdfOptions.style.display = 'none'; // Hide PDF options initially
     exportModal.classList.add('show');
     pushToModalStack(exportModal);
 });
@@ -709,6 +702,12 @@ exportCards.forEach(card => {
         card.classList.add('selected');
         selectedExportFormat = card.dataset.format;
         exportConfirmBtn.disabled = false;
+        // Show/hide PDF options
+        if (selectedExportFormat === 'pdf') {
+            pdfOptions.style.display = 'block';
+        } else {
+            pdfOptions.style.display = 'none';
+        }
     });
 });
 themePillOptions.forEach(option => {
@@ -725,40 +724,38 @@ exportConfirmBtn.addEventListener('click', async () => {
     const index = modalStack.indexOf(exportModal);
     if (index > -1) modalStack.splice(index, 1);
     showFormattingIndicator(`Exporting as ${selectedExportFormat.toUpperCase()}...`);
-
     if (selectedExportFormat === 'pdf') await exportAsPDF(fileName);
     else if (selectedExportFormat === 'markdown') exportAsMarkdown(fileName);
     else if (selectedExportFormat === 'text') exportAsText(fileName);
 });
 
-// PDF Generation
+// Multi-page PDF Generation
 async function exportAsPDF(fileName) {
     try {
         const fontName = document.getElementById('currentFont').textContent || 'Fredoka';
         const note = notes.find(n => n.id === activeNoteId);
         const content = writingCanvas.innerHTML;
         const selectedTheme = themeTogglePill.dataset.theme || 'light';
-
         const tempContainer = document.createElement('div');
         tempContainer.id = 'pdf-export-container';
         tempContainer.setAttribute('data-theme', selectedTheme);
         tempContainer.setAttribute('data-font', fontName);
         Object.assign(tempContainer.style, {
-            position: 'absolute', left: '-9999px', top: '0', width: '794px', minHeight: '1123px',
-            padding: '60px 80px', lineHeight: '1.6', fontSize: '16px', wordBreak: 'break-word', boxSizing: 'border-box'
+            position: 'absolute',
+            left: '-9999px',
+            top: '0',
+            width: '794px',           // A4 width at 96dpi approx
+            lineHeight: '1.6',
+            fontSize: '16px',
+            wordBreak: 'break-word',
+            boxSizing: 'border-box',
+            padding: '60px 80px',
+            backgroundColor: selectedTheme === 'dark' ? '#1a1a1a' : '#ffffff',
+            color: selectedTheme === 'dark' ? '#ffffff' : '#000000'
         });
-
-        if (selectedTheme === 'dark') {
-            tempContainer.style.backgroundColor = '#1a1a1a';
-            tempContainer.style.color = '#ffffff';
-        } else {
-            tempContainer.style.backgroundColor = '#ffffff';
-            tempContainer.style.color = '#000000';
-        }
-
         const contentDiv = document.createElement('div');
         contentDiv.innerHTML = content;
-
+        // Add list-item classes for proper bullet rendering
         const divs = contentDiv.querySelectorAll('div');
         divs.forEach(div => {
             const text = div.textContent || '';
@@ -773,22 +770,50 @@ async function exportAsPDF(fileName) {
                 div.style.display = 'block';
             }
         });
-
         tempContainer.appendChild(contentDiv);
         document.body.appendChild(tempContainer);
 
+        // Render full canvas
         const canvas = await html2canvas(tempContainer, {
-            scale: 4, useCORS: true, backgroundColor: selectedTheme === 'dark' ? '#1a1a1a' : '#ffffff',
-            allowTaint: true, letterRendering: true
+            scale: 2,                 // Slightly lower scale for performance
+            useCORS: true,
+            backgroundColor: selectedTheme === 'dark' ? '#1a1a1a' : '#ffffff',
+            allowTaint: true,
+            letterRendering: true,
+            logging: false
+        });
+        document.body.removeChild(tempContainer);
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4',
+            compress: true
         });
 
-        document.body.removeChild(tempContainer);
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
-        const imgData = canvas.toDataURL('image/png', 1.0);
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        // Calculate the height of one PDF page in canvas pixels
+        const pageHeightPx = (pdfHeight / pdfWidth) * canvasWidth;
+        let totalPages = Math.ceil(canvasHeight / pageHeightPx);
+
+        for (let i = 0; i < totalPages; i++) {
+            if (i > 0) pdf.addPage();
+            const yOffset = i * pageHeightPx;
+            // Create a new canvas for the current page slice
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvasWidth;
+            pageCanvas.height = Math.min(pageHeightPx, canvasHeight - yOffset);
+            const ctx = pageCanvas.getContext('2d');
+            ctx.drawImage(canvas, 0, yOffset, canvasWidth, pageCanvas.height, 0, 0, canvasWidth, pageCanvas.height);
+            const imgData = pageCanvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, (pageCanvas.height / canvasWidth) * pdfWidth, undefined, 'FAST');
+        }
+
         pdf.save(`${fileName}.pdf`);
         showFormattingIndicator('PDF exported successfully!', 'success');
     } catch (error) {
@@ -828,24 +853,23 @@ function loadTheme() {
     const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
     html.setAttribute('data-theme', savedTheme);
     if (savedTheme === 'light') {
-        themeIcon.classList.remove('ph-sun');
-        themeIcon.classList.add('ph-moon');
+        themeIcon.classList.remove('fa-sun');
+        themeIcon.classList.add('fa-moon');
     } else {
-        themeIcon.classList.remove('ph-moon');
-        themeIcon.classList.add('ph-sun');
+        themeIcon.classList.remove('fa-moon');
+        themeIcon.classList.add('fa-sun');
     }
 }
-
 themeToggle.addEventListener('click', () => {
     const currentTheme = html.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', newTheme);
     if (newTheme === 'light') {
-        themeIcon.classList.remove('ph-sun');
-        themeIcon.classList.add('ph-moon');
+        themeIcon.classList.remove('fa-sun');
+        themeIcon.classList.add('fa-moon');
     } else {
-        themeIcon.classList.remove('ph-moon');
-        themeIcon.classList.add('ph-sun');
+        themeIcon.classList.remove('fa-moon');
+        themeIcon.classList.add('fa-sun');
     }
     localStorage.setItem(THEME_KEY, newTheme);
 });
@@ -876,22 +900,17 @@ document.addEventListener('fullscreenchange', () => {
 });
 
 // --- GLOBAL SHORTCUTS: ESC & ENTER ---
-
-// 1. ESC to Close Modals
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && modalStack.length > 0) {
-        const topModal = modalStack.pop(); // Remove from stack
+        const topModal = modalStack.pop();
         if (topModal) {
             topModal.classList.remove('show');
-            // Cleanup specific modals if needed
             if (topModal.id === 'confirmFolderDeleteModal') {
                 delete topModal.dataset.pendingFolderId;
             }
         }
     }
 });
-
-// 2. Enter to Submit in Modals
 function setupEnterKeySubmission(inputId, buttonId) {
     const input = document.getElementById(inputId);
     const btn = document.getElementById(buttonId);
@@ -904,12 +923,79 @@ function setupEnterKeySubmission(inputId, buttonId) {
         });
     }
 }
+setupEnterKeySubmission('newNoteName', 'createNewNote');
+setupEnterKeySubmission('newFolderName', 'createFolderBtn');
+setupEnterKeySubmission('renameNoteInput', 'confirmRenameBtn');
+setupEnterKeySubmission('exportFileName', 'exportConfirmBtn');
 
-// Setup Enter keys for specific inputs
-setupEnterKeySubmission('newNoteName', 'createNewNote');       // New Note
-setupEnterKeySubmission('newFolderName', 'createFolderBtn');   // New Folder
-setupEnterKeySubmission('renameNoteInput', 'confirmRenameBtn'); // Rename Note
-setupEnterKeySubmission('exportFileName', 'exportConfirmBtn'); // Export File
+// ==================== SEARCH FUNCTIONALITY ====================
+searchBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    searchResults.innerHTML = '<div class="search-placeholder">Start typing to search...</div>';
+    searchModal.classList.add('show');
+    pushToModalStack(searchModal);
+    setTimeout(() => searchInput.focus(), 100);
+});
+closeSearchModalBtn.addEventListener('click', () => {
+    searchModal.classList.remove('show');
+    const index = modalStack.indexOf(searchModal);
+    if (index > -1) modalStack.splice(index, 1);
+});
+searchModal.addEventListener('click', (e) => {
+    if (e.target === searchModal) {
+        searchModal.classList.remove('show');
+        const index = modalStack.indexOf(searchModal);
+        if (index > -1) modalStack.splice(index, 1);
+    }
+});
+searchInput.addEventListener('input', () => {
+    const query = searchInput.value.trim().toLowerCase();
+    if (!query) {
+        searchResults.innerHTML = '<div class="search-placeholder">Start typing to search...</div>';
+        return;
+    }
+    // Search in note name and content (strip HTML tags for content)
+    const results = notes.filter(note => {
+        const nameMatch = note.name.toLowerCase().includes(query);
+        const contentText = note.content.replace(/<[^>]*>/g, '').toLowerCase();
+        const contentMatch = contentText.includes(query);
+        return nameMatch || contentMatch;
+    });
+    if (results.length === 0) {
+        searchResults.innerHTML = '<div class="search-placeholder">No notes found</div>';
+        return;
+    }
+    searchResults.innerHTML = ''; // Clear placeholder
+    results.forEach(note => {
+        const folder = folders.find(f => f.id === note.folderId) || { name: 'Unknown' };
+        const card = document.createElement('div');
+        card.className = 'search-result-card';
+        card.innerHTML = `
+            <div class="search-result-name">${escapeHtml(note.name)}</div>
+            <div class="search-result-folder">
+                <i class="fas fa-folder"></i> ${escapeHtml(folder.name)}
+            </div>
+        `;
+        card.addEventListener('click', () => {
+            // Switch to this note
+            switchNote(note.id);
+            searchModal.classList.remove('show');
+            const index = modalStack.indexOf(searchModal);
+            if (index > -1) modalStack.splice(index, 1);
+        });
+        searchResults.appendChild(card);
+    });
+});
+// Helper to escape HTML (prevent XSS)
+function escapeHtml(unsafe) {
+    return unsafe.replace(/[&<>"]/g, function (m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        if (m === '"') return '&quot;';
+        return m;
+    });
+}
 
 // --- INITIALIZATION CALL ---
 function init() {
@@ -922,5 +1008,4 @@ function init() {
     const current = getCurrentFont();
     document.getElementById('currentFont').textContent = current;
 }
-
 init();

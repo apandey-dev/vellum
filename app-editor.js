@@ -29,7 +29,6 @@ function saveCursorRange() {
     }
     return null;
 }
-
 function restoreCursorRange() {
     if (savedCursorRange) {
         try {
@@ -45,7 +44,6 @@ function restoreCursorRange() {
     }
     return false;
 }
-
 function clearSavedCursorRange() { savedCursorRange = null; }
 
 // --- LINE FORMATTING (Basic Structure Shortcuts Only) ---
@@ -64,13 +62,11 @@ function getCurrentLine() {
     }
     return node;
 }
-
 function processLineFormatting(lineNode) {
     if (!lineNode) return false;
     let text = lineNode.textContent || '';
     let processed = false;
     let newHTML = '';
-
     const trimmedText = text.trim();
     if (trimmedText === '===') {
         newHTML = '<div class="horizontal-line thick"></div>';
@@ -79,7 +75,6 @@ function processLineFormatting(lineNode) {
         newHTML = '<div class="horizontal-line dashed"></div>';
         processed = true;
     }
-
     if (processed) {
         const selection = window.getSelection();
         const temp = document.createElement('div');
@@ -87,7 +82,6 @@ function processLineFormatting(lineNode) {
         const newNode = temp.firstChild;
         if (lineNode.nodeType === 3) lineNode.parentNode.replaceChild(newNode, lineNode);
         else lineNode.parentNode.replaceChild(newNode, lineNode);
-
         const newRange = document.createRange();
         newRange.setStartAfter(newNode);
         newRange.collapse(true);
@@ -100,6 +94,11 @@ function processLineFormatting(lineNode) {
 }
 
 // --- FONT SELECTOR LOGIC ---
+const fontSelectorBtn = document.getElementById('fontSelectorBtn');
+const fontDropdown = document.getElementById('fontDropdown');
+const fontOptions = document.querySelectorAll('.font-option');
+const currentFontSpan = document.getElementById('currentFont');
+
 fontSelectorBtn.addEventListener('mousedown', saveCursorRange);
 fontSelectorBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -140,7 +139,6 @@ function getCurrentFont() {
     }
     return 'Fredoka';
 }
-
 function updateFontDisplay() {
     const current = getCurrentFont();
     currentFontSpan.textContent = current;
@@ -149,21 +147,17 @@ function updateFontDisplay() {
         if (opt.dataset.font === current) opt.classList.add('active');
     });
 }
-
 function applyFontAtCursor(fontName) {
     const family = formattingConfig.fonts[fontName];
     if (savedCursorRange) restoreCursorRange();
     else writingCanvas.focus();
-
     document.execCommand('fontName', false, fontName);
-
-    // To ensure specific fonts apply correctly since execCommand fontName uses system fonts usually:
+    // Fallback: wrap with span for better cross-browser
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
     const range = selection.getRangeAt(0);
     const span = document.createElement('span');
     span.style.fontFamily = family;
-
     if (!range.collapsed) {
         span.appendChild(range.extractContents());
         range.insertNode(span);
@@ -171,7 +165,6 @@ function applyFontAtCursor(fontName) {
         const zwsp = document.createTextNode('\u200B');
         span.appendChild(zwsp);
         range.insertNode(span);
-        // Move cursor inside
         range.setStart(zwsp, 1);
         range.collapse(true);
         selection.removeAllRanges();
@@ -181,6 +174,9 @@ function applyFontAtCursor(fontName) {
 }
 
 // --- BULLETS & DROPDOWNS ---
+const bulletsBtn = document.getElementById('bulletsBtn');
+const bulletsMenu = document.getElementById('bulletsMenu');
+
 function closeAllDropdowns() {
     bulletsMenu.classList.remove('active');
     activeDropdown = null;
@@ -205,26 +201,21 @@ document.querySelectorAll('#bulletsMenu .dropdown-item').forEach(item => {
         closeAllDropdowns();
     });
 });
-
 function insertBulletList(type) {
     if (!activeNoteId) return;
     writingCanvas.focus();
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
     const range = selection.getRangeAt(0);
-
-    // Simple block insertion for PDF compatibility style
     const div = document.createElement('div');
     div.style.marginLeft = '40px';
     div.style.position = 'relative';
     div.className = 'pdf-list-item ' + (type === 'numbered' ? 'numbered' : 'bullet');
-
     if (type === 'numbered') {
         div.textContent = '1. ';
     } else {
         div.textContent = '• ';
     }
-
     if (!range.collapsed) {
         div.textContent += range.toString();
         range.deleteContents();
@@ -237,6 +228,71 @@ function insertBulletList(type) {
     saveCurrentNote();
 }
 
+// ==================== PASTE SANITIZATION ====================
+writingCanvas.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const clipboardData = e.clipboardData || window.clipboardData;
+    if (!clipboardData) return;
+
+    // Get plain text first (preferred for clean paste)
+    let text = clipboardData.getData('text/plain');
+    if (text) {
+        // Insert plain text, preserving line breaks
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        const lines = text.split(/\r\n|\r|\n/);
+        for (let i = 0; i < lines.length; i++) {
+            const lineNode = document.createTextNode(lines[i]);
+            range.insertNode(lineNode);
+            if (i < lines.length - 1) {
+                range.insertNode(document.createElement('br'));
+            }
+        }
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        saveCurrentNote();
+        return;
+    }
+
+    // If no plain text, fallback to sanitized HTML
+    let html = clipboardData.getData('text/html');
+    if (html) {
+        // Sanitize HTML: remove style, class, id, data-* attributes, unwanted tags
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, null, false);
+        while (walker.nextNode()) {
+            const el = walker.currentNode;
+            // Remove all attributes except those we want to keep (none by default)
+            const attrs = el.attributes;
+            for (let i = attrs.length - 1; i >= 0; i--) {
+                const attrName = attrs[i].name;
+                if (!['href', 'src', 'alt'].includes(attrName)) {
+                    el.removeAttribute(attrName);
+                }
+            }
+            // Remove unwanted tags (like script, style, meta, link)
+            if (['SCRIPT', 'STYLE', 'META', 'LINK', 'OBJECT', 'IFRAME'].includes(el.tagName)) {
+                el.remove();
+            }
+        }
+        // Convert block elements to divs with line breaks? We'll let browser handle.
+        // Insert the sanitized HTML
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        const fragment = range.createContextualFragment(doc.body.innerHTML);
+        range.insertNode(fragment);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        saveCurrentNote();
+    }
+});
+
 // --- EVENTS ---
 let processing = false;
 writingCanvas.addEventListener('keyup', (e) => {
@@ -244,17 +300,15 @@ writingCanvas.addEventListener('keyup', (e) => {
     if (e.key === ' ' || e.key === 'Enter') {
         processing = true;
         const lineNode = getCurrentLine();
-        const processed = processLineFormatting(lineNode); // Only checks --- and ===
+        const processed = processLineFormatting(lineNode);
         if (processed) showFormattingIndicator('Line inserted');
         processing = false;
     }
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) updateFontDisplay();
 });
-
 writingCanvas.addEventListener('input', () => {
     saveCurrentNote();
 });
-
 writingCanvas.addEventListener('click', () => {
     updateFontDisplay();
 });
@@ -267,7 +321,6 @@ const ctxDelete = document.getElementById('ctxDelete');
 const moveToFolderItem = document.getElementById('moveToFolderItem');
 const folderSubmenu = document.getElementById('folderSubmenu');
 
-// Global variable to track which note was right-clicked
 window.contextMenuNoteId = null;
 
 function hideContextMenu() {
@@ -275,35 +328,22 @@ function hideContextMenu() {
     folderSubmenu.classList.remove('show');
     window.contextMenuNoteId = null;
 }
-
-// 1. Open Context Menu
 noteChips.addEventListener('contextmenu', (e) => {
     const chip = e.target.closest('.chip');
     if (!chip) return;
-
     e.preventDefault();
     window.contextMenuNoteId = chip.dataset.noteId;
-
-    // Update Pin text
     const note = notes.find(n => n.id === window.contextMenuNoteId);
     if (note) {
-        ctxPin.innerHTML = note.isPinned ? '<i class="ph ph-push-pin-slash"></i> Unpin Note' : '<i class="ph ph-push-pin"></i> Pin Note';
+        ctxPin.innerHTML = note.isPinned ? '<i class="fas fa-thumbtack-slash"></i> Unpin Note' : '<i class="fas fa-thumbtack"></i> Pin Note';
     }
-
-    hideContextMenu(); // Clear previous state
-
-    // Position menu
-    // Calculate position to keep it on screen
+    hideContextMenu();
     let x = e.pageX;
     let y = e.pageY;
-
-    // Slight adjustment to not spawn directly under cursor pointer
     noteContextMenu.style.left = `${x}px`;
     noteContextMenu.style.top = `${y}px`;
     noteContextMenu.classList.add('show');
 });
-
-// 2. Action: Rename
 ctxRename.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
     const note = notes.find(n => n.id === window.contextMenuNoteId);
@@ -315,8 +355,6 @@ ctxRename.addEventListener('click', () => {
     }
     hideContextMenu();
 });
-
-// 3. Action: Pin
 ctxPin.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
     const note = notes.find(n => n.id === window.contextMenuNoteId);
@@ -324,48 +362,29 @@ ctxPin.addEventListener('click', () => {
         note.isPinned = !note.isPinned;
         saveToStorage();
         renderNoteChips();
-        // If this note is currently active, update the main toolbar pin button too
         if (note.id === activeNoteId) updatePinButton();
         showFormattingIndicator(note.isPinned ? 'Note pinned' : 'Note unpinned');
     }
     hideContextMenu();
 });
-
-// 4. Action: Delete
 ctxDelete.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
-    // We reuse the existing delete logic but set the active ID temporarily or handle ID passing
-    // Simpler: Just trigger the confirm modal and store the ID to delete
-    // But existing delete logic relies on 'activeNoteId'. 
-    // Let's modify delete logic to handle a specific ID or default to active.
-
-    // Hack for consistency: Switch to that note then click delete? No, jarring.
-    // Better: We invoke the modal, but logic needs to know WHICH note.
-    // Since `deleteNote` function takes an ID, we just need to pass it.
-
-    // However, the confirm modal buttons are hardwired to delete `activeNoteId`.
-    // Let's switch active note to this one first, it's safer UI behavior.
     switchNote(window.contextMenuNoteId);
-    document.getElementById('deleteBtn').click(); // Trigger main delete flow
+    document.getElementById('deleteBtn').click();
     hideContextMenu();
 });
-
-// 5. Action: Move (Submenu)
 moveToFolderItem.addEventListener('mouseenter', () => {
     if (!window.contextMenuNoteId) return;
     folderSubmenu.innerHTML = '';
     folders.forEach(f => {
-        // Don't show current folder
         const note = notes.find(n => n.id === window.contextMenuNoteId);
         if (note && note.folderId === f.id) return;
-
         const opt = document.createElement('div');
         opt.className = 'folder-option';
         opt.textContent = f.name;
         opt.dataset.folderId = f.id;
         folderSubmenu.appendChild(opt);
     });
-
     if (folderSubmenu.children.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'folder-option';
@@ -374,34 +393,23 @@ moveToFolderItem.addEventListener('mouseenter', () => {
         empty.textContent = 'No other folders';
         folderSubmenu.appendChild(empty);
     }
-
     folderSubmenu.classList.add('show');
 });
-
-noteContextMenu.addEventListener('mouseleave', () => {
-    // Optional: Auto hide if mouse leaves area? 
-    // Standard context menus don't usually do this, they wait for click.
-    // We will keep it open until clicked elsewhere.
-});
-
 folderSubmenu.addEventListener('click', (e) => {
     const opt = e.target.closest('.folder-option');
     if (!opt || !window.contextMenuNoteId || opt.textContent === 'No other folders') return;
     moveNoteToFolder(window.contextMenuNoteId, opt.dataset.folderId);
     hideContextMenu();
 });
-
 document.addEventListener('click', (e) => {
     if (noteContextMenu.classList.contains('show') && !noteContextMenu.contains(e.target)) hideContextMenu();
 });
-
 function moveNoteToFolder(nId, fId) {
     const note = notes.find(n => n.id === nId);
     if (!note || note.folderId === fId) return;
     note.folderId = fId;
     saveToStorage();
     if (nId === activeNoteId && activeFolderId !== fId) {
-        // moved out of view
         const remaining = getNotesInFolder(activeFolderId);
         activeNoteId = remaining.length ? remaining[0].id : null;
     }
@@ -409,18 +417,3 @@ function moveNoteToFolder(nId, fId) {
     loadActiveNote();
     showFormattingIndicator('Note moved', 'success');
 }
-
-// --- INITIALIZATION CALL ---
-// This runs after both scripts are loaded and core functions are available
-function init() {
-    loadTheme(); // Will default to light
-    loadFromStorage();
-    renderFolderList();
-    renderNoteChips();
-    loadActiveNote();
-    // Default Font Setup
-    const current = getCurrentFont();
-    document.getElementById('currentFont').textContent = current;
-}
-
-init();
