@@ -2,6 +2,8 @@
 * {
     scrollbar-width: none;
     -ms-overflow-style: none;
+    user-select: none;
+    scrollbar-width: none;
 }
 
 *::-webkit-scrollbar {
@@ -1512,42 +1514,44 @@ body {
     color: #000000 !important;
 }
 
-/* --- Context Menu --- */
+/* --- Enhanced Context Menu --- */
 .context-menu {
     position: fixed;
     background: var(--bg-glass);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 6px;
-    min-width: 180px;
+    border-radius: 14px;
+    padding: 8px;
+    min-width: 200px;
     z-index: 10000;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.2s, visibility 0.2s;
+    transform: scale(0.95);
+    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
 }
 
 .context-menu.show {
     opacity: 1;
     visibility: visible;
+    transform: scale(1);
 }
 
 .context-menu-item {
-    padding: 10px 12px;
+    padding: 12px 16px;
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
     color: var(--text-primary);
     transition: background 0.2s;
-    border-radius: 8px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .context-menu-item:hover {
@@ -1555,8 +1559,10 @@ body {
 }
 
 .context-menu-item i {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--text-secondary);
+    width: 20px;
+    text-align: center;
 }
 
 .context-menu-item:hover i {
@@ -1566,7 +1572,7 @@ body {
 .divider-h {
     height: 1px;
     background-color: var(--border-color);
-    margin: 4px 0;
+    margin: 6px 0;
 }
 
 .context-menu-item.delete-item {

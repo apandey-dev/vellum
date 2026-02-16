@@ -302,8 +302,11 @@ noteChips.addEventListener('contextmenu', (e) => {
         ctxPin.innerHTML = note.isPinned ? '<i class="fas fa-thumbtack-slash"></i> Unpin Note' : '<i class="fas fa-thumbtack"></i> Pin Note';
     }
     hideContextMenu(); // Close any existing menu
-    noteContextMenu.style.left = `${e.pageX}px`;
-    noteContextMenu.style.top = `${e.pageY}px`;
+    // Position menu, keep within viewport
+    const x = Math.min(e.pageX, window.innerWidth - 220);
+    const y = Math.min(e.pageY, window.innerHeight - 250);
+    noteContextMenu.style.left = `${x}px`;
+    noteContextMenu.style.top = `${y}px`;
     noteContextMenu.classList.add('show');
 });
 
@@ -320,22 +323,20 @@ ctxRename.addEventListener('click', () => {
     hideContextMenu();
 });
 
-// Pin
+// Pin - FIXED: undo before change, update UI
 ctxPin.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
     const note = notes.find(n => n.id === window.contextMenuNoteId);
     if (note) {
-        // pushToUndo is inside togglePinNote, but we need to ensure it's called
-        // Actually togglePinNote uses activeNoteId, not contextMenuNoteId.
-        // We'll temporarily set activeNoteId to this note, toggle, then restore? 
-        // Better to implement a separate function that toggles any note.
-        // For simplicity, we'll just toggle the note directly.
+        pushToUndo(); // capture state before toggle
         note.isPinned = !note.isPinned;
         saveToStorage();
         renderNoteChips();
-        if (note.id === activeNoteId) updatePinButton();
+        // If this is the active note, update the pin button in header
+        if (note.id === activeNoteId) {
+            updatePinButton();
+        }
         showFormattingIndicator(note.isPinned ? 'Note pinned' : 'Note unpinned');
-        pushToUndo(); // after change
     }
     hideContextMenu();
 });

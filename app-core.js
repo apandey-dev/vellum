@@ -624,7 +624,9 @@ function updateMoveFolderDropdown(excludeFolderId) {
 function openMoveModal(noteId) {
     const note = notes.find(n => n.id === noteId);
     if (!note) return;
+    const currentFolder = folders.find(f => f.id === note.folderId) || { name: 'Unknown' };
     moveNoteNameSpan.textContent = `Moving: "${note.name}"`;
+    document.getElementById('moveCurrentFolder').innerHTML = `Current folder: <strong>${escapeHtml(currentFolder.name)}</strong>`;
     window.contextMenuNoteId = noteId; // store for later use
     updateMoveFolderDropdown(note.folderId);
     // Reset UI
@@ -650,6 +652,7 @@ function moveNoteToFolder(noteId, targetFolderId) {
     note.folderId = targetFolderId;
     saveToStorage();
 
+    // Update active note if needed
     if (noteId === activeNoteId && sourceFolderId === activeFolderId) {
         const remainingNotes = getNotesInFolder(sourceFolderId);
         if (remainingNotes.length > 0) {
