@@ -15,7 +15,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap"
         rel="stylesheet">
-    <!-- Font Awesome 6 (Free) for better icons -->
+    <!-- Font Awesome 6 (Free) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -29,7 +29,6 @@
             </svg>
         </div>
         <div class="tool-group">
-            <!-- Search button -->
             <div class="tool-btn" id="searchBtn" data-tooltip="Search">
                 <i class="fas fa-search"></i>
             </div>
@@ -114,8 +113,7 @@
     </div>
 
     <main class="workspace">
-        <div class="writing-canvas" id="writingCanvas" contenteditable="true">
-        </div>
+        <div class="writing-canvas" id="writingCanvas" contenteditable="true"></div>
     </main>
 
     <div class="formatting-indicator" id="formattingIndicator"></div>
@@ -124,7 +122,7 @@
         <span>Exit Focus</span>
     </div>
 
-    <!-- Context menu -->
+    <!-- Context Menu -->
     <div class="context-menu" id="noteContextMenu">
         <div class="context-menu-item" id="ctxRename">
             <i class="fas fa-pencil-alt"></i> Rename
@@ -260,7 +258,7 @@
         </div>
     </div>
 
-    <!-- ==================== EXPORT MODAL (NO PDF OPTIONS) ==================== -->
+    <!-- Export Modal (no PDF options) -->
     <div class="form-modal" id="exportModal">
         <div class="form-box export-box">
             <h3><i class="fas fa-download" style="margin-right: 8px;"></i> Export Note</h3>
@@ -269,7 +267,6 @@
                 <input type="text" id="exportFileName" placeholder="Enter file name..." value="note">
             </div>
             <div class="export-options-grid">
-                <!-- PDF Card -->
                 <div class="export-card" data-format="pdf">
                     <div class="export-card-icon pdf">
                         <i class="fas fa-file-pdf"></i>
@@ -277,7 +274,6 @@
                     <h4>PDF</h4>
                     <p>High-quality document</p>
                 </div>
-                <!-- Markdown Card -->
                 <div class="export-card" data-format="markdown">
                     <div class="export-card-icon markdown">
                         <i class="fas fa-file-alt"></i>
@@ -285,7 +281,6 @@
                     <h4>Markdown</h4>
                     <p>.md format</p>
                 </div>
-                <!-- Text Card -->
                 <div class="export-card" data-format="text">
                     <div class="export-card-icon text">
                         <i class="fas fa-file"></i>
@@ -301,7 +296,7 @@
         </div>
     </div>
 
-    <!-- ==================== SEARCH MODAL ==================== -->
+    <!-- Search Modal -->
     <div class="form-modal" id="searchModal">
         <div class="form-box search-box">
             <h3><i class="fas fa-search" style="margin-right: 8px;"></i> Search Notes</h3>

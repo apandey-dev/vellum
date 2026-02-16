@@ -494,7 +494,7 @@ newNoteModal.addEventListener('click', (e) => {
     }
 });
 
-// Rename Note
+// Rename Note (used by context menu)
 confirmRenameBtn.addEventListener('click', () => {
     const newName = renameNoteInput.value.trim();
     if (newName && window.contextMenuNoteId) {
@@ -502,15 +502,17 @@ confirmRenameBtn.addEventListener('click', () => {
         renameNoteModal.classList.remove('show');
         const index = modalStack.indexOf(renameNoteModal);
         if (index > -1) modalStack.splice(index, 1);
+        window.contextMenuNoteId = null; // Clear after use
     }
 });
 cancelRenameBtn.addEventListener('click', () => {
     renameNoteModal.classList.remove('show');
     const index = modalStack.indexOf(renameNoteModal);
     if (index > -1) modalStack.splice(index, 1);
+    window.contextMenuNoteId = null;
 });
 
-// Delete Note
+// Delete Note (used by context menu)
 deleteBtn.addEventListener('click', () => {
     if (!activeNoteId) { showFormattingIndicator('No note to delete'); return; }
     const folderNotes = getNotesInFolder(activeFolderId);
@@ -526,16 +528,22 @@ cancelDeleteBtn.addEventListener('click', () => {
     if (index > -1) modalStack.splice(index, 1);
 });
 confirmDeleteBtn.addEventListener('click', () => {
-    deleteNote(activeNoteId);
+    // If we have a context menu note ID, use that; otherwise use activeNoteId
+    const noteIdToDelete = window.contextMenuNoteId || activeNoteId;
+    if (noteIdToDelete) {
+        deleteNote(noteIdToDelete);
+    }
     confirmModal.classList.remove('show');
     const index = modalStack.indexOf(confirmModal);
     if (index > -1) modalStack.splice(index, 1);
+    window.contextMenuNoteId = null; // Clear after use
 });
 confirmModal.addEventListener('click', (e) => {
     if (e.target === confirmModal) {
         confirmModal.classList.remove('show');
         const index = modalStack.indexOf(confirmModal);
         if (index > -1) modalStack.splice(index, 1);
+        window.contextMenuNoteId = null;
     }
 });
 
@@ -990,8 +998,7 @@ function init() {
     renderFolderList();
     renderNoteChips();
     loadActiveNote();
-    // Default Font Setup
-    const current = getCurrentFont();
-    document.getElementById('currentFont').textContent = current;
+    // Default Font Setup - set to Fredoka initially
+    document.getElementById('currentFont').textContent = 'Fredoka';
 }
 init();

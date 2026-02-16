@@ -20,7 +20,7 @@ const formattingConfig = {
 let savedCursorRange = null;
 let activeDropdown = null;
 
-// --- CURSOR LOGIC (unchanged) ---
+// --- CURSOR LOGIC ---
 function saveCursorRange() {
     const selection = window.getSelection();
     if (selection.rangeCount > 0) {
@@ -264,7 +264,7 @@ writingCanvas.addEventListener('paste', (e) => {
 });
 // Helper to escape HTML (for plain text insertion)
 function escapeHtml(unsafe) {
-    return unsafe.replace(/[&<>"]/g, function (m) {
+    return unsafe.replace(/[&<>"]/g, function(m) {
         if (m === '&') return '&amp;';
         if (m === '<') return '&lt;';
         if (m === '>') return '&gt;';
@@ -293,7 +293,7 @@ writingCanvas.addEventListener('click', () => {
     updateFontDisplay();
 });
 
-// --- ENHANCED CONTEXT MENU (unchanged) ---
+// ==================== ENHANCED CONTEXT MENU ====================
 const noteContextMenu = document.getElementById('noteContextMenu');
 const ctxRename = document.getElementById('ctxRename');
 const ctxPin = document.getElementById('ctxPin');
@@ -308,6 +308,8 @@ function hideContextMenu() {
     folderSubmenu.classList.remove('show');
     window.contextMenuNoteId = null;
 }
+
+// Open context menu on right‑click
 noteChips.addEventListener('contextmenu', (e) => {
     const chip = e.target.closest('.chip');
     if (!chip) return;
@@ -317,24 +319,27 @@ noteChips.addEventListener('contextmenu', (e) => {
     if (note) {
         ctxPin.innerHTML = note.isPinned ? '<i class="fas fa-thumbtack-slash"></i> Unpin Note' : '<i class="fas fa-thumbtack"></i> Pin Note';
     }
-    hideContextMenu();
-    let x = e.pageX;
-    let y = e.pageY;
-    noteContextMenu.style.left = `${x}px`;
-    noteContextMenu.style.top = `${y}px`;
+    hideContextMenu(); // Close any existing menu
+    // Position menu near cursor
+    noteContextMenu.style.left = `${e.pageX}px`;
+    noteContextMenu.style.top = `${e.pageY}px`;
     noteContextMenu.classList.add('show');
 });
+
+// Rename
 ctxRename.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
     const note = notes.find(n => n.id === window.contextMenuNoteId);
     if (note) {
-        document.getElementById('renameNoteInput').value = note.name;
-        document.getElementById('renameNoteModal').classList.add('show');
-        pushToModalStack(document.getElementById('renameNoteModal'));
-        setTimeout(() => document.getElementById('renameNoteInput').focus(), 100);
+        renameNoteInput.value = note.name;
+        renameNoteModal.classList.add('show');
+        pushToModalStack(renameNoteModal);
+        setTimeout(() => renameNoteInput.focus(), 100);
     }
     hideContextMenu();
 });
+
+// Pin
 ctxPin.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
     const note = notes.find(n => n.id === window.contextMenuNoteId);
@@ -347,53 +352,118 @@ ctxPin.addEventListener('click', () => {
     }
     hideContextMenu();
 });
+
+// Delete
 ctxDelete.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
-    switchNote(window.contextMenuNoteId);
-    document.getElementById('deleteBtn').click();
-    hideContextMenu();
+    // Set active note to the one we want to delete (so delete confirmation uses it)
+    if (activeNoteId !== window.contextMenuNoteId) {
+        switchNote(window.contextMenuNoteId);
+    }
+    // Open delete confirmation
+    document.getElementById('deleteBtn').click(); // triggers confirm modal
+    hideContextMenu(); // hide context menu, modal will appear
 });
+
+// Move to – build submenu on hover
 moveToFolderItem.addEventListener('mouseenter', () => {
     if (!window.contextMenuNoteId) return;
     folderSubmenu.innerHTML = '';
+    // List all folders
     folders.forEach(f => {
         const note = notes.find(n => n.id === window.contextMenuNoteId);
-        if (note && note.folderId === f.id) return;
+        if (note && note.folderId === f.id) return; // skip current folder
         const opt = document.createElement('div');
         opt.className = 'folder-option';
         opt.textContent = f.name;
         opt.dataset.folderId = f.id;
         folderSubmenu.appendChild(opt);
     });
-    if (folderSubmenu.children.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'folder-option';
-        empty.style.opacity = '0.5';
-        empty.style.cursor = 'default';
-        empty.textContent = 'No other folders';
-        folderSubmenu.appendChild(empty);
+    // Add "New Folder..." option
+    const newFolderOpt = document.createElement('div');
+    newFolderOpt.className = 'folder-option';
+    newFolderOpt.innerHTML = '<i class="fas fa-plus" style="margin-right: 6px;"></i> New Folder...';
+    newFolderOpt.dataset.action = 'newFolder';
+    folderSubmenu.appendChild(newFolderOpt);
+
+    if (folderSubmenu.children.length === 1 && folderSubmenu.children[0].dataset.action === 'newFolder') {
+        // Only "New Folder..." exists (no other folders)
+        const emptyMsg = document.createElement('div');
+        emptyMsg.className = 'folder-option';
+        emptyMsg.style.opacity = '0.5';
+        emptyMsg.style.cursor = 'default';
+        emptyMsg.textContent = 'No other folders';
+        folderSubmenu.prepend(emptyMsg);
     }
+
     folderSubmenu.classList.add('show');
 });
+
+// Handle folder selection
 folderSubmenu.addEventListener('click', (e) => {
     const opt = e.target.closest('.folder-option');
-    if (!opt || !window.contextMenuNoteId || opt.textContent === 'No other folders') return;
-    moveNoteToFolder(window.contextMenuNoteId, opt.dataset.folderId);
+    if (!opt || !window.contextMenuNoteId) return;
+
+    if (opt.dataset.action === 'newFolder') {
+        // Open folder creation modal and after creation, move note to that new folder
+        // We'll use the existing manage folders modal, but we need to know when a new folder is created.
+        // Simpler: open a small prompt? But we have a modal already. Let's open the manage folders modal,
+        // and after the user creates a folder there, we can move the note. However, the modal is independent.
+        // Alternative: Use the same "Create Folder" from manage folders, but we need to know when it's done.
+        // We'll implement a temporary inline prompt for simplicity.
+        const newFolderName = prompt('Enter new folder name:');
+        if (newFolderName && newFolderName.trim()) {
+            const folder = { id: generateId(), name: newFolderName.trim(), isDefault: false };
+            folders.push(folder);
+            saveToStorage();
+            renderFolderList();      // update folder list in manage modal
+            updateFolderDropdown();  // update dropdown in new note modal
+            // Now move the note to this new folder
+            moveNoteToFolder(window.contextMenuNoteId, folder.id);
+        }
+        hideContextMenu();
+        return;
+    }
+
+    const folderId = opt.dataset.folderId;
+    if (folderId) {
+        moveNoteToFolder(window.contextMenuNoteId, folderId);
+    }
     hideContextMenu();
 });
+
+// Close context menu when clicking elsewhere
 document.addEventListener('click', (e) => {
-    if (noteContextMenu.classList.contains('show') && !noteContextMenu.contains(e.target)) hideContextMenu();
-});
-function moveNoteToFolder(nId, fId) {
-    const note = notes.find(n => n.id === nId);
-    if (!note || note.folderId === fId) return;
-    note.folderId = fId;
-    saveToStorage();
-    if (nId === activeNoteId && activeFolderId !== fId) {
-        const remaining = getNotesInFolder(activeFolderId);
-        activeNoteId = remaining.length ? remaining[0].id : null;
+    if (noteContextMenu.classList.contains('show') && !noteContextMenu.contains(e.target)) {
+        hideContextMenu();
     }
-    renderNoteChips();
-    loadActiveNote();
+});
+
+// Function to move a note to a different folder
+function moveNoteToFolder(noteId, targetFolderId) {
+    const note = notes.find(n => n.id === noteId);
+    if (!note || note.folderId === targetFolderId) return;
+
+    const sourceFolderId = note.folderId;
+    note.folderId = targetFolderId;
+    saveToStorage();
+
+    // If the moved note was the active note and its source folder is the current folder,
+    // we need to switch to another note in the current folder (or show empty)
+    if (noteId === activeNoteId && sourceFolderId === activeFolderId) {
+        const remainingNotes = getNotesInFolder(sourceFolderId);
+        if (remainingNotes.length > 0) {
+            activeNoteId = remainingNotes[0].id;
+        } else {
+            activeNoteId = null;
+        }
+        saveToStorage();
+        renderNoteChips();
+        loadActiveNote();
+    } else {
+        // Just refresh chips (the note disappears from current folder's list)
+        renderNoteChips();
+    }
+
     showFormattingIndicator('Note moved', 'success');
 }

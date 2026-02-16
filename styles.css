@@ -8,7 +8,7 @@
     display: none;
 }
 
-/* --- CSS VARIABLES (unchanged) --- */
+/* --- CSS VARIABLES --- */
 :root {
     /* LIGHT Mode (Default) */
     --bg-canvas: #f2f4f7;
@@ -78,7 +78,7 @@ body {
     background-size: 24px 24px;
 }
 
-/* --- Sidebar (unchanged except minor icon adjustments) --- */
+/* --- Sidebar --- */
 .sidebar {
     width: 68px;
     height: 94vh;
@@ -183,7 +183,7 @@ body {
     align-items: center;
 }
 
-/* --- Top Bar (unchanged) --- */
+/* --- Top Bar --- */
 .top-bar-wrapper {
     position: absolute;
     top: 3vh;
@@ -371,7 +371,6 @@ body {
     font-size: 16px;
 }
 
-/* Font Preview Styling */
 .font-option[data-font="Fredoka"] {
     font-family: 'Fredoka', sans-serif;
 }
@@ -438,7 +437,7 @@ body {
     background-color: rgba(245, 158, 11, 0.25);
 }
 
-/* --- Workspace (unchanged) --- */
+/* --- Workspace --- */
 .workspace {
     flex: 1;
     display: flex;
@@ -512,7 +511,7 @@ body {
     border-top: 2px dashed var(--border-color);
 }
 
-/* --- Formatting Indicator (unchanged) --- */
+/* --- Formatting Indicator --- */
 .formatting-indicator {
     position: fixed;
     bottom: 30px;
@@ -549,7 +548,7 @@ body {
     border-color: #ef4444 !important;
 }
 
-/* --- Dropdown Menus (unchanged) --- */
+/* --- Dropdown Menus --- */
 .dropdown-menu {
     position: absolute;
     left: 80px;
@@ -598,7 +597,7 @@ body {
     font-size: 18px;
 }
 
-/* --- Custom Select (unchanged) --- */
+/* --- Custom Select --- */
 .custom-select {
     position: relative;
     width: 100%;
@@ -699,7 +698,7 @@ body {
     background: var(--text-primary);
 }
 
-/* --- Share Modal (unchanged) --- */
+/* --- Share Modal --- */
 .share-box {
     max-width: 450px !important;
     text-align: center;
@@ -848,7 +847,7 @@ body {
     opacity: 0.5;
 }
 
-/* ==================== REDESIGNED EXPORT MODAL ==================== */
+/* ==================== EXPORT MODAL ==================== */
 .export-box {
     max-width: 550px !important;
     min-width: 500px !important;
@@ -922,64 +921,6 @@ body {
     font-size: 12px;
     color: var(--text-secondary);
     margin: 0;
-}
-
-.pdf-options {
-    border-top: 1px solid var(--border-color);
-    padding-top: 20px;
-    margin-top: 8px;
-    animation: fadeIn 0.3s ease;
-}
-
-.theme-toggle-pill {
-    background: var(--bg-canvas);
-    border: 1px solid var(--border-color);
-    border-radius: 24px;
-    display: flex;
-    position: relative;
-    padding: 4px;
-    cursor: pointer;
-    width: 220px;
-    height: 52px;
-    margin-top: 8px;
-}
-
-.theme-pill-option {
-    flex: 1;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    transition: color 0.3s;
-    gap: 8px;
-    border-radius: 20px;
-}
-
-.theme-pill-option.active {
-    color: var(--bg-canvas);
-}
-
-.theme-pill-slider {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    width: calc(50% - 4px);
-    height: calc(100% - 8px);
-    background: var(--text-primary);
-    border-radius: 20px;
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 1;
-}
-
-.theme-toggle-pill[data-theme="light"] .theme-pill-slider {
-    transform: translateX(100%);
-}
-
-.theme-pill-option i {
-    font-size: 18px;
 }
 
 /* ==================== SEARCH MODAL ==================== */
@@ -1065,7 +1006,7 @@ body {
     font-size: 12px;
 }
 
-/* --- Focus & Restore (unchanged) --- */
+/* --- Focus & Restore --- */
 .sidebar.hidden {
     transform: translateX(-180%);
 }
@@ -1124,7 +1065,7 @@ body {
     box-shadow: 0 12px 50px rgba(0, 0, 0, 0.4);
 }
 
-/* --- Confirmation / Form Modals (unchanged) --- */
+/* --- Confirmation / Form Modals --- */
 .confirm-modal,
 .form-modal {
     position: fixed;
@@ -1324,7 +1265,7 @@ body {
     color: white;
 }
 
-/* --- Empty Folder Message (unchanged) --- */
+/* --- Empty Folder Message --- */
 .writing-canvas.empty-folder-message {
     display: flex;
     align-items: center;
@@ -1397,7 +1338,7 @@ body {
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-/* --- Disabled Button Styles (unchanged) --- */
+/* --- Disabled Button Styles --- */
 .tool-btn.disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -1426,7 +1367,7 @@ body {
     margin-right: 5px;
 }
 
-/* ==================== PDF EXPORT FIXES (unchanged) ==================== */
+/* ==================== PDF EXPORT FIXES ==================== */
 #pdf-export-container {
     all: initial !important;
     font-family: inherit !important;
@@ -1532,7 +1473,7 @@ body {
     color: #000000 !important;
 }
 
-/* --- Context Menu (unchanged) --- */
+/* --- Context Menu --- */
 .context-menu {
     position: fixed;
     background: var(--bg-glass);
