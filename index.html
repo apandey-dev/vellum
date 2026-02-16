@@ -29,7 +29,7 @@
             </svg>
         </div>
         <div class="tool-group">
-            <!-- Search button (new) -->
+            <!-- Search button -->
             <div class="tool-btn" id="searchBtn" data-tooltip="Search">
                 <i class="fas fa-search"></i>
             </div>
@@ -124,7 +124,7 @@
         <span>Exit Focus</span>
     </div>
 
-    <!-- Context menu (unchanged except icons) -->
+    <!-- Context menu -->
     <div class="context-menu" id="noteContextMenu">
         <div class="context-menu-item" id="ctxRename">
             <i class="fas fa-pencil-alt"></i> Rename
@@ -144,7 +144,7 @@
         </div>
     </div>
 
-    <!-- Confirm Delete Modal (unchanged) -->
+    <!-- Confirm Delete Modal -->
     <div class="confirm-modal" id="confirmModal">
         <div class="confirm-box">
             <h3>Delete Note?</h3>
@@ -156,7 +156,7 @@
         </div>
     </div>
 
-    <!-- Rename Modal (unchanged) -->
+    <!-- Rename Modal -->
     <div class="form-modal" id="renameNoteModal">
         <div class="form-box">
             <h3>Rename Note</h3>
@@ -171,7 +171,7 @@
         </div>
     </div>
 
-    <!-- New Note Modal (unchanged) -->
+    <!-- New Note Modal -->
     <div class="form-modal" id="newNoteModal">
         <div class="form-box">
             <h3>Create New Note</h3>
@@ -196,7 +196,7 @@
         </div>
     </div>
 
-    <!-- Manage Folders Modal (unchanged) -->
+    <!-- Manage Folders Modal -->
     <div class="form-modal" id="manageFoldersModal">
         <div class="form-box">
             <h3>Manage Folders</h3>
@@ -212,7 +212,7 @@
         </div>
     </div>
 
-    <!-- Confirm Folder Delete Modal (unchanged) -->
+    <!-- Confirm Folder Delete Modal -->
     <div class="confirm-modal" id="confirmFolderDeleteModal">
         <div class="confirm-box">
             <div class="confirm-icon">
@@ -227,7 +227,7 @@
         </div>
     </div>
 
-    <!-- Share Modal (unchanged) -->
+    <!-- Share Modal -->
     <div class="form-modal" id="shareModal">
         <div class="form-box share-box">
             <h3>Share Note</h3>
@@ -260,7 +260,7 @@
         </div>
     </div>
 
-    <!-- ==================== REDESIGNED EXPORT MODAL ==================== -->
+    <!-- ==================== EXPORT MODAL (NO PDF OPTIONS) ==================== -->
     <div class="form-modal" id="exportModal">
         <div class="form-box export-box">
             <h3><i class="fas fa-download" style="margin-right: 8px;"></i> Export Note</h3>
@@ -294,31 +294,6 @@
                     <p>Plain text file</p>
                 </div>
             </div>
-            <!-- PDF Options (visible only when PDF is selected) -->
-            <div class="pdf-options" id="pdfOptions" style="display: none;">
-                <div class="form-group center">
-                    <label>PDF Theme</label>
-                    <div class="theme-toggle-pill">
-                        <div class="theme-pill-option" data-theme="dark">
-                            <i class="fas fa-moon"></i>
-                            <span>Dark</span>
-                        </div>
-                        <div class="theme-pill-option active" data-theme="light">
-                            <i class="fas fa-sun"></i>
-                            <span>Light</span>
-                        </div>
-                        <div class="theme-pill-slider"></div>
-                    </div>
-                </div>
-                <!-- Optional header/footer toggle (hidden by default, kept for future) -->
-                <div class="form-group hidden">
-                    <label>Include Header/Footer</label>
-                    <div class="toggle-switch">
-                        <input type="checkbox" id="includeHeaderFooter" checked>
-                        <span class="toggle-slider"></span>
-                    </div>
-                </div>
-            </div>
             <div class="form-actions export-actions">
                 <button class="form-btn secondary" id="closeExportModal">Cancel</button>
                 <button class="form-btn primary" id="exportConfirmBtn" disabled>Export</button>
@@ -326,7 +301,7 @@
         </div>
     </div>
 
-    <!-- ==================== NEW SEARCH MODAL ==================== -->
+    <!-- ==================== SEARCH MODAL ==================== -->
     <div class="form-modal" id="searchModal">
         <div class="form-box search-box">
             <h3><i class="fas fa-search" style="margin-right: 8px;"></i> Search Notes</h3>
@@ -334,7 +309,6 @@
                 <input type="text" id="searchInput" placeholder="Type to search notes..." autocomplete="off">
             </div>
             <div class="search-results" id="searchResults">
-                <!-- Results will be dynamically populated -->
                 <div class="search-placeholder">Start typing to search...</div>
             </div>
             <div class="form-actions">

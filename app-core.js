@@ -25,10 +25,6 @@ const closeExportModalBtn = document.getElementById('closeExportModal');
 const exportConfirmBtn = document.getElementById('exportConfirmBtn');
 const exportFileNameInput = document.getElementById('exportFileName');
 const exportCards = document.querySelectorAll('.export-card');
-const pdfOptions = document.getElementById('pdfOptions');
-const themeTogglePill = document.querySelector('.theme-toggle-pill');
-const themePillOptions = document.querySelectorAll('.theme-pill-option');
-const includeHeaderFooter = document.getElementById('includeHeaderFooter');
 const confirmFolderDeleteModal = document.getElementById('confirmFolderDeleteModal');
 const cancelFolderDeleteBtn = document.getElementById('cancelFolderDelete');
 const confirmFolderDeleteBtn = document.getElementById('confirmFolderDelete');
@@ -38,7 +34,7 @@ const confirmRenameBtn = document.getElementById('confirmRenameBtn');
 const cancelRenameBtn = document.getElementById('cancelRenameBtn');
 
 // Button elements
-const searchBtn = document.getElementById('searchBtn');          // NEW
+const searchBtn = document.getElementById('searchBtn');
 const exportBtn = document.getElementById('exportBtn');
 const deleteBtn = document.getElementById('deleteBtn');
 const addNoteBtn = document.getElementById('addNoteBtn');
@@ -49,7 +45,7 @@ const shareBtn = document.getElementById('shareBtn');
 // Note chips container
 const noteChips = document.getElementById('noteChips');
 
-// Search Modal elements (NEW)
+// Search Modal elements
 const searchModal = document.getElementById('searchModal');
 const searchInput = document.getElementById('searchInput');
 const searchResults = document.getElementById('searchResults');
@@ -666,7 +662,7 @@ document.getElementById('shareModal').addEventListener('click', (e) => {
     }
 });
 
-// --- EXPORT & PDF (updated with multi-page) ---
+// --- EXPORT (no theme options) ---
 exportBtn.addEventListener('click', () => {
     if (!activeNoteId) { showFormattingIndicator('No note to export'); return; }
     const note = notes.find(n => n.id === activeNoteId);
@@ -674,13 +670,6 @@ exportBtn.addEventListener('click', () => {
     exportCards.forEach(card => card.classList.remove('selected'));
     selectedExportFormat = null;
     exportConfirmBtn.disabled = true;
-    const currentTheme = html.getAttribute('data-theme');
-    themeTogglePill.dataset.theme = currentTheme;
-    themePillOptions.forEach(opt => {
-        opt.classList.remove('active');
-        if (opt.dataset.theme === currentTheme) opt.classList.add('active');
-    });
-    pdfOptions.style.display = 'none'; // Hide PDF options initially
     exportModal.classList.add('show');
     pushToModalStack(exportModal);
 });
@@ -702,20 +691,6 @@ exportCards.forEach(card => {
         card.classList.add('selected');
         selectedExportFormat = card.dataset.format;
         exportConfirmBtn.disabled = false;
-        // Show/hide PDF options
-        if (selectedExportFormat === 'pdf') {
-            pdfOptions.style.display = 'block';
-        } else {
-            pdfOptions.style.display = 'none';
-        }
-    });
-});
-themePillOptions.forEach(option => {
-    option.addEventListener('click', () => {
-        const selectedTheme = option.dataset.theme;
-        themeTogglePill.dataset.theme = selectedTheme;
-        themePillOptions.forEach(opt => opt.classList.remove('active'));
-        option.classList.add('active');
     });
 });
 exportConfirmBtn.addEventListener('click', async () => {
@@ -729,13 +704,14 @@ exportConfirmBtn.addEventListener('click', async () => {
     else if (selectedExportFormat === 'text') exportAsText(fileName);
 });
 
-// Multi-page PDF Generation
+// Multi-page PDF Generation (uses current theme)
 async function exportAsPDF(fileName) {
     try {
         const fontName = document.getElementById('currentFont').textContent || 'Fredoka';
         const note = notes.find(n => n.id === activeNoteId);
         const content = writingCanvas.innerHTML;
-        const selectedTheme = themeTogglePill.dataset.theme || 'light';
+        // Use current app theme for PDF
+        const selectedTheme = html.getAttribute('data-theme') || 'light';
         const tempContainer = document.createElement('div');
         tempContainer.id = 'pdf-export-container';
         tempContainer.setAttribute('data-theme', selectedTheme);
@@ -744,7 +720,7 @@ async function exportAsPDF(fileName) {
             position: 'absolute',
             left: '-9999px',
             top: '0',
-            width: '794px',           // A4 width at 96dpi approx
+            width: '794px',
             lineHeight: '1.6',
             fontSize: '16px',
             wordBreak: 'break-word',
@@ -773,9 +749,8 @@ async function exportAsPDF(fileName) {
         tempContainer.appendChild(contentDiv);
         document.body.appendChild(tempContainer);
 
-        // Render full canvas
         const canvas = await html2canvas(tempContainer, {
-            scale: 2,                 // Slightly lower scale for performance
+            scale: 2,
             useCORS: true,
             backgroundColor: selectedTheme === 'dark' ? '#1a1a1a' : '#ffffff',
             allowTaint: true,
@@ -797,14 +772,12 @@ async function exportAsPDF(fileName) {
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
 
-        // Calculate the height of one PDF page in canvas pixels
         const pageHeightPx = (pdfHeight / pdfWidth) * canvasWidth;
         let totalPages = Math.ceil(canvasHeight / pageHeightPx);
 
         for (let i = 0; i < totalPages; i++) {
             if (i > 0) pdf.addPage();
             const yOffset = i * pageHeightPx;
-            // Create a new canvas for the current page slice
             const pageCanvas = document.createElement('canvas');
             pageCanvas.width = canvasWidth;
             pageCanvas.height = Math.min(pageHeightPx, canvasHeight - yOffset);
@@ -977,8 +950,21 @@ searchInput.addEventListener('input', () => {
             </div>
         `;
         card.addEventListener('click', () => {
-            // Switch to this note
-            switchNote(note.id);
+            // Switch to this note and update folder
+            saveCurrentNote();
+            // Record last note for current folder before switching
+            if (activeNoteId) {
+                lastNotePerFolder[activeFolderId] = activeNoteId;
+            }
+            // Set new active folder and note
+            activeFolderId = note.folderId;
+            activeNoteId = note.id;
+            // Optionally record last note for new folder
+            lastNotePerFolder[activeFolderId] = note.id;
+            saveToStorage();
+            renderNoteChips();
+            renderFolderList();
+            loadActiveNote();
             searchModal.classList.remove('show');
             const index = modalStack.indexOf(searchModal);
             if (index > -1) modalStack.splice(index, 1);
@@ -986,7 +972,7 @@ searchInput.addEventListener('input', () => {
         searchResults.appendChild(card);
     });
 });
-// Helper to escape HTML (prevent XSS)
+// Helper to escape HTML
 function escapeHtml(unsafe) {
     return unsafe.replace(/[&<>"]/g, function (m) {
         if (m === '&') return '&amp;';

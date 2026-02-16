@@ -20,7 +20,7 @@ const formattingConfig = {
 let savedCursorRange = null;
 let activeDropdown = null;
 
-// --- CURSOR LOGIC ---
+// --- CURSOR LOGIC (unchanged) ---
 function saveCursorRange() {
     const selection = window.getSelection();
     if (selection.rangeCount > 0) {
@@ -46,7 +46,7 @@ function restoreCursorRange() {
 }
 function clearSavedCursorRange() { savedCursorRange = null; }
 
-// --- LINE FORMATTING (Basic Structure Shortcuts Only) ---
+// --- LINE FORMATTING (using execCommand for undo) ---
 function getCurrentLine() {
     const selection = window.getSelection();
     if (selection.rangeCount === 0) return null;
@@ -66,24 +66,27 @@ function processLineFormatting(lineNode) {
     if (!lineNode) return false;
     let text = lineNode.textContent || '';
     let processed = false;
-    let newHTML = '';
+    let htmlToInsert = '';
     const trimmedText = text.trim();
     if (trimmedText === '===') {
-        newHTML = '<div class="horizontal-line thick"></div>';
+        htmlToInsert = '<div class="horizontal-line thick"></div>';
         processed = true;
     } else if (trimmedText === '---') {
-        newHTML = '<div class="horizontal-line dashed"></div>';
+        htmlToInsert = '<div class="horizontal-line dashed"></div>';
         processed = true;
     }
     if (processed) {
+        // Use execCommand to insert HTML for undo support
         const selection = window.getSelection();
-        const temp = document.createElement('div');
-        temp.innerHTML = newHTML;
-        const newNode = temp.firstChild;
-        if (lineNode.nodeType === 3) lineNode.parentNode.replaceChild(newNode, lineNode);
-        else lineNode.parentNode.replaceChild(newNode, lineNode);
+        const range = selection.getRangeAt(0);
+        // Delete the current line content
+        range.deleteContents();
+        // Insert the new element
+        document.execCommand('insertHTML', false, htmlToInsert);
+        // Move cursor after inserted element
         const newRange = document.createRange();
-        newRange.setStartAfter(newNode);
+        const container = writingCanvas;
+        newRange.setStartAfter(container.lastChild || container);
         newRange.collapse(true);
         selection.removeAllRanges();
         selection.addRange(newRange);
@@ -93,7 +96,7 @@ function processLineFormatting(lineNode) {
     return false;
 }
 
-// --- FONT SELECTOR LOGIC ---
+// --- FONT SELECTOR LOGIC (using execCommand) ---
 const fontSelectorBtn = document.getElementById('fontSelectorBtn');
 const fontDropdown = document.getElementById('fontDropdown');
 const fontOptions = document.querySelectorAll('.font-option');
@@ -148,32 +151,14 @@ function updateFontDisplay() {
     });
 }
 function applyFontAtCursor(fontName) {
-    const family = formattingConfig.fonts[fontName];
     if (savedCursorRange) restoreCursorRange();
     else writingCanvas.focus();
+    // execCommand('fontName') is undoable
     document.execCommand('fontName', false, fontName);
-    // Fallback: wrap with span for better cross-browser
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
-    const range = selection.getRangeAt(0);
-    const span = document.createElement('span');
-    span.style.fontFamily = family;
-    if (!range.collapsed) {
-        span.appendChild(range.extractContents());
-        range.insertNode(span);
-    } else {
-        const zwsp = document.createTextNode('\u200B');
-        span.appendChild(zwsp);
-        range.insertNode(span);
-        range.setStart(zwsp, 1);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-    }
     saveCurrentNote();
 }
 
-// --- BULLETS & DROPDOWNS ---
+// --- BULLETS (using execCommand for undo) ---
 const bulletsBtn = document.getElementById('bulletsBtn');
 const bulletsMenu = document.getElementById('bulletsMenu');
 
@@ -207,34 +192,33 @@ function insertBulletList(type) {
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
     const range = selection.getRangeAt(0);
-    const div = document.createElement('div');
-    div.style.marginLeft = '40px';
-    div.style.position = 'relative';
-    div.className = 'pdf-list-item ' + (type === 'numbered' ? 'numbered' : 'bullet');
+    let html;
     if (type === 'numbered') {
-        div.textContent = '1. ';
+        html = '<div style="margin-left:40px;position:relative;" class="pdf-list-item numbered">1. </div>';
     } else {
-        div.textContent = '• ';
+        html = '<div style="margin-left:40px;position:relative;" class="pdf-list-item bullet">• </div>';
     }
-    if (!range.collapsed) {
-        div.textContent += range.toString();
-        range.deleteContents();
+    // Use execCommand for undoable insertion
+    document.execCommand('insertHTML', false, html);
+    // Place cursor inside the new div
+    const newDiv = writingCanvas.lastChild;
+    if (newDiv) {
+        const newRange = document.createRange();
+        newRange.setStart(newDiv, newDiv.childNodes.length);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
     }
-    range.insertNode(div);
-    range.setStart(div, div.textContent.length);
-    range.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(range);
     saveCurrentNote();
 }
 
-// ==================== PASTE SANITIZATION ====================
+// ==================== PASTE SANITIZATION (using execCommand for undo) ====================
 writingCanvas.addEventListener('paste', (e) => {
     e.preventDefault();
     const clipboardData = e.clipboardData || window.clipboardData;
     if (!clipboardData) return;
 
-    // Get plain text first (preferred for clean paste)
+    // Try plain text first
     let text = clipboardData.getData('text/plain');
     if (text) {
         // Insert plain text, preserving line breaks
@@ -242,30 +226,27 @@ writingCanvas.addEventListener('paste', (e) => {
         if (!selection.rangeCount) return;
         const range = selection.getRangeAt(0);
         range.deleteContents();
+
+        // Build HTML with <br> for line breaks
         const lines = text.split(/\r\n|\r|\n/);
+        let html = '';
         for (let i = 0; i < lines.length; i++) {
-            const lineNode = document.createTextNode(lines[i]);
-            range.insertNode(lineNode);
-            if (i < lines.length - 1) {
-                range.insertNode(document.createElement('br'));
-            }
+            html += escapeHtml(lines[i]);
+            if (i < lines.length - 1) html += '<br>';
         }
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        document.execCommand('insertHTML', false, html);
         saveCurrentNote();
         return;
     }
 
-    // If no plain text, fallback to sanitized HTML
+    // Fallback to sanitized HTML
     let html = clipboardData.getData('text/html');
     if (html) {
-        // Sanitize HTML: remove style, class, id, data-* attributes, unwanted tags
+        // Sanitize: remove style, class, id, unwanted tags
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, null, false);
         while (walker.nextNode()) {
             const el = walker.currentNode;
-            // Remove all attributes except those we want to keep (none by default)
             const attrs = el.attributes;
             for (let i = attrs.length - 1; i >= 0; i--) {
                 const attrName = attrs[i].name;
@@ -273,25 +254,24 @@ writingCanvas.addEventListener('paste', (e) => {
                     el.removeAttribute(attrName);
                 }
             }
-            // Remove unwanted tags (like script, style, meta, link)
             if (['SCRIPT', 'STYLE', 'META', 'LINK', 'OBJECT', 'IFRAME'].includes(el.tagName)) {
                 el.remove();
             }
         }
-        // Convert block elements to divs with line breaks? We'll let browser handle.
-        // Insert the sanitized HTML
-        const selection = window.getSelection();
-        if (!selection.rangeCount) return;
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        const fragment = range.createContextualFragment(doc.body.innerHTML);
-        range.insertNode(fragment);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        document.execCommand('insertHTML', false, doc.body.innerHTML);
         saveCurrentNote();
     }
 });
+// Helper to escape HTML (for plain text insertion)
+function escapeHtml(unsafe) {
+    return unsafe.replace(/[&<>"]/g, function (m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        if (m === '"') return '&quot;';
+        return m;
+    });
+}
 
 // --- EVENTS ---
 let processing = false;
@@ -313,7 +293,7 @@ writingCanvas.addEventListener('click', () => {
     updateFontDisplay();
 });
 
-// --- ENHANCED CONTEXT MENU (RENAME, MOVE, PIN) ---
+// --- ENHANCED CONTEXT MENU (unchanged) ---
 const noteContextMenu = document.getElementById('noteContextMenu');
 const ctxRename = document.getElementById('ctxRename');
 const ctxPin = document.getElementById('ctxPin');
