@@ -33,7 +33,7 @@ const renameNoteInput = document.getElementById('renameNoteInput');
 const confirmRenameBtn = document.getElementById('confirmRenameBtn');
 const cancelRenameBtn = document.getElementById('cancelRenameBtn');
 
-// Move note modal elements (added)
+// Move note modal elements
 const moveNoteModal = document.getElementById('moveNoteModal');
 const moveNoteNameSpan = document.getElementById('moveNoteName');
 const moveFolderSelectWrapper = document.getElementById('moveFolderSelectWrapper');
@@ -44,6 +44,9 @@ const moveNewFolderInput = document.getElementById('moveNewFolderName');
 const createAndMoveBtn = document.getElementById('createAndMoveBtn');
 const cancelMoveBtn = document.getElementById('cancelMoveBtn');
 const confirmMoveBtn = document.getElementById('confirmMoveBtn');
+
+// ADD THIS LINE (Share Modal)
+const shareModal = document.getElementById('shareModal');
 
 // Button elements
 const searchBtn = document.getElementById('searchBtn');
@@ -83,6 +86,96 @@ let selectedExportFormat = null;
 
 // ESC Key Hierarchy Management
 let modalStack = [];
+
+// ==================== UNDO / REDO ====================
+let undoStack = [];               // array of snapshots
+let undoIndex = -1;               // current position in stack (-1 means no state yet)
+const MAX_UNDO = 50;
+
+/**
+ * Capture a deep copy of the entire state and push it onto the undo stack.
+ * Call this BEFORE making any state-changing operation.
+ */
+function pushToUndo() {
+    // Truncate any forward history if we are not at the end
+    if (undoIndex < undoStack.length - 1) {
+        undoStack = undoStack.slice(0, undoIndex + 1);
+    }
+    const snapshot = {
+        notes: JSON.parse(JSON.stringify(notes)),
+        folders: JSON.parse(JSON.stringify(folders)),
+        activeNoteId: activeNoteId,
+        activeFolderId: activeFolderId,
+        lastNotePerFolder: JSON.parse(JSON.stringify(lastNotePerFolder))
+    };
+    undoStack.push(snapshot);
+    if (undoStack.length > MAX_UNDO) {
+        undoStack.shift();
+    } else {
+        undoIndex++;
+    }
+}
+
+/**
+ * Restore a state from the undo stack at the given index.
+ * @param {number} index - The index in undoStack to restore.
+ */
+function restoreState(index) {
+    if (index < 0 || index >= undoStack.length) return;
+    const state = undoStack[index];
+    notes = JSON.parse(JSON.stringify(state.notes));
+    folders = JSON.parse(JSON.stringify(state.folders));
+    activeNoteId = state.activeNoteId;
+    activeFolderId = state.activeFolderId;
+    lastNotePerFolder = JSON.parse(JSON.stringify(state.lastNotePerFolder));
+
+    // Ensure activeFolderId exists
+    if (!folders.find(f => f.id === activeFolderId)) {
+        activeFolderId = folders[0]?.id || null;
+    }
+    // Ensure activeNoteId exists in the current folder
+    if (activeNoteId && !notes.find(n => n.id === activeNoteId)) {
+        const folderNotes = getNotesInFolder(activeFolderId);
+        activeNoteId = folderNotes.length > 0 ? folderNotes[0].id : null;
+    }
+
+    saveToStorage();
+    renderNoteChips();
+    renderFolderList();
+    loadActiveNote();
+    undoIndex = index;
+}
+
+function undo() {
+    if (undoIndex > 0) {
+        restoreState(undoIndex - 1);
+        showFormattingIndicator('Undo', 'success');
+    } else {
+        showFormattingIndicator('Nothing to undo', 'error');
+    }
+}
+
+function redo() {
+    if (undoIndex < undoStack.length - 1) {
+        restoreState(undoIndex + 1);
+        showFormattingIndicator('Redo', 'success');
+    } else {
+        showFormattingIndicator('Nothing to redo', 'error');
+    }
+}
+
+// Keyboard shortcuts for undo/redo
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            undo();
+        } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+            e.preventDefault();
+            redo();
+        }
+    }
+});
 
 // --- HELPER FUNCTIONS ---
 function generateId() {
@@ -192,6 +285,7 @@ function saveCurrentNote() {
 }
 
 function createNote(name, folderId) {
+    pushToUndo(); // before change
     const note = {
         id: generateId(),
         name: name,
@@ -210,6 +304,7 @@ function createNote(name, folderId) {
 }
 
 function deleteNote(noteId) {
+    pushToUndo(); // before change
     const index = notes.findIndex(n => n.id === noteId);
     if (index > -1) {
         notes.splice(index, 1);
@@ -230,6 +325,7 @@ function deleteNote(noteId) {
 }
 
 function renameNote(noteId, newName) {
+    pushToUndo(); // before change
     const note = notes.find(n => n.id === noteId);
     if (note) {
         note.name = newName;
@@ -313,6 +409,7 @@ function togglePinNote() {
         showFormattingIndicator('No active note to pin');
         return;
     }
+    pushToUndo(); // before change
     const note = notes.find(n => n.id === activeNoteId);
     if (note) {
         note.isPinned = !note.isPinned;
@@ -326,6 +423,7 @@ pinBtn.addEventListener('click', togglePinNote);
 
 // --- FOLDER OPERATIONS ---
 function createFolder(name) {
+    pushToUndo(); // before change
     const folder = { id: generateId(), name: name, isDefault: false };
     folders.push(folder);
     saveToStorage();
@@ -503,14 +601,10 @@ function updateMoveFolderDropdown(excludeFolderId) {
         option.textContent = folder.name;
         option.dataset.folderId = folder.id;
         option.addEventListener('click', () => {
-            // Update selected display
             moveSelectedFolderName.textContent = folder.name;
-            // Remove selected class from others and add to this
             moveFolderSelectOptions.querySelectorAll('.select-option').forEach(opt => opt.classList.remove('selected'));
             option.classList.add('selected');
-            // Close dropdown
             moveFolderSelectWrapper.classList.remove('active');
-            // Enable the Move button
             confirmMoveBtn.disabled = false;
         });
         moveFolderSelectOptions.appendChild(option);
@@ -548,6 +642,7 @@ function openMoveModal(noteId) {
  * @param {string} targetFolderId 
  */
 function moveNoteToFolder(noteId, targetFolderId) {
+    pushToUndo(); // before change
     const note = notes.find(n => n.id === noteId);
     if (!note || note.folderId === targetFolderId) return;
 
@@ -555,8 +650,6 @@ function moveNoteToFolder(noteId, targetFolderId) {
     note.folderId = targetFolderId;
     saveToStorage();
 
-    // If the moved note was the active note and its source folder is the current folder,
-    // switch to another note in the current folder (or show empty)
     if (noteId === activeNoteId && sourceFolderId === activeFolderId) {
         const remainingNotes = getNotesInFolder(sourceFolderId);
         if (remainingNotes.length > 0) {
@@ -568,7 +661,6 @@ function moveNoteToFolder(noteId, targetFolderId) {
         renderNoteChips();
         loadActiveNote();
     } else {
-        // Just refresh chips (the note disappears from current folder's list)
         renderNoteChips();
     }
 
@@ -576,8 +668,6 @@ function moveNoteToFolder(noteId, targetFolderId) {
 }
 
 // --- Event listeners for move modal ---
-
-// Cancel button
 cancelMoveBtn.addEventListener('click', () => {
     moveNoteModal.classList.remove('show');
     const index = modalStack.indexOf(moveNoteModal);
@@ -585,7 +675,6 @@ cancelMoveBtn.addEventListener('click', () => {
     window.contextMenuNoteId = null;
 });
 
-// Move button (only enabled when a folder is selected)
 confirmMoveBtn.addEventListener('click', () => {
     const selectedOption = moveFolderSelectOptions.querySelector('.select-option.selected');
     if (!selectedOption) return;
@@ -599,38 +688,30 @@ confirmMoveBtn.addEventListener('click', () => {
     }
 });
 
-// Create & Move: creates a new folder and moves the note there
 createAndMoveBtn.addEventListener('click', () => {
     const newFolderName = moveNewFolderInput.value.trim();
     if (!newFolderName) {
         showFormattingIndicator('Please enter a folder name', 'error');
         return;
     }
-    // Create folder
-    const folder = { id: generateId(), name: newFolderName, isDefault: false };
-    folders.push(folder);
-    saveToStorage();
-    // Update UI components that list folders
-    renderFolderList();
-    updateFolderDropdown();
-    // Move note to this new folder
+    // Create folder (pushToUndo inside createFolder)
+    createFolder(newFolderName);
+    // The new folder is now in folders array, get its ID (last one)
+    const newFolder = folders[folders.length - 1];
     if (window.contextMenuNoteId) {
-        moveNoteToFolder(window.contextMenuNoteId, folder.id);
+        moveNoteToFolder(window.contextMenuNoteId, newFolder.id);
     }
-    // Close modal
     moveNoteModal.classList.remove('show');
     const index = modalStack.indexOf(moveNoteModal);
     if (index > -1) modalStack.splice(index, 1);
     window.contextMenuNoteId = null;
 });
 
-// Toggle folder dropdown in move modal
 moveFolderSelectTrigger.addEventListener('click', (e) => {
     e.stopPropagation();
     moveFolderSelectWrapper.classList.toggle('active');
 });
 
-// Close dropdown when clicking outside
 document.addEventListener('click', (e) => {
     if (!moveFolderSelectWrapper.contains(e.target)) {
         moveFolderSelectWrapper.classList.remove('active');
@@ -747,6 +828,7 @@ cancelFolderDeleteBtn.addEventListener('click', () => {
 confirmFolderDeleteBtn.addEventListener('click', () => {
     const folderId = confirmFolderDeleteModal.dataset.pendingFolderId;
     if (folderId) {
+        pushToUndo(); // before change
         const defaultFolderId = folders[0].id;
         notes.forEach(note => { if (note.folderId === folderId) note.folderId = defaultFolderId; });
         const index = folders.findIndex(f => f.id === folderId);
@@ -852,7 +934,7 @@ exportConfirmBtn.addEventListener('click', async () => {
     else if (selectedExportFormat === 'text') exportAsText(fileName);
 });
 
-// PDF export (unchanged) – copy from previous version
+// PDF export (fixed)
 async function exportAsPDF(fileName) {
     try {
         const fontName = document.getElementById('currentFont').textContent || 'Fredoka';
@@ -937,7 +1019,7 @@ async function exportAsPDF(fileName) {
         showFormattingIndicator('PDF exported successfully!', 'success');
     } catch (error) {
         console.error(error);
-        showFormattingIndicator('Error exporting PDF', 'error');
+        showFormattingIndicator('Error exporting PDF: ' + error.message, 'error');
     }
 }
 
@@ -1049,7 +1131,7 @@ setupEnterKeySubmission('newNoteName', 'createNewNote');
 setupEnterKeySubmission('newFolderName', 'createFolderBtn');
 setupEnterKeySubmission('renameNoteInput', 'confirmRenameBtn');
 setupEnterKeySubmission('exportFileName', 'exportConfirmBtn');
-setupEnterKeySubmission('moveNewFolderName', 'createAndMoveBtn'); // Enter in new folder input triggers Create & Move
+setupEnterKeySubmission('moveNewFolderName', 'createAndMoveBtn');
 
 // --- SEARCH MODAL ---
 searchBtn.addEventListener('click', () => {
@@ -1120,6 +1202,16 @@ function escapeHtml(unsafe) {
     });
 }
 
+// Debounced content change for undo (push after typing stops)
+let contentChangeTimer;
+writingCanvas.addEventListener('input', () => {
+    saveCurrentNote();
+    clearTimeout(contentChangeTimer);
+    contentChangeTimer = setTimeout(() => {
+        pushToUndo();
+    }, 1000);
+});
+
 // --- INITIALIZATION ---
 function init() {
     loadTheme();
@@ -1129,5 +1221,8 @@ function init() {
     loadActiveNote();
     const current = getCurrentFont();
     document.getElementById('currentFont').textContent = current;
+
+    // Push initial state to undo stack
+    pushToUndo();
 }
 init();

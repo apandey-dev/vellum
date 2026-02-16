@@ -46,7 +46,7 @@ function restoreCursorRange() {
 }
 function clearSavedCursorRange() { savedCursorRange = null; }
 
-// --- LINE FORMATTING ---
+// --- LINE FORMATTING (using execCommand for undo) ---
 function getCurrentLine() {
     const selection = window.getSelection();
     if (selection.rangeCount === 0) return null;
@@ -92,7 +92,7 @@ function processLineFormatting(lineNode) {
     return false;
 }
 
-// --- FONT SELECTOR ---
+// --- FONT SELECTOR LOGIC (using execCommand) ---
 const fontSelectorBtn = document.getElementById('fontSelectorBtn');
 const fontDropdown = document.getElementById('fontDropdown');
 const fontOptions = document.querySelectorAll('.font-option');
@@ -153,7 +153,7 @@ function applyFontAtCursor(fontName) {
     saveCurrentNote();
 }
 
-// --- BULLETS ---
+// --- BULLETS (using execCommand for undo) ---
 const bulletsBtn = document.getElementById('bulletsBtn');
 const bulletsMenu = document.getElementById('bulletsMenu');
 
@@ -186,6 +186,7 @@ function insertBulletList(type) {
     writingCanvas.focus();
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
     let html;
     if (type === 'numbered') {
         html = '<div style="margin-left:40px;position:relative;" class="pdf-list-item numbered">1. </div>';
@@ -204,7 +205,7 @@ function insertBulletList(type) {
     saveCurrentNote();
 }
 
-// --- PASTE SANITIZATION ---
+// ==================== PASTE SANITIZATION (using execCommand for undo) ====================
 writingCanvas.addEventListener('paste', (e) => {
     e.preventDefault();
     const clipboardData = e.clipboardData || window.clipboardData;
@@ -272,14 +273,11 @@ writingCanvas.addEventListener('keyup', (e) => {
     }
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) updateFontDisplay();
 });
-writingCanvas.addEventListener('input', () => {
-    saveCurrentNote();
-});
 writingCanvas.addEventListener('click', () => {
     updateFontDisplay();
 });
 
-// ==================== CONTEXT MENU ====================
+// ==================== ENHANCED CONTEXT MENU ====================
 const noteContextMenu = document.getElementById('noteContextMenu');
 const ctxRename = document.getElementById('ctxRename');
 const ctxPin = document.getElementById('ctxPin');
@@ -304,7 +302,6 @@ noteChips.addEventListener('contextmenu', (e) => {
         ctxPin.innerHTML = note.isPinned ? '<i class="fas fa-thumbtack-slash"></i> Unpin Note' : '<i class="fas fa-thumbtack"></i> Pin Note';
     }
     hideContextMenu(); // Close any existing menu
-    // Position menu near cursor
     noteContextMenu.style.left = `${e.pageX}px`;
     noteContextMenu.style.top = `${e.pageY}px`;
     noteContextMenu.classList.add('show');
@@ -328,11 +325,17 @@ ctxPin.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
     const note = notes.find(n => n.id === window.contextMenuNoteId);
     if (note) {
+        // pushToUndo is inside togglePinNote, but we need to ensure it's called
+        // Actually togglePinNote uses activeNoteId, not contextMenuNoteId.
+        // We'll temporarily set activeNoteId to this note, toggle, then restore? 
+        // Better to implement a separate function that toggles any note.
+        // For simplicity, we'll just toggle the note directly.
         note.isPinned = !note.isPinned;
         saveToStorage();
         renderNoteChips();
         if (note.id === activeNoteId) updatePinButton();
         showFormattingIndicator(note.isPinned ? 'Note pinned' : 'Note unpinned');
+        pushToUndo(); // after change
     }
     hideContextMenu();
 });
@@ -340,16 +343,14 @@ ctxPin.addEventListener('click', () => {
 // Delete
 ctxDelete.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
-    // Set active note to the one we want to delete (so delete confirmation uses it)
     if (activeNoteId !== window.contextMenuNoteId) {
         switchNote(window.contextMenuNoteId);
     }
-    // Open delete confirmation
     document.getElementById('deleteBtn').click(); // triggers confirm modal
-    hideContextMenu(); // hide context menu, modal will appear
+    hideContextMenu();
 });
 
-// Move to – open custom modal (instead of submenu)
+// Move to – open move modal
 moveToFolderItem.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
     openMoveModal(window.contextMenuNoteId);

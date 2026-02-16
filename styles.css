@@ -1164,7 +1164,7 @@ body {
     flex-shrink: 0;
 }
 
-/* --- Button styles for confirm modals --- */
+/* --- Button styles for confirm modals (added to match form-btn) --- */
 .confirm-actions {
     display: flex;
     gap: 12px;
@@ -1579,40 +1579,6 @@ body {
 
 .context-menu-item.delete-item i {
     color: #ef4444;
-}
-
-.context-menu-submenu {
-    position: absolute;
-    left: calc(100% + 5px);
-    top: 0;
-    background: var(--bg-glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 6px;
-    min-width: 150px;
-    display: none;
-    max-height: 300px;
-    overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-}
-
-.context-menu-submenu.show {
-    display: block;
-}
-
-.folder-option {
-    padding: 10px 12px;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--text-primary);
-    white-space: nowrap;
-    border-radius: 8px;
-}
-
-.folder-option:hover {
-    background-color: var(--hover-bg);
 }
 
 .icon-circle {
