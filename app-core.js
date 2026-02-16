@@ -937,85 +937,42 @@ exportConfirmBtn.addEventListener('click', async () => {
 // PDF export (fixed)
 async function exportAsPDF(fileName) {
     try {
-        const fontName = document.getElementById('currentFont').textContent || 'Fredoka';
-        const note = notes.find(n => n.id === activeNoteId);
-        const content = writingCanvas.innerHTML;
-        const selectedTheme = html.getAttribute('data-theme') || 'light';
-        const tempContainer = document.createElement('div');
-        tempContainer.id = 'pdf-export-container';
-        tempContainer.setAttribute('data-theme', selectedTheme);
-        tempContainer.setAttribute('data-font', fontName);
-        Object.assign(tempContainer.style, {
-            position: 'absolute',
-            left: '-9999px',
-            top: '0',
-            width: '794px',
-            lineHeight: '1.6',
-            fontSize: '16px',
-            wordBreak: 'break-word',
-            boxSizing: 'border-box',
-            padding: '60px 80px',
-            backgroundColor: selectedTheme === 'dark' ? '#1a1a1a' : '#ffffff',
-            color: selectedTheme === 'dark' ? '#ffffff' : '#000000'
-        });
-        const contentDiv = document.createElement('div');
-        contentDiv.innerHTML = content;
-        const divs = contentDiv.querySelectorAll('div');
-        divs.forEach(div => {
-            const text = div.textContent || '';
-            const style = div.getAttribute('style') || '';
-            if (style.includes('margin-left') || text.match(/^[•\d]/)) {
-                div.classList.add('pdf-list-item');
-                if (text.match(/^\d/)) div.classList.add('numbered');
-                else if (text.includes('•')) div.classList.add('bullet');
-                div.style.marginLeft = '40px';
-                div.style.padding = '2px 0';
-                div.style.position = 'relative';
-                div.style.display = 'block';
-            }
-        });
-        tempContainer.appendChild(contentDiv);
-        document.body.appendChild(tempContainer);
+        const element = document.createElement('div');
+        element.innerHTML = writingCanvas.innerHTML;
+        element.className = 'pdf-export-content';
 
-        const canvas = await html2canvas(tempContainer, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: selectedTheme === 'dark' ? '#1a1a1a' : '#ffffff',
-            allowTaint: true,
-            letterRendering: true,
-            logging: false
-        });
-        document.body.removeChild(tempContainer);
+        // Apply current font
+        const currentFont = getCurrentFont();
+        element.style.fontFamily = formattingConfig.fonts[currentFont] || 'Fredoka, sans-serif';
+        element.style.fontVariant = 'normal';
+        element.style.fontFeatureSettings = 'normal';
 
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4',
-            compress: true
+        // Ensure Clean UI: Force white background and black text for PDF
+        element.style.backgroundColor = '#ffffff';
+        element.style.color = '#000000';
+        element.style.padding = '20px';
+        element.style.lineHeight = '1.6';
+        element.style.fontSize = '12pt';
+
+        // Handle images to ensure they fit
+        const imgs = element.querySelectorAll('img');
+        imgs.forEach(img => {
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
         });
 
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
+        const opt = {
+            margin: 10, // mm
+            filename: `${fileName}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        };
 
-        const pageHeightPx = (pdfHeight / pdfWidth) * canvasWidth;
-        let totalPages = Math.ceil(canvasHeight / pageHeightPx);
+        // Use html2pdf
+        await html2pdf().set(opt).from(element).save();
 
-        for (let i = 0; i < totalPages; i++) {
-            if (i > 0) pdf.addPage();
-            const yOffset = i * pageHeightPx;
-            const pageCanvas = document.createElement('canvas');
-            pageCanvas.width = canvasWidth;
-            pageCanvas.height = Math.min(pageHeightPx, canvasHeight - yOffset);
-            const ctx = pageCanvas.getContext('2d');
-            ctx.drawImage(canvas, 0, yOffset, canvasWidth, pageCanvas.height, 0, 0, canvasWidth, pageCanvas.height);
-            const imgData = pageCanvas.toDataURL('image/png');
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, (pageCanvas.height / canvasWidth) * pdfWidth, undefined, 'FAST');
-        }
-
-        pdf.save(`${fileName}.pdf`);
         showFormattingIndicator('PDF exported successfully!', 'success');
     } catch (error) {
         console.error(error);
