@@ -33,6 +33,18 @@ const renameNoteInput = document.getElementById('renameNoteInput');
 const confirmRenameBtn = document.getElementById('confirmRenameBtn');
 const cancelRenameBtn = document.getElementById('cancelRenameBtn');
 
+// Move note modal elements (added)
+const moveNoteModal = document.getElementById('moveNoteModal');
+const moveNoteNameSpan = document.getElementById('moveNoteName');
+const moveFolderSelectWrapper = document.getElementById('moveFolderSelectWrapper');
+const moveFolderSelectTrigger = document.getElementById('moveFolderSelectTrigger');
+const moveSelectedFolderName = document.getElementById('moveSelectedFolderName');
+const moveFolderSelectOptions = document.getElementById('moveFolderSelectOptions');
+const moveNewFolderInput = document.getElementById('moveNewFolderName');
+const createAndMoveBtn = document.getElementById('createAndMoveBtn');
+const cancelMoveBtn = document.getElementById('cancelMoveBtn');
+const confirmMoveBtn = document.getElementById('confirmMoveBtn');
+
 // Button elements
 const searchBtn = document.getElementById('searchBtn');
 const exportBtn = document.getElementById('exportBtn');
@@ -140,6 +152,29 @@ function loadFromStorage() {
 function pushToModalStack(modal) {
     modalStack.push(modal);
 }
+
+// Generic outside click handler for all modals
+function setupModalClose(modalElement) {
+    modalElement.addEventListener('click', (e) => {
+        if (e.target === modalElement) {
+            modalElement.classList.remove('show');
+            const index = modalStack.indexOf(modalElement);
+            if (index > -1) modalStack.splice(index, 1);
+            // Clear any pending data
+            if (modalElement.id === 'confirmFolderDeleteModal') {
+                delete modalElement.dataset.pendingFolderId;
+            }
+            if (modalElement.id === 'moveNoteModal') {
+                window.contextMenuNoteId = null;
+            }
+        }
+    });
+}
+
+// Apply to all modals
+[confirmModal, newNoteModal, manageFoldersModal, exportModal, confirmFolderDeleteModal, renameNoteModal, shareModal, searchModal, moveNoteModal].forEach(modal => {
+    if (modal) setupModalClose(modal);
+});
 
 // --- NOTE OPERATIONS ---
 function getNotesInFolder(folderId) {
@@ -451,7 +486,158 @@ function getSelectedFolderId() {
     return selectedOption ? selectedOption.dataset.folderId : activeFolderId;
 }
 
-// --- MODAL EVENT LISTENERS ---
+// ==================== MOVE NOTE MODAL FUNCTIONS ====================
+
+/**
+ * Populate the move modal's folder dropdown, excluding the current folder of the note.
+ * @param {string} excludeFolderId - The folder ID to exclude (the note's current folder).
+ */
+function updateMoveFolderDropdown(excludeFolderId) {
+    moveFolderSelectOptions.innerHTML = '';
+    let hasOptions = false;
+    folders.forEach(folder => {
+        if (folder.id === excludeFolderId) return; // skip current folder
+        hasOptions = true;
+        const option = document.createElement('div');
+        option.className = 'select-option';
+        option.textContent = folder.name;
+        option.dataset.folderId = folder.id;
+        option.addEventListener('click', () => {
+            // Update selected display
+            moveSelectedFolderName.textContent = folder.name;
+            // Remove selected class from others and add to this
+            moveFolderSelectOptions.querySelectorAll('.select-option').forEach(opt => opt.classList.remove('selected'));
+            option.classList.add('selected');
+            // Close dropdown
+            moveFolderSelectWrapper.classList.remove('active');
+            // Enable the Move button
+            confirmMoveBtn.disabled = false;
+        });
+        moveFolderSelectOptions.appendChild(option);
+    });
+    if (!hasOptions) {
+        const option = document.createElement('div');
+        option.className = 'select-option disabled';
+        option.textContent = 'No other folders';
+        moveFolderSelectOptions.appendChild(option);
+    }
+}
+
+/**
+ * Opens the move note modal for a given note ID.
+ * @param {string} noteId 
+ */
+function openMoveModal(noteId) {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+    moveNoteNameSpan.textContent = `Moving: "${note.name}"`;
+    window.contextMenuNoteId = noteId; // store for later use
+    updateMoveFolderDropdown(note.folderId);
+    // Reset UI
+    moveSelectedFolderName.textContent = 'Choose folder';
+    moveNewFolderInput.value = '';
+    confirmMoveBtn.disabled = true;
+    // Show modal
+    moveNoteModal.classList.add('show');
+    pushToModalStack(moveNoteModal);
+}
+
+/**
+ * Moves a note to a target folder and updates UI.
+ * @param {string} noteId 
+ * @param {string} targetFolderId 
+ */
+function moveNoteToFolder(noteId, targetFolderId) {
+    const note = notes.find(n => n.id === noteId);
+    if (!note || note.folderId === targetFolderId) return;
+
+    const sourceFolderId = note.folderId;
+    note.folderId = targetFolderId;
+    saveToStorage();
+
+    // If the moved note was the active note and its source folder is the current folder,
+    // switch to another note in the current folder (or show empty)
+    if (noteId === activeNoteId && sourceFolderId === activeFolderId) {
+        const remainingNotes = getNotesInFolder(sourceFolderId);
+        if (remainingNotes.length > 0) {
+            activeNoteId = remainingNotes[0].id;
+        } else {
+            activeNoteId = null;
+        }
+        saveToStorage();
+        renderNoteChips();
+        loadActiveNote();
+    } else {
+        // Just refresh chips (the note disappears from current folder's list)
+        renderNoteChips();
+    }
+
+    showFormattingIndicator('Note moved', 'success');
+}
+
+// --- Event listeners for move modal ---
+
+// Cancel button
+cancelMoveBtn.addEventListener('click', () => {
+    moveNoteModal.classList.remove('show');
+    const index = modalStack.indexOf(moveNoteModal);
+    if (index > -1) modalStack.splice(index, 1);
+    window.contextMenuNoteId = null;
+});
+
+// Move button (only enabled when a folder is selected)
+confirmMoveBtn.addEventListener('click', () => {
+    const selectedOption = moveFolderSelectOptions.querySelector('.select-option.selected');
+    if (!selectedOption) return;
+    const folderId = selectedOption.dataset.folderId;
+    if (folderId && window.contextMenuNoteId) {
+        moveNoteToFolder(window.contextMenuNoteId, folderId);
+        moveNoteModal.classList.remove('show');
+        const index = modalStack.indexOf(moveNoteModal);
+        if (index > -1) modalStack.splice(index, 1);
+        window.contextMenuNoteId = null;
+    }
+});
+
+// Create & Move: creates a new folder and moves the note there
+createAndMoveBtn.addEventListener('click', () => {
+    const newFolderName = moveNewFolderInput.value.trim();
+    if (!newFolderName) {
+        showFormattingIndicator('Please enter a folder name', 'error');
+        return;
+    }
+    // Create folder
+    const folder = { id: generateId(), name: newFolderName, isDefault: false };
+    folders.push(folder);
+    saveToStorage();
+    // Update UI components that list folders
+    renderFolderList();
+    updateFolderDropdown();
+    // Move note to this new folder
+    if (window.contextMenuNoteId) {
+        moveNoteToFolder(window.contextMenuNoteId, folder.id);
+    }
+    // Close modal
+    moveNoteModal.classList.remove('show');
+    const index = modalStack.indexOf(moveNoteModal);
+    if (index > -1) modalStack.splice(index, 1);
+    window.contextMenuNoteId = null;
+});
+
+// Toggle folder dropdown in move modal
+moveFolderSelectTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    moveFolderSelectWrapper.classList.toggle('active');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!moveFolderSelectWrapper.contains(e.target)) {
+        moveFolderSelectWrapper.classList.remove('active');
+    }
+});
+
+// ==================== OTHER MODAL EVENT LISTENERS ====================
 
 // New Note
 addNoteBtn.addEventListener('click', () => {
@@ -486,13 +672,6 @@ document.getElementById('createNewNote').addEventListener('click', () => {
     const index = modalStack.indexOf(newNoteModal);
     if (index > -1) modalStack.splice(index, 1);
 });
-newNoteModal.addEventListener('click', (e) => {
-    if (e.target === newNoteModal) {
-        newNoteModal.classList.remove('show');
-        const index = modalStack.indexOf(newNoteModal);
-        if (index > -1) modalStack.splice(index, 1);
-    }
-});
 
 // Rename Note (used by context menu)
 confirmRenameBtn.addEventListener('click', () => {
@@ -502,7 +681,7 @@ confirmRenameBtn.addEventListener('click', () => {
         renameNoteModal.classList.remove('show');
         const index = modalStack.indexOf(renameNoteModal);
         if (index > -1) modalStack.splice(index, 1);
-        window.contextMenuNoteId = null; // Clear after use
+        window.contextMenuNoteId = null;
     }
 });
 cancelRenameBtn.addEventListener('click', () => {
@@ -512,7 +691,7 @@ cancelRenameBtn.addEventListener('click', () => {
     window.contextMenuNoteId = null;
 });
 
-// Delete Note (used by context menu)
+// Delete Note (via sidebar button)
 deleteBtn.addEventListener('click', () => {
     if (!activeNoteId) { showFormattingIndicator('No note to delete'); return; }
     const folderNotes = getNotesInFolder(activeFolderId);
@@ -528,7 +707,6 @@ cancelDeleteBtn.addEventListener('click', () => {
     if (index > -1) modalStack.splice(index, 1);
 });
 confirmDeleteBtn.addEventListener('click', () => {
-    // If we have a context menu note ID, use that; otherwise use activeNoteId
     const noteIdToDelete = window.contextMenuNoteId || activeNoteId;
     if (noteIdToDelete) {
         deleteNote(noteIdToDelete);
@@ -536,15 +714,7 @@ confirmDeleteBtn.addEventListener('click', () => {
     confirmModal.classList.remove('show');
     const index = modalStack.indexOf(confirmModal);
     if (index > -1) modalStack.splice(index, 1);
-    window.contextMenuNoteId = null; // Clear after use
-});
-confirmModal.addEventListener('click', (e) => {
-    if (e.target === confirmModal) {
-        confirmModal.classList.remove('show');
-        const index = modalStack.indexOf(confirmModal);
-        if (index > -1) modalStack.splice(index, 1);
-        window.contextMenuNoteId = null;
-    }
+    window.contextMenuNoteId = null;
 });
 
 // Manage Folders
@@ -566,13 +736,6 @@ document.getElementById('closeFoldersModal').addEventListener('click', () => {
     const index = modalStack.indexOf(manageFoldersModal);
     if (index > -1) modalStack.splice(index, 1);
 });
-manageFoldersModal.addEventListener('click', (e) => {
-    if (e.target === manageFoldersModal) {
-        manageFoldersModal.classList.remove('show');
-        const index = modalStack.indexOf(manageFoldersModal);
-        if (index > -1) modalStack.splice(index, 1);
-    }
-});
 
 // Delete Folder Confirm
 cancelFolderDeleteBtn.addEventListener('click', () => {
@@ -584,7 +747,6 @@ cancelFolderDeleteBtn.addEventListener('click', () => {
 confirmFolderDeleteBtn.addEventListener('click', () => {
     const folderId = confirmFolderDeleteModal.dataset.pendingFolderId;
     if (folderId) {
-        // Move notes to default folder
         const defaultFolderId = folders[0].id;
         notes.forEach(note => { if (note.folderId === folderId) note.folderId = defaultFolderId; });
         const index = folders.findIndex(f => f.id === folderId);
@@ -601,16 +763,8 @@ confirmFolderDeleteBtn.addEventListener('click', () => {
     if (index > -1) modalStack.splice(index, 1);
     delete confirmFolderDeleteModal.dataset.pendingFolderId;
 });
-confirmFolderDeleteModal.addEventListener('click', (e) => {
-    if (e.target === confirmFolderDeleteModal) {
-        confirmFolderDeleteModal.classList.remove('show');
-        const index = modalStack.indexOf(confirmFolderDeleteModal);
-        if (index > -1) modalStack.splice(index, 1);
-        delete confirmFolderDeleteModal.dataset.pendingFolderId;
-    }
-});
 
-// Share Modal logic
+// Share Modal
 function updateShareUI(isPublic) {
     const options = document.querySelectorAll('#shareToggle .toggle-option');
     const shareToggle = document.getElementById('shareToggle');
@@ -662,15 +816,8 @@ document.getElementById('copyLinkBtn').addEventListener('click', () => {
     btn.innerHTML = '<i class="fas fa-check"></i>';
     setTimeout(() => btn.innerHTML = original, 2000);
 });
-document.getElementById('shareModal').addEventListener('click', (e) => {
-    if (e.target === document.getElementById('shareModal')) {
-        document.getElementById('shareModal').classList.remove('show');
-        const index = modalStack.indexOf(document.getElementById('shareModal'));
-        if (index > -1) modalStack.splice(index, 1);
-    }
-});
 
-// --- EXPORT (no theme options) ---
+// Export Modal
 exportBtn.addEventListener('click', () => {
     if (!activeNoteId) { showFormattingIndicator('No note to export'); return; }
     const note = notes.find(n => n.id === activeNoteId);
@@ -685,13 +832,6 @@ closeExportModalBtn.addEventListener('click', () => {
     exportModal.classList.remove('show');
     const index = modalStack.indexOf(exportModal);
     if (index > -1) modalStack.splice(index, 1);
-});
-exportModal.addEventListener('click', (e) => {
-    if (e.target === exportModal) {
-        exportModal.classList.remove('show');
-        const index = modalStack.indexOf(exportModal);
-        if (index > -1) modalStack.splice(index, 1);
-    }
 });
 exportCards.forEach(card => {
     card.addEventListener('click', () => {
@@ -712,13 +852,12 @@ exportConfirmBtn.addEventListener('click', async () => {
     else if (selectedExportFormat === 'text') exportAsText(fileName);
 });
 
-// Multi-page PDF Generation (uses current theme)
+// PDF export (unchanged) – copy from previous version
 async function exportAsPDF(fileName) {
     try {
         const fontName = document.getElementById('currentFont').textContent || 'Fredoka';
         const note = notes.find(n => n.id === activeNoteId);
         const content = writingCanvas.innerHTML;
-        // Use current app theme for PDF
         const selectedTheme = html.getAttribute('data-theme') || 'light';
         const tempContainer = document.createElement('div');
         tempContainer.id = 'pdf-export-container';
@@ -739,7 +878,6 @@ async function exportAsPDF(fileName) {
         });
         const contentDiv = document.createElement('div');
         contentDiv.innerHTML = content;
-        // Add list-item classes for proper bullet rendering
         const divs = contentDiv.querySelectorAll('div');
         divs.forEach(div => {
             const text = div.textContent || '';
@@ -889,6 +1027,9 @@ document.addEventListener('keydown', (e) => {
             if (topModal.id === 'confirmFolderDeleteModal') {
                 delete topModal.dataset.pendingFolderId;
             }
+            if (topModal.id === 'moveNoteModal') {
+                window.contextMenuNoteId = null;
+            }
         }
     }
 });
@@ -908,8 +1049,9 @@ setupEnterKeySubmission('newNoteName', 'createNewNote');
 setupEnterKeySubmission('newFolderName', 'createFolderBtn');
 setupEnterKeySubmission('renameNoteInput', 'confirmRenameBtn');
 setupEnterKeySubmission('exportFileName', 'exportConfirmBtn');
+setupEnterKeySubmission('moveNewFolderName', 'createAndMoveBtn'); // Enter in new folder input triggers Create & Move
 
-// ==================== SEARCH FUNCTIONALITY ====================
+// --- SEARCH MODAL ---
 searchBtn.addEventListener('click', () => {
     searchInput.value = '';
     searchResults.innerHTML = '<div class="search-placeholder">Start typing to search...</div>';
@@ -922,20 +1064,12 @@ closeSearchModalBtn.addEventListener('click', () => {
     const index = modalStack.indexOf(searchModal);
     if (index > -1) modalStack.splice(index, 1);
 });
-searchModal.addEventListener('click', (e) => {
-    if (e.target === searchModal) {
-        searchModal.classList.remove('show');
-        const index = modalStack.indexOf(searchModal);
-        if (index > -1) modalStack.splice(index, 1);
-    }
-});
 searchInput.addEventListener('input', () => {
     const query = searchInput.value.trim().toLowerCase();
     if (!query) {
         searchResults.innerHTML = '<div class="search-placeholder">Start typing to search...</div>';
         return;
     }
-    // Search in note name and content (strip HTML tags for content)
     const results = notes.filter(note => {
         const nameMatch = note.name.toLowerCase().includes(query);
         const contentText = note.content.replace(/<[^>]*>/g, '').toLowerCase();
@@ -946,7 +1080,7 @@ searchInput.addEventListener('input', () => {
         searchResults.innerHTML = '<div class="search-placeholder">No notes found</div>';
         return;
     }
-    searchResults.innerHTML = ''; // Clear placeholder
+    searchResults.innerHTML = '';
     results.forEach(note => {
         const folder = folders.find(f => f.id === note.folderId) || { name: 'Unknown' };
         const card = document.createElement('div');
@@ -958,16 +1092,12 @@ searchInput.addEventListener('input', () => {
             </div>
         `;
         card.addEventListener('click', () => {
-            // Switch to this note and update folder
             saveCurrentNote();
-            // Record last note for current folder before switching
             if (activeNoteId) {
                 lastNotePerFolder[activeFolderId] = activeNoteId;
             }
-            // Set new active folder and note
             activeFolderId = note.folderId;
             activeNoteId = note.id;
-            // Optionally record last note for new folder
             lastNotePerFolder[activeFolderId] = note.id;
             saveToStorage();
             renderNoteChips();
@@ -980,7 +1110,6 @@ searchInput.addEventListener('input', () => {
         searchResults.appendChild(card);
     });
 });
-// Helper to escape HTML
 function escapeHtml(unsafe) {
     return unsafe.replace(/[&<>"]/g, function (m) {
         if (m === '&') return '&amp;';
@@ -991,14 +1120,13 @@ function escapeHtml(unsafe) {
     });
 }
 
-// --- INITIALIZATION CALL ---
+// --- INITIALIZATION ---
 function init() {
     loadTheme();
     loadFromStorage();
     renderFolderList();
     renderNoteChips();
     loadActiveNote();
-    // Default Font Setup
     const current = getCurrentFont();
     document.getElementById('currentFont').textContent = current;
 }

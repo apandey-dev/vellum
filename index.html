@@ -133,9 +133,7 @@
         <div class="divider-h"></div>
         <div class="context-menu-item" id="moveToFolderItem">
             <i class="fas fa-folder-open"></i> Move to...
-            <i class="fas fa-chevron-right" style="margin-left: auto; font-size: 12px;"></i>
         </div>
-        <div class="context-menu-submenu" id="folderSubmenu"></div>
         <div class="divider-h"></div>
         <div class="context-menu-item delete-item" id="ctxDelete">
             <i class="fas fa-trash-alt"></i> Delete
@@ -308,6 +306,36 @@
             </div>
             <div class="form-actions">
                 <button class="form-btn secondary" id="closeSearchModal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Move Note Modal (new) -->
+    <div class="form-modal" id="moveNoteModal">
+        <div class="form-box">
+            <h3>Move Note</h3>
+            <p class="move-note-name" id="moveNoteName"></p>
+            <div class="form-group">
+                <label>Select Folder</label>
+                <div class="custom-select" id="moveFolderSelectWrapper">
+                    <div class="select-trigger" id="moveFolderSelectTrigger">
+                        <span id="moveSelectedFolderName">Choose folder</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="select-options" id="moveFolderSelectOptions"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Or create new folder</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="moveNewFolderName" placeholder="New folder name...">
+                    <button class="form-btn primary" id="createAndMoveBtn" style="white-space: nowrap;">Create &
+                        Move</button>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="form-btn secondary" id="cancelMoveBtn">Cancel</button>
+                <button class="form-btn primary" id="confirmMoveBtn" disabled>Move</button>
             </div>
         </div>
     </div>

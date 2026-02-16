@@ -46,7 +46,7 @@ function restoreCursorRange() {
 }
 function clearSavedCursorRange() { savedCursorRange = null; }
 
-// --- LINE FORMATTING (using execCommand for undo) ---
+// --- LINE FORMATTING ---
 function getCurrentLine() {
     const selection = window.getSelection();
     if (selection.rangeCount === 0) return null;
@@ -76,14 +76,10 @@ function processLineFormatting(lineNode) {
         processed = true;
     }
     if (processed) {
-        // Use execCommand to insert HTML for undo support
         const selection = window.getSelection();
         const range = selection.getRangeAt(0);
-        // Delete the current line content
         range.deleteContents();
-        // Insert the new element
         document.execCommand('insertHTML', false, htmlToInsert);
-        // Move cursor after inserted element
         const newRange = document.createRange();
         const container = writingCanvas;
         newRange.setStartAfter(container.lastChild || container);
@@ -96,7 +92,7 @@ function processLineFormatting(lineNode) {
     return false;
 }
 
-// --- FONT SELECTOR LOGIC (using execCommand) ---
+// --- FONT SELECTOR ---
 const fontSelectorBtn = document.getElementById('fontSelectorBtn');
 const fontDropdown = document.getElementById('fontDropdown');
 const fontOptions = document.querySelectorAll('.font-option');
@@ -153,12 +149,11 @@ function updateFontDisplay() {
 function applyFontAtCursor(fontName) {
     if (savedCursorRange) restoreCursorRange();
     else writingCanvas.focus();
-    // execCommand('fontName') is undoable
     document.execCommand('fontName', false, fontName);
     saveCurrentNote();
 }
 
-// --- BULLETS (using execCommand for undo) ---
+// --- BULLETS ---
 const bulletsBtn = document.getElementById('bulletsBtn');
 const bulletsMenu = document.getElementById('bulletsMenu');
 
@@ -191,16 +186,13 @@ function insertBulletList(type) {
     writingCanvas.focus();
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
-    const range = selection.getRangeAt(0);
     let html;
     if (type === 'numbered') {
         html = '<div style="margin-left:40px;position:relative;" class="pdf-list-item numbered">1. </div>';
     } else {
         html = '<div style="margin-left:40px;position:relative;" class="pdf-list-item bullet">• </div>';
     }
-    // Use execCommand for undoable insertion
     document.execCommand('insertHTML', false, html);
-    // Place cursor inside the new div
     const newDiv = writingCanvas.lastChild;
     if (newDiv) {
         const newRange = document.createRange();
@@ -212,22 +204,19 @@ function insertBulletList(type) {
     saveCurrentNote();
 }
 
-// ==================== PASTE SANITIZATION (using execCommand for undo) ====================
+// --- PASTE SANITIZATION ---
 writingCanvas.addEventListener('paste', (e) => {
     e.preventDefault();
     const clipboardData = e.clipboardData || window.clipboardData;
     if (!clipboardData) return;
 
-    // Try plain text first
     let text = clipboardData.getData('text/plain');
     if (text) {
-        // Insert plain text, preserving line breaks
         const selection = window.getSelection();
         if (!selection.rangeCount) return;
         const range = selection.getRangeAt(0);
         range.deleteContents();
 
-        // Build HTML with <br> for line breaks
         const lines = text.split(/\r\n|\r|\n/);
         let html = '';
         for (let i = 0; i < lines.length; i++) {
@@ -239,10 +228,8 @@ writingCanvas.addEventListener('paste', (e) => {
         return;
     }
 
-    // Fallback to sanitized HTML
     let html = clipboardData.getData('text/html');
     if (html) {
-        // Sanitize: remove style, class, id, unwanted tags
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, null, false);
         while (walker.nextNode()) {
@@ -262,7 +249,6 @@ writingCanvas.addEventListener('paste', (e) => {
         saveCurrentNote();
     }
 });
-// Helper to escape HTML (for plain text insertion)
 function escapeHtml(unsafe) {
     return unsafe.replace(/[&<>"]/g, function (m) {
         if (m === '&') return '&amp;';
@@ -293,19 +279,17 @@ writingCanvas.addEventListener('click', () => {
     updateFontDisplay();
 });
 
-// ==================== ENHANCED CONTEXT MENU ====================
+// ==================== CONTEXT MENU ====================
 const noteContextMenu = document.getElementById('noteContextMenu');
 const ctxRename = document.getElementById('ctxRename');
 const ctxPin = document.getElementById('ctxPin');
 const ctxDelete = document.getElementById('ctxDelete');
 const moveToFolderItem = document.getElementById('moveToFolderItem');
-const folderSubmenu = document.getElementById('folderSubmenu');
 
 window.contextMenuNoteId = null;
 
 function hideContextMenu() {
     noteContextMenu.classList.remove('show');
-    folderSubmenu.classList.remove('show');
     window.contextMenuNoteId = null;
 }
 
@@ -365,65 +349,10 @@ ctxDelete.addEventListener('click', () => {
     hideContextMenu(); // hide context menu, modal will appear
 });
 
-// Move to – build submenu on hover
-moveToFolderItem.addEventListener('mouseenter', () => {
+// Move to – open custom modal (instead of submenu)
+moveToFolderItem.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
-    folderSubmenu.innerHTML = '';
-    // List all folders except the current one of the note
-    const currentNote = notes.find(n => n.id === window.contextMenuNoteId);
-    folders.forEach(f => {
-        if (currentNote && f.id === currentNote.folderId) return; // skip current folder
-        const opt = document.createElement('div');
-        opt.className = 'folder-option';
-        opt.textContent = f.name;
-        opt.dataset.folderId = f.id;
-        folderSubmenu.appendChild(opt);
-    });
-    // Add "New Folder..." option
-    const newFolderOpt = document.createElement('div');
-    newFolderOpt.className = 'folder-option';
-    newFolderOpt.innerHTML = '<i class="fas fa-plus" style="margin-right: 6px;"></i> New Folder...';
-    newFolderOpt.dataset.action = 'newFolder';
-    folderSubmenu.appendChild(newFolderOpt);
-
-    // If no other folders exist, show a disabled message before "New Folder..."
-    if (folderSubmenu.children.length === 1 && folderSubmenu.children[0].dataset.action === 'newFolder') {
-        const emptyMsg = document.createElement('div');
-        emptyMsg.className = 'folder-option';
-        emptyMsg.style.opacity = '0.5';
-        emptyMsg.style.cursor = 'default';
-        emptyMsg.textContent = 'No other folders';
-        folderSubmenu.prepend(emptyMsg);
-    }
-
-    folderSubmenu.classList.add('show');
-});
-
-// Handle folder selection
-folderSubmenu.addEventListener('click', (e) => {
-    const opt = e.target.closest('.folder-option');
-    if (!opt || !window.contextMenuNoteId) return;
-
-    if (opt.dataset.action === 'newFolder') {
-        // Use prompt for new folder name (kept simple, can be replaced with custom input)
-        const newFolderName = prompt('Enter new folder name:');
-        if (newFolderName && newFolderName.trim()) {
-            const folder = { id: generateId(), name: newFolderName.trim(), isDefault: false };
-            folders.push(folder);
-            saveToStorage();
-            renderFolderList();      // update folder list in manage modal
-            updateFolderDropdown();  // update dropdown in new note modal
-            // Now move the note to this new folder
-            moveNoteToFolder(window.contextMenuNoteId, folder.id);
-        }
-        hideContextMenu();
-        return;
-    }
-
-    const folderId = opt.dataset.folderId;
-    if (folderId) {
-        moveNoteToFolder(window.contextMenuNoteId, folderId);
-    }
+    openMoveModal(window.contextMenuNoteId);
     hideContextMenu();
 });
 
@@ -433,31 +362,3 @@ document.addEventListener('click', (e) => {
         hideContextMenu();
     }
 });
-
-// Function to move a note to a different folder
-function moveNoteToFolder(noteId, targetFolderId) {
-    const note = notes.find(n => n.id === noteId);
-    if (!note || note.folderId === targetFolderId) return;
-
-    const sourceFolderId = note.folderId;
-    note.folderId = targetFolderId;
-    saveToStorage();
-
-    // If the moved note was the active note and its source folder is the current folder,
-    // we need to switch to another note in the current folder (or show empty)
-    if (noteId === activeNoteId && sourceFolderId === activeFolderId) {
-        const remainingNotes = getNotesInFolder(sourceFolderId);
-        if (remainingNotes.length > 0) {
-            activeNoteId = remainingNotes[0].id;
-        } else {
-            activeNoteId = null;
-        }
-        saveToStorage();
-        renderNoteChips();
-        loadActiveNote();
-    } else {
-        renderNoteChips();
-    }
-
-    showFormattingIndicator('Note moved', 'success');
-}

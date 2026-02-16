@@ -1164,7 +1164,7 @@ body {
     flex-shrink: 0;
 }
 
-/* --- Button styles for confirm modals (added to match form-btn) --- */
+/* --- Button styles for confirm modals --- */
 .confirm-actions {
     display: flex;
     gap: 12px;
