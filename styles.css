@@ -1164,6 +1164,45 @@ body {
     flex-shrink: 0;
 }
 
+/* --- Button styles for confirm modals (added to match form-btn) --- */
+.confirm-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+.confirm-btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Fredoka', sans-serif;
+}
+
+.confirm-btn.cancel {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.confirm-btn.cancel:hover {
+    background: var(--border-color);
+}
+
+.confirm-btn.delete {
+    background: #ef4444;
+    color: white;
+}
+
+.confirm-btn.delete:hover {
+    background: #dc2626;
+    transform: scale(1.05);
+}
+
+/* Keep original form-btn styles for other modals */
 .form-btn {
     padding: 10px 20px;
     border-radius: 10px;

@@ -998,7 +998,8 @@ function init() {
     renderFolderList();
     renderNoteChips();
     loadActiveNote();
-    // Default Font Setup - set to Fredoka initially
-    document.getElementById('currentFont').textContent = 'Fredoka';
+    // Default Font Setup
+    const current = getCurrentFont();
+    document.getElementById('currentFont').textContent = current;
 }
 init();

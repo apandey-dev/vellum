@@ -264,7 +264,7 @@ writingCanvas.addEventListener('paste', (e) => {
 });
 // Helper to escape HTML (for plain text insertion)
 function escapeHtml(unsafe) {
-    return unsafe.replace(/[&<>"]/g, function(m) {
+    return unsafe.replace(/[&<>"]/g, function (m) {
         if (m === '&') return '&amp;';
         if (m === '<') return '&lt;';
         if (m === '>') return '&gt;';
@@ -369,10 +369,10 @@ ctxDelete.addEventListener('click', () => {
 moveToFolderItem.addEventListener('mouseenter', () => {
     if (!window.contextMenuNoteId) return;
     folderSubmenu.innerHTML = '';
-    // List all folders
+    // List all folders except the current one of the note
+    const currentNote = notes.find(n => n.id === window.contextMenuNoteId);
     folders.forEach(f => {
-        const note = notes.find(n => n.id === window.contextMenuNoteId);
-        if (note && note.folderId === f.id) return; // skip current folder
+        if (currentNote && f.id === currentNote.folderId) return; // skip current folder
         const opt = document.createElement('div');
         opt.className = 'folder-option';
         opt.textContent = f.name;
@@ -386,8 +386,8 @@ moveToFolderItem.addEventListener('mouseenter', () => {
     newFolderOpt.dataset.action = 'newFolder';
     folderSubmenu.appendChild(newFolderOpt);
 
+    // If no other folders exist, show a disabled message before "New Folder..."
     if (folderSubmenu.children.length === 1 && folderSubmenu.children[0].dataset.action === 'newFolder') {
-        // Only "New Folder..." exists (no other folders)
         const emptyMsg = document.createElement('div');
         emptyMsg.className = 'folder-option';
         emptyMsg.style.opacity = '0.5';
@@ -405,12 +405,7 @@ folderSubmenu.addEventListener('click', (e) => {
     if (!opt || !window.contextMenuNoteId) return;
 
     if (opt.dataset.action === 'newFolder') {
-        // Open folder creation modal and after creation, move note to that new folder
-        // We'll use the existing manage folders modal, but we need to know when a new folder is created.
-        // Simpler: open a small prompt? But we have a modal already. Let's open the manage folders modal,
-        // and after the user creates a folder there, we can move the note. However, the modal is independent.
-        // Alternative: Use the same "Create Folder" from manage folders, but we need to know when it's done.
-        // We'll implement a temporary inline prompt for simplicity.
+        // Use prompt for new folder name (kept simple, can be replaced with custom input)
         const newFolderName = prompt('Enter new folder name:');
         if (newFolderName && newFolderName.trim()) {
             const folder = { id: generateId(), name: newFolderName.trim(), isDefault: false };
@@ -461,7 +456,6 @@ function moveNoteToFolder(noteId, targetFolderId) {
         renderNoteChips();
         loadActiveNote();
     } else {
-        // Just refresh chips (the note disappears from current folder's list)
         renderNoteChips();
     }
 
