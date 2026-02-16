@@ -177,8 +177,15 @@ body {
     transform: translateY(-50%) translateX(8px);
 }
 
-.bottom-actions {
+.divider {
+    width: 40px;
+    height: 1px;
+    background-color: var(--border-color);
     margin-top: auto;
+    margin-bottom: 12px;
+}
+
+.bottom-actions {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -749,7 +756,7 @@ body {
 }
 
 [data-theme="light"] .toggle-option.active {
-    color: var(--toggle-text);
+    color: var(--bg-panel);
 }
 
 .toggle-slider {

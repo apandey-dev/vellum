@@ -153,57 +153,7 @@ function applyFontAtCursor(fontName) {
     saveCurrentNote();
 }
 
-// --- BULLETS (using execCommand for undo) ---
-const bulletsBtn = document.getElementById('bulletsBtn');
-const bulletsMenu = document.getElementById('bulletsMenu');
 
-function closeAllDropdowns() {
-    bulletsMenu.classList.remove('active');
-    activeDropdown = null;
-    clearSavedCursorRange();
-}
-document.addEventListener('click', (e) => {
-    if (!bulletsBtn.contains(e.target) && !bulletsMenu.contains(e.target)) closeAllDropdowns();
-});
-bulletsBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (bulletsMenu.classList.contains('active')) closeAllDropdowns();
-    else {
-        closeAllDropdowns();
-        bulletsMenu.classList.add('active');
-        const rect = bulletsBtn.getBoundingClientRect();
-        bulletsMenu.style.top = `${rect.top}px`;
-    }
-});
-document.querySelectorAll('#bulletsMenu .dropdown-item').forEach(item => {
-    item.addEventListener('click', () => {
-        insertBulletList(item.dataset.type);
-        closeAllDropdowns();
-    });
-});
-function insertBulletList(type) {
-    if (!activeNoteId) return;
-    writingCanvas.focus();
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
-    const range = selection.getRangeAt(0);
-    let html;
-    if (type === 'numbered') {
-        html = '<div style="margin-left:40px;position:relative;" class="pdf-list-item numbered">1. </div>';
-    } else {
-        html = '<div style="margin-left:40px;position:relative;" class="pdf-list-item bullet">• </div>';
-    }
-    document.execCommand('insertHTML', false, html);
-    const newDiv = writingCanvas.lastChild;
-    if (newDiv) {
-        const newRange = document.createRange();
-        newRange.setStart(newDiv, newDiv.childNodes.length);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-    }
-    saveCurrentNote();
-}
 
 // ==================== PASTE SANITIZATION (using execCommand for undo) ====================
 writingCanvas.addEventListener('paste', (e) => {
@@ -286,9 +236,11 @@ const moveToFolderItem = document.getElementById('moveToFolderItem');
 
 window.contextMenuNoteId = null;
 
-function hideContextMenu() {
+function hideContextMenu(keepId = false) {
     noteContextMenu.classList.remove('show');
-    window.contextMenuNoteId = null;
+    if (!keepId) {
+        window.contextMenuNoteId = null;
+    }
 }
 
 // Open context menu on right‑click
@@ -296,12 +248,15 @@ noteChips.addEventListener('contextmenu', (e) => {
     const chip = e.target.closest('.chip');
     if (!chip) return;
     e.preventDefault();
+
+    hideContextMenu(false); // Close any existing menu and clear ID first
+
     window.contextMenuNoteId = chip.dataset.noteId;
     const note = notes.find(n => n.id === window.contextMenuNoteId);
     if (note) {
         ctxPin.innerHTML = note.isPinned ? '<i class="fas fa-thumbtack-slash"></i> Unpin Note' : '<i class="fas fa-thumbtack"></i> Pin Note';
     }
-    hideContextMenu(); // Close any existing menu
+
     // Position menu, keep within viewport
     const x = Math.min(e.pageX, window.innerWidth - 220);
     const y = Math.min(e.pageY, window.innerHeight - 250);
@@ -320,7 +275,7 @@ ctxRename.addEventListener('click', () => {
         pushToModalStack(renameNoteModal);
         setTimeout(() => renameNoteInput.focus(), 100);
     }
-    hideContextMenu();
+    hideContextMenu(true); // Keep ID for modal
 });
 
 // Pin - FIXED: undo before change, update UI
@@ -338,7 +293,7 @@ ctxPin.addEventListener('click', () => {
         }
         showFormattingIndicator(note.isPinned ? 'Note pinned' : 'Note unpinned');
     }
-    hideContextMenu();
+    hideContextMenu(false);
 });
 
 // Delete
@@ -348,14 +303,17 @@ ctxDelete.addEventListener('click', () => {
         switchNote(window.contextMenuNoteId);
     }
     document.getElementById('deleteBtn').click(); // triggers confirm modal
-    hideContextMenu();
+    // Note: deleteBtn click handler sets up the modal. We need to keep the ID.
+    // However, deleteBtn handler normally works on activeNoteId. 
+    // The modal uses window.contextMenuNoteId if set.
+    hideContextMenu(true);
 });
 
 // Move to – open move modal
 moveToFolderItem.addEventListener('click', () => {
     if (!window.contextMenuNoteId) return;
     openMoveModal(window.contextMenuNoteId);
-    hideContextMenu();
+    hideContextMenu(true); // Keep ID for modal
 });
 
 // Close context menu when clicking elsewhere
