@@ -390,18 +390,19 @@ function loadActiveNote() {
 
 // --- PIN BUTTON ---
 function updatePinButton() {
+    // Always reset to base icon first (or just keep it static if logic allows, 
+    // but here we ensure consistency if innerHTML was previously changed)
+    pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
+
     if (!activeNoteId) {
         pinBtn.classList.remove('pinned');
-        pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
         return;
     }
     const note = notes.find(n => n.id === activeNoteId);
     if (note && note.isPinned) {
         pinBtn.classList.add('pinned');
-        pinBtn.innerHTML = '<i class="fas fa-thumbtack-slash"></i>';
     } else {
         pinBtn.classList.remove('pinned');
-        pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
     }
 }
 function togglePinNote() {

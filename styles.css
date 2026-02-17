@@ -364,6 +364,30 @@ body {
     transform: translateX(4px);
 }
 
+/* --- Pin Button State --- */
+.action-btn.pinned {
+    background-color: var(--pinned-bg);
+    color: var(--pinned-border);
+    border-color: var(--pinned-border);
+}
+
+.action-btn.pinned i {
+    transform: rotate(45deg);
+    /* Angled "pinned" look */
+    /* Ensure icon is solid/visible */
+}
+
+/* Hover effect for pin button specifically */
+.action-btn#pinBtn:hover i {
+    transform: rotate(0deg);
+    /* Straighten on hover to suggest action */
+}
+
+.action-btn.pinned:hover i {
+    transform: rotate(0deg);
+    /* Reset rotation on hover */
+}
+
 .font-option.active {
     background-color: var(--accent-color);
     color: white;
@@ -810,18 +834,20 @@ body {
     align-items: center;
     gap: 8px;
     margin-top: 12px;
-    background: var(--bg-secondary);
+    background: var(--bg-canvas);
+    /* Use valid variable */
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 6px 6px 6px 12px;
-    /* Pad left for text, right/top/bottom for button space */
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: all 0.2s ease;
 }
 
 .link-input-wrapper:focus-within {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    /* Subtle green glow matches toggle */
+    border-color: var(--accent-color);
+    /* Use accent color */
+    background: var(--bg-panel);
+    /* Highlight effect */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 #shareLinkInput {
@@ -837,22 +863,29 @@ body {
 
 .link-input-wrapper .copy-btn {
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     border-radius: 8px;
     width: 36px;
     height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-primary);
+    color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     flex-shrink: 0;
 }
 
 .link-input-wrapper .copy-btn:hover {
-    background: var(--text-primary);
-    color: var(--bg-primary);
+    background: var(--bg-panel);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.link-input-wrapper .copy-btn:active {
+    transform: scale(0.95);
 }
 
 /* --- INLINE SHORTCUT STYLES --- */
