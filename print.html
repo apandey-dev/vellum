@@ -13,6 +13,32 @@
         rel="stylesheet">
 
     <style>
+        /* --- GLOBAL RESET --- */
+        * {
+            box-sizing: border-box;
+            scrollbar-width: none;
+            user-select: none;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            /* Main scroll is on #preview-container unless infinity mode overrides */
+        }
+
+        body {
+            background-color: #e0e0e0;
+            /* Gray App Background */
+            font-family: 'Fredoka', sans-serif;
+            display: flex;
+            /* Sidebar | Preview */
+            align-items: flex-start;
+            /* CRITICAL: Aligns children to top */
+        }
+
         /* --- VARIABLES --- */
         :root {
             --bg-color: #ffffff;
@@ -27,7 +53,6 @@
         }
 
         [data-theme="dark"] {
-            /* On screen preview dark mode */
             --bg-color: #1a1a1a;
             --text-color: #e0e0e0;
             --sidebar-bg: #111;
@@ -35,31 +60,10 @@
             --accent-color: #fff;
         }
 
-        /* --- GLOBAL LAYOUT --- */
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background-color: #e0e0e0;
-            /* App background to contrast page */
-            font-family: 'Fredoka', sans-serif;
-            display: flex;
-            align-items: flex-start;
-            /* Prevent stretch issues if height is specified manually */
-            overflow: hidden;
-        }
-
         /* --- SETTINGS SIDEBAR --- */
         #settings-sidebar {
             width: var(--sidebar-width);
             height: 100vh;
-            min-height: 100vh;
-            box-sizing: border-box;
             background-color: var(--sidebar-bg);
             color: var(--sidebar-text);
             padding: 20px;
@@ -70,7 +74,6 @@
             z-index: 1000;
             overflow-y: auto;
             flex-shrink: 0;
-            /* Prevent shrinking */
         }
 
         h2 {
@@ -117,7 +120,6 @@
             font-family: inherit;
             cursor: pointer;
             width: 100%;
-            box-sizing: border-box;
         }
 
         input {
@@ -142,52 +144,46 @@
         /* --- PREVIEW AREA --- */
         #preview-container {
             flex: 1;
-            /* Allow scrolling, do NOT force height to match viewport */
             height: 100vh;
             overflow-y: auto;
+            /* STRICT BLOCK LAYOUT - NO FLEX VERTICAL CENTERING */
             display: block;
-            /* Remove flex to stop vertical centering */
             padding: 40px;
+            /* Gray space around paper */
             background-color: #555;
-            box-sizing: border-box;
+            position: relative;
         }
 
-        /* THE PHYSICAL PAPER (Visual Wrapper for Margins) */
+        /* THE PHYSICAL PAPER */
         #page-sheet {
             background-color: var(--bg-color);
             width: var(--page-width);
             min-height: var(--page-height);
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-            box-sizing: border-box;
-            transition: width 0.3s ease, min-height 0.3s ease;
-            /* Center horizontally */
+            /* Center Horizontally Only */
             margin: 0 auto;
             padding: 0;
+            position: relative;
         }
 
-        /* THE CONTENT CONTAINER (Visual Wrapper for Padding) */
+        /* THE CONTENT CONTAINER */
         #editor-print-container {
             width: 100%;
             height: 100%;
             background-color: transparent;
-            /* Transparent to show paper styling if any */
             color: var(--text-color);
-            box-sizing: border-box;
-            /* Typography Reset to match Editor exactly */
+            /* Typography Reset */
             line-height: 1.6;
             font-size: 12pt;
             word-wrap: break-word;
+            /* Structure */
             overflow: hidden;
-            /* Prevent margin collapse from children */
             display: flow-root;
-            /* Establish reliable block formatting context */
-
-            /* Inner Padding applied here */
             padding: 40px;
-            /* Default */
+            /* Default inner padding */
         }
 
-        /* Prevent first-child gap issues */
+        /* FIRST CHILD RESET - PREVENT TOP GAP */
         #editor-print-container> :first-child {
             margin-top: 0 !important;
             padding-top: 0 !important;
@@ -195,51 +191,7 @@
             break-before: auto !important;
         }
 
-        /* --- PAGE SIZE CLASSES --- */
-        /* Note: @page rules are injected dynamically by JS */
-        body.size-a4 {
-            --page-width: 210mm;
-            --page-height: 297mm;
-        }
-
-        body.size-a3 {
-            --page-width: 297mm;
-            --page-height: 420mm;
-        }
-
-        body.size-a5 {
-            --page-width: 148mm;
-            --page-height: 210mm;
-        }
-
-        body.size-letter {
-            --page-width: 215.9mm;
-            --page-height: 279.4mm;
-        }
-
-        body.size-legal {
-            --page-width: 215.9mm;
-            --page-height: 355.6mm;
-        }
-
-        /* INFINITY MODE */
-        body.size-infinity {
-            --page-width: 210mm;
-            /* Standard width for readability */
-            --page-height: auto;
-            height: auto;
-            overflow: visible;
-        }
-
-        body.size-infinity #page-sheet {
-            min-height: 100vh;
-            height: auto;
-            box-shadow: none;
-            margin-bottom: 0;
-            overflow: visible;
-        }
-
-        /* --- CONTENT STYLING (Fidelity) --- */
+        /* --- CONTENT STYLING --- */
         #editor-print-container img {
             max-width: 100%;
             height: auto;
@@ -268,10 +220,50 @@
             opacity: 0.8;
         }
 
-        /* Preserve Whitespace/Breaks */
         #editor-print-container * {
             page-break-inside: avoid;
             break-inside: avoid;
+        }
+
+        /* --- PAGE SIZE CLASSES --- */
+        body.size-a4 {
+            --page-width: 210mm;
+            --page-height: 297mm;
+        }
+
+        body.size-a3 {
+            --page-width: 297mm;
+            --page-height: 420mm;
+        }
+
+        body.size-a5 {
+            --page-width: 148mm;
+            --page-height: 210mm;
+        }
+
+        body.size-letter {
+            --page-width: 215.9mm;
+            --page-height: 279.4mm;
+        }
+
+        body.size-legal {
+            --page-width: 215.9mm;
+            --page-height: 355.6mm;
+        }
+
+        /* INFINITY MODE OVERRIDES */
+        body.size-infinity {
+            --page-width: 210mm;
+            --page-height: auto;
+            height: auto;
+            overflow: visible;
+        }
+
+        body.size-infinity #page-sheet {
+            min-height: 100vh;
+            height: auto;
+            box-shadow: none;
+            margin-bottom: 0;
         }
 
         /* --- PRINT MEDIA QUERIES --- */
@@ -297,11 +289,8 @@
                 width: 100%;
             }
 
-            /* HIDE VISUAL MARGIN SIMULATION DURING PRINT */
-            /* We let browser handles margins based on @page */
             #page-sheet {
                 padding: 0 !important;
-                /* CRITICAL: Remove visual padding, allow @page margin */
                 box-shadow: none;
                 margin: 0;
                 width: 100%;
@@ -314,10 +303,8 @@
 
             #editor-print-container {
                 width: 100%;
-                /* Padding is kept here, as it's inner content padding */
             }
 
-            /* Infinity Mode Rules */
             body.size-infinity #page-sheet {
                 height: auto !important;
                 overflow: visible !important;
@@ -338,7 +325,6 @@
         <div class="control-group">
             <label for="sizeSelect">Page Size</label>
             <select id="sizeSelect">
-                <!-- Size Options -->
                 <option value="size-infinity" selected>Infinity (Single Continuous Page)</option>
                 <option value="size-a4">A4</option>
                 <option value="size-a3">A3</option>
@@ -386,11 +372,10 @@
 
     <!-- Content Preview -->
     <div id="preview-container">
-        <!-- WRAPPER: Simulates Page Sheet (White paper) -->
+        <!-- THE PAPER -->
         <div id="page-sheet">
-            <!-- WRAPPER: Inner Content (Text area) -->
+            <!-- THE CONTENT -->
             <div id="editor-print-container">
-                <!-- Content will be injected here -->
                 <p style="color: grey; text-align: center; margin-top: 50%;">Loading content...</p>
             </div>
         </div>
@@ -410,7 +395,6 @@
             const styleInjection = document.getElementById('page-style-injection');
 
             // Padding Inputs (px)
-            // Applied as PADDING to #editor-print-container
             const paddingInputs = {
                 top: document.getElementById('paddingTop'),
                 bottom: document.getElementById('paddingBottom'),
@@ -431,11 +415,9 @@
                 let pageRule = '';
 
                 if (size === 'size-infinity') {
-                    // TRUE INFINITY MODE logic (height calculation)
-                    const contentHeightPx = pageSheet.scrollHeight; // Measure the expanded sheet including padding
-                    // Approx 1px = 0.264583mm
+                    // TRUE INFINITY MODE logic
+                    const contentHeightPx = pageSheet.scrollHeight;
                     const heightMm = Math.ceil(contentHeightPx * 0.264583) + 20;
-
                     // Force margin 0 to let padding handle spacing
                     pageRule = `@page { size: 210mm ${heightMm}mm; margin: 0; }`;
                 } else {
@@ -447,19 +429,13 @@
 
             // 3. Padding Update Function (Pixel-based, Real-time)
             function updateContentPadding() {
-                // Get values, default to 0 if empty
                 let pt = parseInt(paddingInputs.top.value) || 0;
                 let pb = parseInt(paddingInputs.bottom.value) || 0;
                 let pl = parseInt(paddingInputs.left.value) || 0;
                 let pr = parseInt(paddingInputs.right.value) || 0;
 
-                // Clamp negative
-                pt = Math.max(0, pt);
-                pb = Math.max(0, pb);
-                pl = Math.max(0, pl);
-                pr = Math.max(0, pr);
+                pt = Math.max(0, pt); pb = Math.max(0, pb); pl = Math.max(0, pl); pr = Math.max(0, pr);
 
-                // Apply directly to style
                 editorContainer.style.paddingTop = `${pt}px`;
                 editorContainer.style.paddingBottom = `${pb}px`;
                 editorContainer.style.paddingLeft = `${pl}px`;
@@ -469,7 +445,7 @@
             // 4. Setup Listeners
             sizeSelect.addEventListener('change', (e) => {
                 document.body.className = e.target.value;
-                updatePageSize(); // Trigger recalc
+                updatePageSize();
             });
 
             themeSelect.addEventListener('change', (e) => {
@@ -477,7 +453,6 @@
                 document.documentElement.setAttribute('data-theme', theme);
             });
 
-            // Listen to Padding Inputs (Real-time 'input' event)
             Object.values(paddingInputs).forEach(input => {
                 input.addEventListener('input', updateContentPadding);
             });
