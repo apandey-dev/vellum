@@ -385,21 +385,39 @@ function handleBackspace(e) {
         }
     } else if (lineBlock.classList.contains('task-item')) {
         // Handle Task Item Backspace directly
-        // Purpose: Remove the checkbox wrapper so it doesn't linger
+        // Purpose: Cleanly convert to regular text without residual styles
+
+        // 1. Remove the checkbox UI
         const checkboxWrapper = lineBlock.querySelector('.custom-checkbox-wrapper');
         if (checkboxWrapper) checkboxWrapper.remove();
 
-        // Unwrap the rest (the content span)
-        const newDiv = unwrapBlock(lineBlock);
+        // 2. Remove class to strip styling (margins/flex)
+        lineBlock.classList.remove('task-item');
+        lineBlock.classList.remove('completed');
 
-        // Ensure regular div structure if it was a span
-        if (newDiv.tagName === 'SPAN') {
-            const parent = newDiv.parentNode;
-            // This case shouldn't happen with unwrapBlock usually returning a div, 
-            // but if unwrapBlock just strips the parent tag, we might be left with content.
-            // Let's rely on standard unwrapBlock behavior but ensure we killed the checkbox first.
+        // 3. Ensure it's just a div (unwrapBlock might be overkill if we just strip classes)
+        // If unwrapBlock does more (like handling tag changes), we can use it, but stripping usually works for DIVs
+        if (lineBlock.tagName !== 'DIV') {
+            const newDiv = unwrapBlock(lineBlock);
+            setCursorAtEnd(newDiv);
+        } else {
+            // It's already a DIV, just stripped of class. Ensure cursor is at start? 
+            // Backspace at start usually implies merging with previous if not special, 
+            // but here we are converting special to normal. Cursor should stay at start of content.
+            // But logic says: "removal process". 
+            // If I backspace at start of "[ ] Text", I expect "Text". 
+
+            // Ensure lineBlock is clean
+            if (!lineBlock.textContent.trim()) lineBlock.innerHTML = '<br>'; // Handle empty case
+
+            // We need to place cursor at start of text
+            const range = document.createRange();
+            range.selectNodeContents(lineBlock);
+            range.collapse(true); // Start
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
         }
-        setCursorAtEnd(newDiv);
     } else {
         // Non-list special blocks
         const newDiv = unwrapBlock(lineBlock);
@@ -468,36 +486,14 @@ function handleEnter(e) {
         isProcessing = true;
         pushToUndo();
 
-        const contentSpan = lineBlock.querySelector('span:last-child');
-        const text = contentSpan ? contentSpan.textContent.trim() : '';
+        // Always exit list on Enter (User preference)
+        const newP = document.createElement('div');
+        newP.innerHTML = '<br>';
 
-        if (!text) {
-            // Empty task - convert to regular paragraph (exit list)
-            const newP = document.createElement('div');
-            newP.innerHTML = '<br>';
-            lineBlock.replaceWith(newP);
-            setCursorAtEnd(newP);
-        } else {
-            // Create new task
-            const newTask = document.createElement('div');
-            newTask.className = 'task-item';
-            newTask.innerHTML = `
-                <label class="custom-checkbox-wrapper" contenteditable="false">
-                    <input type="checkbox">
-                    <span class="checkmark"></span>
-                </label>
-                <span style="flex:1;">&#8203;</span>
-            `;
-            // Add click handler to the new checkbox
-            const cb = newTask.querySelector('input');
-            cb.addEventListener('click', function () {
-                this.closest('.task-item').classList.toggle('completed');
-                saveCurrentNote();
-            });
-            lineBlock.parentNode.insertBefore(newTask, lineBlock.nextSibling);
-            const newContentSpan = newTask.querySelector('span:last-child');
-            setCursorAtEnd(newContentSpan);
-        }
+        // Insert new line after current task
+        lineBlock.parentNode.insertBefore(newP, lineBlock.nextSibling);
+        setCursorAtEnd(newP);
+
         saveCurrentNote();
         isProcessing = false;
     } else if (lineBlock.tagName === 'H2' || lineBlock.tagName === 'H3' || lineBlock.tagName === 'BLOCKQUOTE') {
