@@ -153,16 +153,25 @@ function handleInlineShortcuts(e) {
 
     // Helper to check if cursor is at start of line (ignoring leading whitespace)
     const textBeforeCursor = text.slice(0, offset);
-    const trimmedBefore = textBeforeCursor.trim();
-    const isLineStart = (trimmedBefore.length === 0);
+    // We only care if the *pattern* is at the end of textBeforeCursor, 
+    // AND if the things before the pattern are just whitespace.
+
+    function isSimulationOfStart(pattern) {
+        // pattern e.g. "## "
+        if (!textBeforeCursor.endsWith(pattern)) return false;
+        const prefix = textBeforeCursor.slice(0, -pattern.length);
+        return /^\s*$/.test(prefix);
+    }
 
     // 1. Headings
-    if (isLineStart && textBeforeCursor.endsWith('## ')) {
+    if (isSimulationOfStart('## ')) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
-        const start = offset - 3;
-        range.setStart(node, start);
+        // Calculate where the pattern starts
+        const matchLength = 3;
+        const patternStart = offset - matchLength;
+        range.setStart(node, patternStart);
         range.setEnd(node, offset);
         range.deleteContents();
         const newBlock = convertBlockTo('h2', lineBlock);
@@ -171,12 +180,13 @@ function handleInlineShortcuts(e) {
         isProcessing = false;
         return;
     }
-    if (isLineStart && textBeforeCursor.endsWith('### ')) {
+    if (isSimulationOfStart('### ')) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
-        const start = offset - 4;
-        range.setStart(node, start);
+        const matchLength = 4;
+        const patternStart = offset - matchLength;
+        range.setStart(node, patternStart);
         range.setEnd(node, offset);
         range.deleteContents();
         const newBlock = convertBlockTo('h3', lineBlock);
@@ -187,12 +197,12 @@ function handleInlineShortcuts(e) {
     }
 
     // 2. Bullet list
-    if (isLineStart && textBeforeCursor.endsWith('* ')) {
+    if (isSimulationOfStart('* ')) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
-        const start = offset - 2;
-        range.setStart(node, start);
+        const matchLength = 2;
+        range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
         range.deleteContents();
 
@@ -213,12 +223,12 @@ function handleInlineShortcuts(e) {
     }
 
     // 3. Checkbox
-    if (isLineStart && textBeforeCursor.endsWith('[] ')) {
+    if (isSimulationOfStart('[] ')) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
-        const start = offset - 3;
-        range.setStart(node, start);
+        const matchLength = 3;
+        range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
         range.deleteContents();
 
@@ -261,12 +271,12 @@ function handleInlineShortcuts(e) {
     }
 
     // 4. Blockquote
-    if (isLineStart && textBeforeCursor.endsWith('> ')) {
+    if (isSimulationOfStart('> ')) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
-        const start = offset - 2;
-        range.setStart(node, start);
+        const matchLength = 2;
+        range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
         range.deleteContents();
         const newBlock = convertBlockTo('blockquote', lineBlock);
@@ -277,7 +287,7 @@ function handleInlineShortcuts(e) {
     }
 
     // 5. Horizontal rule (---) – must be the whole line
-    if (isLineStart && text.trim() === '---' && offset === text.length) {
+    if (isSimulationOfStart('---') && offset === text.length) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
@@ -373,6 +383,23 @@ function handleBackspace(e) {
             parentUl.replaceWith(fragment);
             setCursorAtEnd(newDiv);
         }
+    } else if (lineBlock.classList.contains('task-item')) {
+        // Handle Task Item Backspace directly
+        // Purpose: Remove the checkbox wrapper so it doesn't linger
+        const checkboxWrapper = lineBlock.querySelector('.custom-checkbox-wrapper');
+        if (checkboxWrapper) checkboxWrapper.remove();
+
+        // Unwrap the rest (the content span)
+        const newDiv = unwrapBlock(lineBlock);
+
+        // Ensure regular div structure if it was a span
+        if (newDiv.tagName === 'SPAN') {
+            const parent = newDiv.parentNode;
+            // This case shouldn't happen with unwrapBlock usually returning a div, 
+            // but if unwrapBlock just strips the parent tag, we might be left with content.
+            // Let's rely on standard unwrapBlock behavior but ensure we killed the checkbox first.
+        }
+        setCursorAtEnd(newDiv);
     } else {
         // Non-list special blocks
         const newDiv = unwrapBlock(lineBlock);
@@ -396,10 +423,44 @@ function handleEnter(e) {
         isProcessing = true;
         pushToUndo();
 
-        const newLi = document.createElement('li');
-        newLi.innerHTML = '&#8203;';
-        lineBlock.parentNode.insertBefore(newLi, lineBlock.nextSibling);
-        setCursorAtEnd(newLi);
+        // Check if empty (escape list)
+        const text = lineBlock.textContent.trim();
+        if (!text) {
+            // Convert to paragraph
+            const newP = document.createElement('div');
+            newP.innerHTML = '<br>';
+
+            const parentUl = lineBlock.parentNode;
+            if (parentUl.children.length === 1) {
+                parentUl.replaceWith(newP);
+            } else {
+                // Split list logic similar to backspace but for Enter
+                // Or simpler: insert newP after UL?
+                // Standard behavior: break the list.
+                const index = Array.from(parentUl.children).indexOf(lineBlock);
+                const after = Array.from(parentUl.children).slice(index + 1);
+
+                const fragment = document.createDocumentFragment();
+                fragment.appendChild(newP);
+                if (after.length) {
+                    const ulAfter = document.createElement('ul');
+                    after.forEach(li => ulAfter.appendChild(li));
+                    fragment.appendChild(ulAfter);
+                }
+
+                // Remove current LI
+                lineBlock.remove();
+
+                // Insert after parentUl
+                parentUl.parentNode.insertBefore(fragment, parentUl.nextSibling);
+            }
+            setCursorAtEnd(newP);
+        } else {
+            const newLi = document.createElement('li');
+            newLi.innerHTML = '&#8203;';
+            lineBlock.parentNode.insertBefore(newLi, lineBlock.nextSibling);
+            setCursorAtEnd(newLi);
+        }
         saveCurrentNote();
         isProcessing = false;
     } else if (lineBlock.classList.contains('task-item')) {
@@ -407,24 +468,36 @@ function handleEnter(e) {
         isProcessing = true;
         pushToUndo();
 
-        const newTask = document.createElement('div');
-        newTask.className = 'task-item';
-        newTask.innerHTML = `
-            <label class="custom-checkbox-wrapper" contenteditable="false">
-                <input type="checkbox">
-                <span class="checkmark"></span>
-            </label>
-            <span style="flex:1;">&#8203;</span>
-        `;
-        // Add click handler to the new checkbox
-        const cb = newTask.querySelector('input');
-        cb.addEventListener('click', function () {
-            this.closest('.task-item').classList.toggle('completed');
-            saveCurrentNote();
-        });
-        lineBlock.parentNode.insertBefore(newTask, lineBlock.nextSibling);
-        const contentSpan = newTask.querySelector('span:last-child');
-        setCursorAtEnd(contentSpan);
+        const contentSpan = lineBlock.querySelector('span:last-child');
+        const text = contentSpan ? contentSpan.textContent.trim() : '';
+
+        if (!text) {
+            // Empty task - convert to regular paragraph (exit list)
+            const newP = document.createElement('div');
+            newP.innerHTML = '<br>';
+            lineBlock.replaceWith(newP);
+            setCursorAtEnd(newP);
+        } else {
+            // Create new task
+            const newTask = document.createElement('div');
+            newTask.className = 'task-item';
+            newTask.innerHTML = `
+                <label class="custom-checkbox-wrapper" contenteditable="false">
+                    <input type="checkbox">
+                    <span class="checkmark"></span>
+                </label>
+                <span style="flex:1;">&#8203;</span>
+            `;
+            // Add click handler to the new checkbox
+            const cb = newTask.querySelector('input');
+            cb.addEventListener('click', function () {
+                this.closest('.task-item').classList.toggle('completed');
+                saveCurrentNote();
+            });
+            lineBlock.parentNode.insertBefore(newTask, lineBlock.nextSibling);
+            const newContentSpan = newTask.querySelector('span:last-child');
+            setCursorAtEnd(newContentSpan);
+        }
         saveCurrentNote();
         isProcessing = false;
     } else if (lineBlock.tagName === 'H2' || lineBlock.tagName === 'H3' || lineBlock.tagName === 'BLOCKQUOTE') {
@@ -631,7 +704,10 @@ writingCanvas.addEventListener('paste', (e) => {
         const lines = text.split(/\r\n|\r|\n/);
         let html = '';
         for (let i = 0; i < lines.length; i++) {
-            html += escapeHtml(lines[i]);
+            let line = escapeHtml(lines[i]);
+            // Preserve leading whitespace for code indentation
+            line = line.replace(/^ +/g, (match) => '&nbsp;'.repeat(match.length));
+            html += line;
             if (i < lines.length - 1) html += '<br>';
         }
         document.execCommand('insertHTML', false, html);

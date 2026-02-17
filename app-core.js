@@ -946,6 +946,7 @@ async function exportAsPDF(fileName) {
 
     // 2. Save to localStorage for print.html to pick up
     localStorage.setItem('mindjournal_print_content', content);
+    localStorage.setItem('mindjournal_print_title', fileName); // SYNC TITLE
 
     // 3. Open print.html in new tab
     const printWindow = window.open('print.html', '_blank');
