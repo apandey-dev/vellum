@@ -66,6 +66,13 @@ const searchInput = document.getElementById('searchInput');
 const searchResults = document.getElementById('searchResults');
 const closeSearchModalBtn = document.getElementById('closeSearchModal');
 
+// Context menu elements
+const noteContextMenu = document.getElementById('noteContextMenu');
+const ctxRename = document.getElementById('ctxRename');
+const ctxPin = document.getElementById('ctxPin');
+const moveToFolderItem = document.getElementById('moveToFolderItem');
+const ctxDelete = document.getElementById('ctxDelete');
+
 // --- STORAGE KEYS ---
 const THEME_KEY = 'focuspad_theme';
 const NOTES_KEY = 'focuspad_notes';
@@ -506,6 +513,35 @@ function renderNoteChips() {
         textSpan.textContent = note.name;
         chipContent.appendChild(textSpan);
         chip.appendChild(chipContent);
+
+        // Add Menu Button
+        const menuBtn = document.createElement('div');
+        menuBtn.className = 'chip-menu-btn';
+        menuBtn.innerHTML = '';
+        menuBtn.onclick = (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+
+            window.contextMenuNoteId = note.id;
+
+            const noteObj = notes.find(n => n.id === note.id);
+            if (noteObj) {
+                ctxPin.innerHTML = noteObj.isPinned ? '<i class="fas fa-thumbtack-slash"></i> Unpin Note' : '<i class="fas fa-thumbtack"></i> Pin Note';
+            }
+
+            const rect = menuBtn.getBoundingClientRect();
+            const x = Math.min(rect.right, window.innerWidth - 220);
+            const y = Math.min(rect.bottom, window.innerHeight - 250);
+            noteContextMenu.style.left = `${x}px`;
+            noteContextMenu.style.top = `${y}px`;
+
+            setTimeout(() => {
+                noteContextMenu.classList.add('show');
+            }, 10);
+        };
+
+        chip.appendChild(menuBtn);
+
         chip.onclick = () => switchNote(note.id);
         noteChips.appendChild(chip);
     });
@@ -1147,6 +1183,88 @@ writingCanvas.addEventListener('input', () => {
     contentChangeTimer = setTimeout(() => {
         pushToUndo();
     }, 1000);
+});
+
+// ==================== NOTE CONTEXT MENU EVENT LISTENERS ====================
+
+// Right-click on chips
+noteChips.addEventListener('contextmenu', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    e.preventDefault();
+
+    window.contextMenuNoteId = chip.dataset.noteId;
+    const note = notes.find(n => n.id === window.contextMenuNoteId);
+    if (note) {
+        ctxPin.innerHTML = note.isPinned ? '<i class="fas fa-thumbtack-slash"></i> Unpin Note' : '<i class="fas fa-thumbtack"></i> Pin Note';
+    }
+
+    const x = Math.min(e.pageX, window.innerWidth - 220);
+    const y = Math.min(e.pageY, window.innerHeight - 250);
+    noteContextMenu.style.left = `${x}px`;
+    noteContextMenu.style.top = `${y}px`;
+    noteContextMenu.classList.add('show');
+});
+
+// Rename
+ctxRename.addEventListener('click', () => {
+    if (!window.contextMenuNoteId) return;
+    const note = notes.find(n => n.id === window.contextMenuNoteId);
+    if (note) {
+        renameNoteInput.value = note.name;
+        renameNoteModal.classList.add('show');
+        pushToModalStack(renameNoteModal);
+        setTimeout(() => renameNoteInput.focus(), 100);
+    }
+    noteContextMenu.classList.remove('show');
+    // Keep ID for modal
+});
+
+// Pin
+ctxPin.addEventListener('click', () => {
+    if (!window.contextMenuNoteId) return;
+    const note = notes.find(n => n.id === window.contextMenuNoteId);
+    if (note) {
+        pushToUndo();
+        note.isPinned = !note.isPinned;
+        saveToStorage();
+        renderNoteChips();
+        if (note.id === activeNoteId) {
+            updatePinButton();
+        }
+        showFormattingIndicator(note.isPinned ? 'Note pinned' : 'Note unpinned');
+    }
+    noteContextMenu.classList.remove('show');
+    window.contextMenuNoteId = null;
+});
+
+// Move to folder
+moveToFolderItem.addEventListener('click', () => {
+    if (!window.contextMenuNoteId) return;
+    openMoveModal(window.contextMenuNoteId);
+    noteContextMenu.classList.remove('show');
+    // Keep ID for modal
+});
+
+// Delete
+ctxDelete.addEventListener('click', () => {
+    if (!window.contextMenuNoteId) return;
+    // If not the active note, switch to it before delete? The delete modal uses contextMenuNoteId.
+    if (activeNoteId !== window.contextMenuNoteId) {
+        switchNote(window.contextMenuNoteId);
+    }
+    // Trigger delete modal (which will use window.contextMenuNoteId)
+    deleteBtn.click(); // This opens the confirm modal
+    noteContextMenu.classList.remove('show');
+    // Keep ID for modal, modal will clear it after action
+});
+
+// Close context menu when clicking elsewhere
+document.addEventListener('click', (e) => {
+    if (noteContextMenu.classList.contains('show') && !noteContextMenu.contains(e.target)) {
+        noteContextMenu.classList.remove('show');
+        window.contextMenuNoteId = null;
+    }
 });
 
 // --- INITIALIZATION ---
