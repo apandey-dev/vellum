@@ -211,18 +211,316 @@ function escapeHtml(unsafe) {
 }
 
 // --- EVENTS ---
+// --- EVENTS ---
 let processing = false;
+
+// Enhanced Input Handler for Inline Shortcuts
+// Helper to find the nearest block-level parent (div, p, etc.) of a node
+function getLineBlock(node) {
+    while (node && node.parentElement !== writingCanvas && node !== writingCanvas) {
+        node = node.parentElement;
+    }
+    return node;
+}
+
+// Enhanced Input Handler for Inline Shortcuts
+function handleInlineShortcuts(e) {
+    // 1. Handle Navigation & Block-Breaking keys
+    if (e.key === 'Enter') return;
+    if (e.inputType === 'deleteContentBackward') return;
+
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    const node = range.startContainer;
+
+    // We only care about text nodes for pattern matching
+    if (node.nodeType !== 3) return;
+
+    const text = node.textContent;
+    const offset = range.startOffset;
+
+    // --- HELPER: Convert Block to Element (Preserving Content) ---
+    const convertBlockTo = (tagName, styles = {}) => {
+        const lineBlock = getLineBlock(node);
+        if (!lineBlock) return;
+
+        const newEl = document.createElement(tagName);
+
+        // Move children to preserve spans/formatting
+        while (lineBlock.firstChild) {
+            newEl.appendChild(lineBlock.firstChild);
+        }
+
+        // Apply styles
+        Object.assign(newEl.style, styles);
+
+        // Replace
+        lineBlock.replaceWith(newEl);
+
+        // Restore Cursor (put at end of new element content)
+        const newRange = document.createRange();
+        newRange.selectNodeContents(newEl);
+        newRange.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        saveCurrentNote();
+    };
+
+
+    // --- 1. HEADING SHORTCUTS (### , ## ) ---
+    // Rule: Must preserve existing colors/spans.
+    // Logic: Remove the marker text, THEN convert block.
+
+    // H3 (### )
+    if (text.slice(0, offset).endsWith('### ')) {
+        const start = offset - 4; // Length of "### "
+        // Verify it's effectively at the start (ignoring purely whitespace text nodes before it?)
+        // For simplicity and strictness requested: Check if text content of block *starts* with it 
+        // OR if the node text itself is the trigger.
+        // To support "Color then ##": The block text will start with "Text ##". 
+        // Wait, "Heading must work even if color is active".
+        // Example: "@red. Text" -> user types "## " ?? No.
+        // Example: User types "@red. ## " -> Text is red "## ".
+        // Then space. 
+        // We should just detect if "## " exists and remove it, then promote the block.
+
+        // Remove the characters "### "
+        const rangeToDelete = document.createRange();
+        rangeToDelete.setStart(node, start);
+        rangeToDelete.setEnd(node, offset);
+        rangeToDelete.deleteContents();
+
+        convertBlockTo('h3');
+        return;
+    }
+
+    // H2 (## )
+    if (text.slice(0, offset).endsWith('## ')) {
+        const start = offset - 3;
+        const rangeToDelete = document.createRange();
+        rangeToDelete.setStart(node, start);
+        rangeToDelete.setEnd(node, offset);
+        rangeToDelete.deleteContents();
+
+        convertBlockTo('h2');
+        return;
+    }
+
+    // LIST SHORTCUT (* )
+    if (text.slice(0, offset).endsWith('* ')) {
+        // Strict start check for lists usually, but consistent with above:
+        const rangeToDelete = document.createRange();
+        rangeToDelete.setStart(node, offset - 2);
+        rangeToDelete.setEnd(node, offset);
+        rangeToDelete.deleteContents();
+
+        // Special: Lists need <ul> wrapper if not present? 
+        // Current requirement: "Convert *. "
+        // convertBlockTo 'li' ? 
+        // If we just make it an 'li', browser might wrap in clean ul or leave it. 
+        // Best to wrap in UL.
+
+        const lineBlock = getLineBlock(node);
+        if (lineBlock) {
+            const ul = document.createElement('ul');
+            const li = document.createElement('li');
+
+            // Move children to li
+            while (lineBlock.firstChild) {
+                li.appendChild(lineBlock.firstChild);
+            }
+            ul.appendChild(li);
+            lineBlock.replaceWith(ul);
+
+            const newRange = document.createRange();
+            newRange.selectNodeContents(li);
+            newRange.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+            saveCurrentNote();
+            return;
+        }
+    }
+
+
+    // --- 2. COMBINED SHORTCUTS (#head.center.red:) ---
+    // Trigger on ':'
+    if (e.data === ':') {
+        const textBeforeCursor = text.slice(0, offset);
+        // Regex: #head followed by dots and words, ending with :
+        // Capture group 1: modifiers (center.red)
+        const match = textBeforeCursor.match(/#head\.([a-zA-Z0-9.]+):$/);
+
+        if (match) {
+            const modifiersStr = match[1]; // e.g. "center.red"
+            const fullMatch = match[0];
+            const start = offset - fullMatch.length;
+
+            // Delete command
+            const rangeToDelete = document.createRange();
+            rangeToDelete.setStart(node, start);
+            rangeToDelete.setEnd(node, offset);
+            rangeToDelete.deleteContents();
+
+            // Parse Modifiers
+            const modifiers = modifiersStr.split('.');
+            const styles = {};
+
+            modifiers.forEach(mod => {
+                if (['center', 'left', 'right', 'justify'].includes(mod)) {
+                    styles.textAlign = mod;
+                } else {
+                    // Assume color
+                    styles.color = mod;
+                }
+            });
+
+            // Convert to H1 (per user request #head -> h1)
+            convertBlockTo('h1', styles);
+            return;
+        }
+    }
+
+    // --- 3. INLINE SHORTCUTS (Trigger: .) ---
+    if (e.data === '.') {
+        const textBeforeCursor = text.slice(0, offset);
+
+        // Colors: @red., @blue.
+        const colorMatch = textBeforeCursor.match(/@([a-zA-Z]+)\.$/);
+        if (colorMatch) {
+            const colorName = colorMatch[1];
+            const matchLength = colorMatch[0].length;
+            const start = offset - matchLength;
+
+            const rangeToDelete = document.createRange();
+            rangeToDelete.setStart(node, start);
+            rangeToDelete.setEnd(node, offset);
+            rangeToDelete.deleteContents();
+
+            const span = document.createElement('span');
+            span.style.color = colorName;
+            span.innerHTML = '&#8203;';
+
+            rangeToDelete.insertNode(span);
+
+            const newRange = document.createRange();
+            newRange.setStart(span.firstChild, 1);
+            newRange.collapse(true);
+
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+            saveCurrentNote();
+            return;
+        }
+
+        // Headings: @head.
+        if (textBeforeCursor.endsWith('@head.')) {
+            const start = offset - 6;
+            const rangeToDelete = document.createRange();
+            rangeToDelete.setStart(node, start);
+            rangeToDelete.setEnd(node, offset);
+            rangeToDelete.deleteContents();
+
+            const el = document.createElement('h2');
+            el.className = 'inline-heading';
+            el.style.display = 'inline'; // Ensure
+            el.innerHTML = '&#8203;';
+
+            rangeToDelete.insertNode(el);
+
+            const newRange = document.createRange();
+            newRange.setStart(el.firstChild, 1);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+            saveCurrentNote();
+            return;
+        }
+
+        // Subheadings: @subHead.
+        if (textBeforeCursor.endsWith('@subHead.')) {
+            const start = offset - 9;
+            const rangeToDelete = document.createRange();
+            rangeToDelete.setStart(node, start);
+            rangeToDelete.setEnd(node, offset);
+            rangeToDelete.deleteContents();
+
+            const el = document.createElement('h3');
+            el.className = 'inline-subheading';
+            el.style.display = 'inline';
+            el.innerHTML = '&#8203;';
+
+            rangeToDelete.insertNode(el);
+
+            const newRange = document.createRange();
+            newRange.setStart(el.firstChild, 1);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+            saveCurrentNote();
+            return;
+        }
+
+        // Code: @code.
+        if (textBeforeCursor.endsWith('@code.')) {
+            const start = offset - 6;
+            const rangeToReplace = document.createRange();
+            rangeToReplace.setStart(node, start);
+            rangeToReplace.setEnd(node, offset);
+            rangeToReplace.deleteContents();
+
+            const pre = document.createElement('pre');
+            const code = document.createElement('code');
+            code.textContent = '\u200B';
+            pre.appendChild(code);
+
+            rangeToReplace.insertNode(pre);
+
+            const newRange = document.createRange();
+            newRange.setStart(code.firstChild, 1);
+            newRange.collapse(true);
+
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+            saveCurrentNote();
+            return;
+        }
+    }
+}
+
+// Attach Event Listeners
+writingCanvas.addEventListener('input', handleInlineShortcuts);
+
 writingCanvas.addEventListener('keyup', (e) => {
     if (processing) return;
-    if (e.key === ' ' || e.key === 'Enter') {
+
+    if (e.key === 'Enter') {
+        processing = true;
+        const lineNode = getCurrentLine();
+
+        // --- Specific HR Handler for '---' ---
+        // processLineFormatting already handles '---', so we just need to ensure
+        // it's called. The existing logic below calls it.
+        // We will add a small safety check to ensure it doesn't leave '---' key presses
+        // if for some reason processLineFormatting fails or detects differently.
+        const processed = processLineFormatting(lineNode);
+        if (processed) showFormattingIndicator('Horizontal Rule inserted');
+
+        processing = false;
+    } else if (e.key === ' ') {
+        // Space triggers '===' (double line) in processLineFormatting
         processing = true;
         const lineNode = getCurrentLine();
         const processed = processLineFormatting(lineNode);
         if (processed) showFormattingIndicator('Line inserted');
         processing = false;
     }
+
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) updateFontDisplay();
 });
+
 writingCanvas.addEventListener('click', () => {
     updateFontDisplay();
 });

@@ -476,9 +476,24 @@ body {
     color: var(--text-primary) !important;
 }
 
-.writing-canvas,
+.writing-canvas {
+    color: var(--text-primary);
+}
+
+.writing-canvas ul {
+    margin: 8px 0;
+    padding-left: 24px;
+    list-style-type: disc;
+}
+
+.writing-canvas li {
+    margin-bottom: 4px;
+    line-height: 1.6;
+}
+
 .writing-canvas * {
-    color: inherit !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 [data-theme="light"] .writing-canvas {
@@ -792,21 +807,101 @@ body {
 
 .link-input-wrapper {
     display: flex;
+    align-items: center;
     gap: 8px;
-    margin-top: 8px;
+    margin-top: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 6px 6px 6px 12px;
+    /* Pad left for text, right/top/bottom for button space */
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.link-input-wrapper input {
-    flex: 1;
-    background: var(--bg-canvas);
-    border: 1px solid var(--border-color);
-    padding: 10px 12px;
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-family: 'Fredoka', sans-serif;
-    font-size: 13px;
-    cursor: text;
+.link-input-wrapper:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    /* Subtle green glow matches toggle */
 }
+
+#shareLinkInput {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    outline: none;
+    width: 100%;
+}
+
+.link-input-wrapper .copy-btn {
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.link-input-wrapper .copy-btn:hover {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+}
+
+/* --- INLINE SHORTCUT STYLES --- */
+.inline-heading {
+    display: inline;
+    font-size: 1.5em;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+    line-height: inherit;
+    color: var(--text-primary);
+}
+
+.inline-subheading {
+    display: inline;
+    font-size: 1.25em;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+    line-height: inherit;
+    color: var(--text-primary);
+}
+
+/* Code Block Styling */
+pre {
+    background: #1e1e1e;
+    color: #ffffff;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    white-space: pre-wrap;
+    /* Allow wrapping */
+}
+
+code {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+/* Ensure code inside pre inherits color */
+pre code {
+    color: inherit;
+    background: none;
+    padding: 0;
+}
+
+
 
 .copy-btn {
     width: 42px;
