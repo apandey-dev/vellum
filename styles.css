@@ -373,19 +373,14 @@ body {
 
 .action-btn.pinned i {
     transform: rotate(45deg);
-    /* Angled "pinned" look */
-    /* Ensure icon is solid/visible */
 }
 
-/* Hover effect for pin button specifically */
 .action-btn#pinBtn:hover i {
     transform: rotate(0deg);
-    /* Straighten on hover to suggest action */
 }
 
 .action-btn.pinned:hover i {
     transform: rotate(0deg);
-    /* Reset rotation on hover */
 }
 
 .font-option.active {
@@ -500,7 +495,38 @@ body {
     color: var(--text-primary) !important;
 }
 
-.writing-canvas {
+/* Strict Heading Resets */
+.writing-canvas h1,
+.writing-canvas h2,
+.writing-canvas h3,
+.writing-canvas h4,
+.writing-canvas h5,
+.writing-canvas h6 {
+    margin: 0;
+    padding: 0;
+    font-weight: bold;
+    line-height: 1.4;
+}
+
+.writing-canvas h1 {
+    font-size: 2em;
+}
+
+.writing-canvas h2 {
+    font-size: 1.5em;
+}
+
+.writing-canvas h3 {
+    font-size: 1.25em;
+}
+
+.writing-canvas ul {
+    margin: 0;
+    padding-left: 24px;
+    list-style-type: disc;
+}
+
+.writing-canvas * {
     color: var(--text-primary);
 }
 
@@ -539,6 +565,90 @@ body {
     font-style: italic;
     opacity: 0.6;
     white-space: pre-line;
+}
+
+/* --- Blockquote --- */
+.writing-canvas blockquote {
+    border-left: 4px solid var(--accent-color);
+    margin: 8px 0;
+    padding: 8px 16px;
+    background: rgba(128, 128, 128, 0.05);
+    border-radius: 4px;
+    color: var(--text-secondary);
+}
+
+/* --- Checkbox Task --- */
+.writing-canvas .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.custom-checkbox-wrapper {
+    display: inline-flex;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.custom-checkbox-wrapper input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    height: 20px;
+    width: 20px;
+    background-color: transparent;
+    border: 3px solid var(--border-color);
+    border-radius: 5px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.custom-checkbox-wrapper:hover input~.checkmark {
+    border-color: var(--accent-color);
+    background-color: var(--bg-hover);
+    transform: translateY(-0.5px);
+}
+
+.custom-checkbox-wrapper input:checked~.checkmark {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: scale(1.05);
+}
+
+.checkmark:after {
+    content: "";
+    display: none;
+    width: 5px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-bottom: 2px;
+}
+
+.custom-checkbox-wrapper input:checked~.checkmark:after {
+    display: block;
+}
+
+.writing-canvas .task-item.completed span {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    transition: color 0.2s ease;
 }
 
 .horizontal-line {
@@ -835,7 +945,6 @@ body {
     gap: 8px;
     margin-top: 12px;
     background: var(--bg-canvas);
-    /* Use valid variable */
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 6px 6px 6px 12px;
@@ -844,9 +953,7 @@ body {
 
 .link-input-wrapper:focus-within {
     border-color: var(--accent-color);
-    /* Use accent color */
     background: var(--bg-panel);
-    /* Highlight effect */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
@@ -919,7 +1026,6 @@ pre {
     margin: 8px 0;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     white-space: pre-wrap;
-    /* Allow wrapping */
 }
 
 code {
@@ -927,14 +1033,11 @@ code {
     font-size: 0.9em;
 }
 
-/* Ensure code inside pre inherits color */
 pre code {
     color: inherit;
     background: none;
     padding: 0;
 }
-
-
 
 .copy-btn {
     width: 42px;
@@ -1301,7 +1404,7 @@ pre code {
     flex-shrink: 0;
 }
 
-/* --- Button styles for confirm modals (added to match form-btn) --- */
+/* --- Button styles for confirm modals --- */
 .confirm-actions {
     display: flex;
     gap: 12px;
@@ -1543,8 +1646,6 @@ pre code {
     margin-right: 5px;
 }
 
-
-
 /* --- Enhanced Context Menu --- */
 .context-menu {
     position: fixed;
@@ -1639,4 +1740,46 @@ pre code {
 body.dark .icon-circle {
     background: #1f1f1f;
     color: #e3e3e3;
+}
+
+/* --- Editor Context Menu & Submenu --- */
+#editorContextMenu {
+    min-width: 220px;
+}
+
+.context-menu-item.has-submenu {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.context-menu-submenu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 8px;
+    min-width: 150px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-10px);
+    transition: all 0.2s;
+    z-index: 10001;
+}
+
+.context-menu-item.has-submenu:hover .context-menu-submenu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+.context-menu-submenu .context-menu-item {
+    padding: 8px 12px;
+    font-size: 13px;
 }

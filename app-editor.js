@@ -1,8 +1,10 @@
 // ========================================
-// mindJournal - EDITOR & FORMATTING (Part 2/2)
+// mindJournal - EDITOR & FORMATTING (Rebuilt)
 // ========================================
 
-// Note: Relies on DOM elements and state defined in app-core.js
+// --- Dependencies ---
+// Uses writingCanvas, pushToUndo, saveCurrentNote, showFormattingIndicator from app-core.js
+// Also relies on global notes array, activeNoteId, etc.
 
 // --- CONFIG ---
 const formattingConfig = {
@@ -19,6 +21,7 @@ const formattingConfig = {
 
 let savedCursorRange = null;
 let activeDropdown = null;
+let isProcessing = false; // Prevent recursive event triggering
 
 // --- CURSOR LOGIC ---
 function saveCursorRange() {
@@ -46,51 +49,510 @@ function restoreCursorRange() {
 }
 function clearSavedCursorRange() { savedCursorRange = null; }
 
-// --- LINE FORMATTING (using execCommand for undo) ---
-function getCurrentLine() {
-    const selection = window.getSelection();
-    if (selection.rangeCount === 0) return null;
-    let node = selection.anchorNode;
-    if (!node) return null;
-    if (node.nodeType === 3) return node;
-    if (node.nodeType === 1) {
-        const range = selection.getRangeAt(0);
-        let targetNode = range.startContainer;
-        if (targetNode.nodeType === 3) return targetNode;
-        const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
-        return walker.nextNode() || node;
+// --- Get the top-level block (direct child of writingCanvas) containing node ---
+function getLineBlock(node) {
+    while (node && node.parentElement !== writingCanvas && node !== writingCanvas) {
+        node = node.parentElement;
     }
-    return node;
+    return node === writingCanvas ? null : node;
 }
-function processLineFormatting(lineNode) {
-    if (!lineNode) return false;
-    let text = lineNode.textContent || '';
-    let processed = false;
-    let htmlToInsert = '';
-    const trimmedText = text.trim();
-    if (trimmedText === '===') {
-        htmlToInsert = '<div class="horizontal-line thick"></div>';
-        processed = true;
-    } else if (trimmedText === '---') {
-        htmlToInsert = '<div class="horizontal-line dashed"></div>';
-        processed = true;
+
+// --- Convert a block to a new element, preserving content ---
+function convertBlockTo(newTagName, lineBlock, preserveContent = true, className = '') {
+    if (!lineBlock) return null;
+    const newEl = document.createElement(newTagName);
+    if (className) newEl.className = className;
+
+    // Move all children / text content
+    if (lineBlock.nodeType === 3) { // text node
+        newEl.textContent = lineBlock.textContent;
+    } else {
+        while (lineBlock.firstChild) newEl.appendChild(lineBlock.firstChild);
     }
-    if (processed) {
-        const selection = window.getSelection();
-        const range = selection.getRangeAt(0);
+
+    // Ensure empty block is focusable
+    if (!newEl.textContent.trim() && newEl.children.length === 0) {
+        newEl.innerHTML = '&#8203;';
+    }
+
+    lineBlock.replaceWith(newEl);
+    return newEl;
+}
+
+// --- Unwrap a special block to a normal paragraph (div) ---
+function unwrapBlock(lineBlock) {
+    if (!lineBlock) return null;
+    const newDiv = document.createElement('div');
+    if (lineBlock.nodeType === 3) {
+        newDiv.textContent = lineBlock.textContent;
+    } else {
+        while (lineBlock.firstChild) newDiv.appendChild(lineBlock.firstChild);
+    }
+    if (!newDiv.textContent.trim() && newDiv.children.length === 0) {
+        newDiv.innerHTML = '<br>';
+    }
+    lineBlock.replaceWith(newDiv);
+    return newDiv;
+}
+
+// --- Restore cursor after DOM mutation ---
+function setCursorAtEnd(element) {
+    const range = document.createRange();
+    const sel = window.getSelection();
+    if (element.nodeType === 3) {
+        range.setStart(element, element.length);
+        range.collapse(true);
+    } else {
+        if (element.lastChild) {
+            range.setStartAfter(element.lastChild);
+        } else {
+            range.selectNodeContents(element);
+        }
+        range.collapse(false);
+    }
+    sel.removeAllRanges();
+    sel.addRange(range);
+    writingCanvas.focus();
+}
+
+// --- Inline color handler ---
+function applyColorAtCursor(colorName) {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    if (!range.collapsed) {
+        // Wrap selection with color span
+        const span = document.createElement('span');
+        span.style.color = colorName;
+        range.surroundContents(span);
+        setCursorAtEnd(span);
+    } else {
+        // Insert color span at cursor
+        const span = document.createElement('span');
+        span.style.color = colorName;
+        span.innerHTML = '&#8203;'; // zero-width space
+        range.insertNode(span);
+        setCursorAtEnd(span.firstChild);
+    }
+    saveCurrentNote();
+}
+
+// --- Transform current line based on typed pattern (called from input) ---
+function handleInlineShortcuts(e) {
+    if (isProcessing) return;
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (node.nodeType !== 3) return; // only text nodes
+
+    const text = node.textContent;
+    const offset = range.startOffset;
+    const lineBlock = getLineBlock(node);
+    if (!lineBlock) return;
+
+    // Helper to check if cursor is at start of line (ignoring leading whitespace)
+    const textBeforeCursor = text.slice(0, offset);
+    const trimmedBefore = textBeforeCursor.trim();
+    const isLineStart = (trimmedBefore.length === 0);
+
+    // 1. Headings
+    if (isLineStart && textBeforeCursor.endsWith('## ')) {
+        e.preventDefault();
+        isProcessing = true;
+        pushToUndo();
+        const start = offset - 3;
+        range.setStart(node, start);
+        range.setEnd(node, offset);
         range.deleteContents();
-        document.execCommand('insertHTML', false, htmlToInsert);
-        const newRange = document.createRange();
-        const container = writingCanvas;
-        newRange.setStartAfter(container.lastChild || container);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
+        const newBlock = convertBlockTo('h2', lineBlock);
+        setCursorAtEnd(newBlock);
         saveCurrentNote();
-        return true;
+        isProcessing = false;
+        return;
     }
-    return false;
+    if (isLineStart && textBeforeCursor.endsWith('### ')) {
+        e.preventDefault();
+        isProcessing = true;
+        pushToUndo();
+        const start = offset - 4;
+        range.setStart(node, start);
+        range.setEnd(node, offset);
+        range.deleteContents();
+        const newBlock = convertBlockTo('h3', lineBlock);
+        setCursorAtEnd(newBlock);
+        saveCurrentNote();
+        isProcessing = false;
+        return;
+    }
+
+    // 2. Bullet list
+    if (isLineStart && textBeforeCursor.endsWith('* ')) {
+        e.preventDefault();
+        isProcessing = true;
+        pushToUndo();
+        const start = offset - 2;
+        range.setStart(node, start);
+        range.setEnd(node, offset);
+        range.deleteContents();
+
+        const ul = document.createElement('ul');
+        const li = document.createElement('li');
+        if (lineBlock.nodeType === 3) {
+            li.textContent = lineBlock.textContent;
+        } else {
+            while (lineBlock.firstChild) li.appendChild(lineBlock.firstChild);
+        }
+        if (!li.textContent.trim()) li.innerHTML = '&#8203;';
+        ul.appendChild(li);
+        lineBlock.replaceWith(ul);
+        setCursorAtEnd(li);
+        saveCurrentNote();
+        isProcessing = false;
+        return;
+    }
+
+    // 3. Checkbox
+    if (isLineStart && textBeforeCursor.endsWith('[] ')) {
+        e.preventDefault();
+        isProcessing = true;
+        pushToUndo();
+        const start = offset - 3;
+        range.setStart(node, start);
+        range.setEnd(node, offset);
+        range.deleteContents();
+
+        const taskDiv = document.createElement('div');
+        taskDiv.className = 'task-item';
+
+        const label = document.createElement('label');
+        label.className = 'custom-checkbox-wrapper';
+        label.contentEditable = 'false';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.addEventListener('click', function () {
+            this.closest('.task-item').classList.toggle('completed');
+            saveCurrentNote();
+        });
+
+        const checkmark = document.createElement('span');
+        checkmark.className = 'checkmark';
+
+        label.appendChild(checkbox);
+        label.appendChild(checkmark);
+
+        const contentSpan = document.createElement('span');
+        contentSpan.style.flex = '1';
+        if (lineBlock.nodeType === 3) {
+            contentSpan.textContent = lineBlock.textContent;
+        } else {
+            while (lineBlock.firstChild) contentSpan.appendChild(lineBlock.firstChild);
+        }
+        if (!contentSpan.textContent.trim()) contentSpan.innerHTML = '&#8203;';
+
+        taskDiv.appendChild(label);
+        taskDiv.appendChild(contentSpan);
+        lineBlock.replaceWith(taskDiv);
+        setCursorAtEnd(contentSpan);
+        saveCurrentNote();
+        isProcessing = false;
+        return;
+    }
+
+    // 4. Blockquote
+    if (isLineStart && textBeforeCursor.endsWith('> ')) {
+        e.preventDefault();
+        isProcessing = true;
+        pushToUndo();
+        const start = offset - 2;
+        range.setStart(node, start);
+        range.setEnd(node, offset);
+        range.deleteContents();
+        const newBlock = convertBlockTo('blockquote', lineBlock);
+        setCursorAtEnd(newBlock);
+        saveCurrentNote();
+        isProcessing = false;
+        return;
+    }
+
+    // 5. Horizontal rule (---) – must be the whole line
+    if (isLineStart && text.trim() === '---' && offset === text.length) {
+        e.preventDefault();
+        isProcessing = true;
+        pushToUndo();
+        const hr = document.createElement('hr');
+        hr.className = 'horizontal-line';
+        const p = document.createElement('div');
+        p.innerHTML = '<br>';
+        lineBlock.replaceWith(hr);
+        hr.after(p);
+        setCursorAtEnd(p);
+        saveCurrentNote();
+        isProcessing = false;
+        return;
+    }
+
+    // 6. Inline color (@color.)
+    if (e.data === '.') {
+        const match = textBeforeCursor.match(/@([a-zA-Z]+)\.$/);
+        if (match) {
+            e.preventDefault();
+            isProcessing = true;
+            pushToUndo();
+            const colorName = match[1];
+            const start = offset - match[0].length;
+            range.setStart(node, start);
+            range.setEnd(node, offset);
+            range.deleteContents();
+
+            const span = document.createElement('span');
+            span.style.color = colorName;
+            span.innerHTML = '&#8203;';
+            range.insertNode(span);
+            setCursorAtEnd(span.firstChild);
+            saveCurrentNote();
+            isProcessing = false;
+        }
+    }
 }
+
+// --- Backspace handler (unwrap at start) ---
+function handleBackspace(e) {
+    if (e.key !== 'Backspace' || isProcessing) return;
+    const sel = window.getSelection();
+    if (!sel.rangeCount || !sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (range.startOffset !== 0) return; // not at start
+
+    const lineBlock = getLineBlock(node);
+    if (!lineBlock) return;
+
+    const isSpecial = lineBlock.tagName === 'H2' || lineBlock.tagName === 'H3' ||
+        lineBlock.tagName === 'LI' || lineBlock.tagName === 'BLOCKQUOTE' ||
+        lineBlock.classList.contains('task-item');
+
+    if (!isSpecial) return;
+
+    e.preventDefault();
+    isProcessing = true;
+    pushToUndo();
+
+    // For list items, need to handle list structure
+    if (lineBlock.tagName === 'LI') {
+        const parentUl = lineBlock.parentNode;
+        if (parentUl.children.length === 1) {
+            // Only one item, replace whole ul with div
+            const newDiv = document.createElement('div');
+            while (lineBlock.firstChild) newDiv.appendChild(lineBlock.firstChild);
+            parentUl.replaceWith(newDiv);
+            setCursorAtEnd(newDiv);
+        } else {
+            // More than one item, split the list
+            const index = Array.from(parentUl.children).indexOf(lineBlock);
+            const before = Array.from(parentUl.children).slice(0, index);
+            const after = Array.from(parentUl.children).slice(index + 1);
+
+            const newDiv = document.createElement('div');
+            while (lineBlock.firstChild) newDiv.appendChild(lineBlock.firstChild);
+
+            // Replace the current li with newDiv, then reinsert remaining lists
+            const fragment = document.createDocumentFragment();
+            if (before.length) {
+                const ulBefore = document.createElement('ul');
+                before.forEach(li => ulBefore.appendChild(li));
+                fragment.appendChild(ulBefore);
+            }
+            fragment.appendChild(newDiv);
+            if (after.length) {
+                const ulAfter = document.createElement('ul');
+                after.forEach(li => ulAfter.appendChild(li));
+                fragment.appendChild(ulAfter);
+            }
+            parentUl.replaceWith(fragment);
+            setCursorAtEnd(newDiv);
+        }
+    } else {
+        // Non-list special blocks
+        const newDiv = unwrapBlock(lineBlock);
+        setCursorAtEnd(newDiv);
+    }
+    saveCurrentNote();
+    isProcessing = false;
+}
+
+// --- Enter key handler (create new line in lists/tasks) ---
+function handleEnter(e) {
+    if (e.key !== 'Enter' || isProcessing) return;
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const node = sel.anchorNode;
+    const lineBlock = getLineBlock(node);
+    if (!lineBlock) return;
+
+    if (lineBlock.tagName === 'LI') {
+        e.preventDefault();
+        isProcessing = true;
+        pushToUndo();
+
+        const newLi = document.createElement('li');
+        newLi.innerHTML = '&#8203;';
+        lineBlock.parentNode.insertBefore(newLi, lineBlock.nextSibling);
+        setCursorAtEnd(newLi);
+        saveCurrentNote();
+        isProcessing = false;
+    } else if (lineBlock.classList.contains('task-item')) {
+        e.preventDefault();
+        isProcessing = true;
+        pushToUndo();
+
+        const newTask = document.createElement('div');
+        newTask.className = 'task-item';
+        newTask.innerHTML = `
+            <label class="custom-checkbox-wrapper" contenteditable="false">
+                <input type="checkbox">
+                <span class="checkmark"></span>
+            </label>
+            <span style="flex:1;">&#8203;</span>
+        `;
+        // Add click handler to the new checkbox
+        const cb = newTask.querySelector('input');
+        cb.addEventListener('click', function () {
+            this.closest('.task-item').classList.toggle('completed');
+            saveCurrentNote();
+        });
+        lineBlock.parentNode.insertBefore(newTask, lineBlock.nextSibling);
+        const contentSpan = newTask.querySelector('span:last-child');
+        setCursorAtEnd(contentSpan);
+        saveCurrentNote();
+        isProcessing = false;
+    } else if (lineBlock.tagName === 'H2' || lineBlock.tagName === 'H3' || lineBlock.tagName === 'BLOCKQUOTE') {
+        e.preventDefault();
+        isProcessing = true;
+        pushToUndo();
+
+        const newP = document.createElement('div');
+        newP.innerHTML = '<br>';
+        lineBlock.parentNode.insertBefore(newP, lineBlock.nextSibling);
+        setCursorAtEnd(newP);
+        saveCurrentNote();
+        isProcessing = false;
+    }
+}
+
+// --- Editor Context Menu ---
+const editorContextMenu = document.getElementById('editorContextMenu');
+const colorSubmenuTrigger = document.getElementById('colorSubmenuTrigger');
+const colorSubmenu = document.getElementById('colorSubmenu');
+
+writingCanvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    // Hide any other context menus
+    document.getElementById('noteContextMenu').classList.remove('show');
+    editorContextMenu.classList.remove('show');
+
+    // Position near cursor
+    const x = Math.min(e.pageX, window.innerWidth - 250);
+    const y = Math.min(e.pageY, window.innerHeight - 300);
+    editorContextMenu.style.left = x + 'px';
+    editorContextMenu.style.top = y + 'px';
+    editorContextMenu.classList.add('show');
+});
+
+// Hide when clicking outside
+document.addEventListener('click', (e) => {
+    if (!editorContextMenu.contains(e.target) && e.target !== writingCanvas) {
+        editorContextMenu.classList.remove('show');
+    }
+});
+
+// Submenu positioning
+colorSubmenuTrigger.addEventListener('mouseenter', () => {
+    const rect = colorSubmenuTrigger.getBoundingClientRect();
+    colorSubmenu.style.left = rect.width + 'px';
+    colorSubmenu.style.top = '0';
+});
+
+// Context menu actions
+editorContextMenu.addEventListener('click', (e) => {
+    const target = e.target.closest('.context-menu-item');
+    if (!target || target.classList.contains('has-submenu')) return;
+
+    const action = target.dataset.action;
+    const color = target.dataset.color;
+    if (!action && !color) return;
+
+    e.preventDefault();
+    editorContextMenu.classList.remove('show');
+
+    // Get current line block
+    const sel = window.getSelection();
+    let lineBlock = null;
+    if (sel.rangeCount) {
+        lineBlock = getLineBlock(sel.anchorNode);
+    }
+    if (!lineBlock) {
+        // If no selection, use first child? fallback: create new line at end
+        lineBlock = document.createElement('div');
+        writingCanvas.appendChild(lineBlock);
+    }
+
+    pushToUndo();
+
+    if (action === 'heading1') {
+        const newEl = convertBlockTo('h2', lineBlock); // using h2 for heading1
+        setCursorAtEnd(newEl);
+    } else if (action === 'heading2') {
+        const newEl = convertBlockTo('h3', lineBlock);
+        setCursorAtEnd(newEl);
+    } else if (action === 'bulletList') {
+        const ul = document.createElement('ul');
+        const li = document.createElement('li');
+        if (lineBlock.nodeType === 3) {
+            li.textContent = lineBlock.textContent;
+        } else {
+            while (lineBlock.firstChild) li.appendChild(lineBlock.firstChild);
+        }
+        if (!li.textContent.trim()) li.innerHTML = '&#8203;';
+        ul.appendChild(li);
+        lineBlock.replaceWith(ul);
+        setCursorAtEnd(li);
+    } else if (action === 'checkbox') {
+        const taskDiv = document.createElement('div');
+        taskDiv.className = 'task-item';
+        taskDiv.innerHTML = `
+            <label class="custom-checkbox-wrapper" contenteditable="false">
+                <input type="checkbox">
+                <span class="checkmark"></span>
+            </label>
+            <span style="flex:1;">&#8203;</span>
+        `;
+        const cb = taskDiv.querySelector('input');
+        cb.addEventListener('click', function () {
+            this.closest('.task-item').classList.toggle('completed');
+            saveCurrentNote();
+        });
+        // Move content if any
+        const contentSpan = taskDiv.querySelector('span:last-child');
+        if (lineBlock.nodeType === 3) {
+            contentSpan.textContent = lineBlock.textContent;
+        } else {
+            while (lineBlock.firstChild) contentSpan.appendChild(lineBlock.firstChild);
+        }
+        if (!contentSpan.textContent.trim()) contentSpan.innerHTML = '&#8203;';
+        lineBlock.replaceWith(taskDiv);
+        setCursorAtEnd(contentSpan);
+    } else if (action === 'blockquote') {
+        const newEl = convertBlockTo('blockquote', lineBlock);
+        setCursorAtEnd(newEl);
+    } else if (color) {
+        applyColorAtCursor(color);
+    }
+
+    saveCurrentNote();
+    showFormattingIndicator('Applied', 'success');
+});
 
 // --- FONT SELECTOR LOGIC (using execCommand) ---
 const fontSelectorBtn = document.getElementById('fontSelectorBtn');
@@ -153,9 +615,7 @@ function applyFontAtCursor(fontName) {
     saveCurrentNote();
 }
 
-
-
-// ==================== PASTE SANITIZATION (using execCommand for undo) ====================
+// --- PASTE SANITIZATION ---
 writingCanvas.addEventListener('paste', (e) => {
     e.preventDefault();
     const clipboardData = e.clipboardData || window.clipboardData;
@@ -211,412 +671,25 @@ function escapeHtml(unsafe) {
 }
 
 // --- EVENTS ---
-// --- EVENTS ---
-let processing = false;
-
-// Enhanced Input Handler for Inline Shortcuts
-// Helper to find the nearest block-level parent (div, p, etc.) of a node
-function getLineBlock(node) {
-    while (node && node.parentElement !== writingCanvas && node !== writingCanvas) {
-        node = node.parentElement;
-    }
-    return node;
-}
-
-// Enhanced Input Handler for Inline Shortcuts
-function handleInlineShortcuts(e) {
-    // 1. Handle Navigation & Block-Breaking keys
-    if (e.key === 'Enter') return;
-    if (e.inputType === 'deleteContentBackward') return;
-
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
-
-    const range = selection.getRangeAt(0);
-    const node = range.startContainer;
-
-    // We only care about text nodes for pattern matching
-    if (node.nodeType !== 3) return;
-
-    const text = node.textContent;
-    const offset = range.startOffset;
-
-    // --- HELPER: Convert Block to Element (Preserving Content) ---
-    const convertBlockTo = (tagName, styles = {}) => {
-        const lineBlock = getLineBlock(node);
-        if (!lineBlock) return;
-
-        const newEl = document.createElement(tagName);
-
-        // Move children to preserve spans/formatting
-        while (lineBlock.firstChild) {
-            newEl.appendChild(lineBlock.firstChild);
-        }
-
-        // Apply styles
-        Object.assign(newEl.style, styles);
-
-        // Replace
-        lineBlock.replaceWith(newEl);
-
-        // Restore Cursor (put at end of new element content)
-        const newRange = document.createRange();
-        newRange.selectNodeContents(newEl);
-        newRange.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        saveCurrentNote();
-    };
-
-
-    // --- 1. HEADING SHORTCUTS (### , ## ) ---
-    // Rule: Must preserve existing colors/spans.
-    // Logic: Remove the marker text, THEN convert block.
-
-    // H3 (### )
-    if (text.slice(0, offset).endsWith('### ')) {
-        const start = offset - 4; // Length of "### "
-        // Verify it's effectively at the start (ignoring purely whitespace text nodes before it?)
-        // For simplicity and strictness requested: Check if text content of block *starts* with it 
-        // OR if the node text itself is the trigger.
-        // To support "Color then ##": The block text will start with "Text ##". 
-        // Wait, "Heading must work even if color is active".
-        // Example: "@red. Text" -> user types "## " ?? No.
-        // Example: User types "@red. ## " -> Text is red "## ".
-        // Then space. 
-        // We should just detect if "## " exists and remove it, then promote the block.
-
-        // Remove the characters "### "
-        const rangeToDelete = document.createRange();
-        rangeToDelete.setStart(node, start);
-        rangeToDelete.setEnd(node, offset);
-        rangeToDelete.deleteContents();
-
-        convertBlockTo('h3');
-        return;
-    }
-
-    // H2 (## )
-    if (text.slice(0, offset).endsWith('## ')) {
-        const start = offset - 3;
-        const rangeToDelete = document.createRange();
-        rangeToDelete.setStart(node, start);
-        rangeToDelete.setEnd(node, offset);
-        rangeToDelete.deleteContents();
-
-        convertBlockTo('h2');
-        return;
-    }
-
-    // LIST SHORTCUT (* )
-    if (text.slice(0, offset).endsWith('* ')) {
-        // Strict start check for lists usually, but consistent with above:
-        const rangeToDelete = document.createRange();
-        rangeToDelete.setStart(node, offset - 2);
-        rangeToDelete.setEnd(node, offset);
-        rangeToDelete.deleteContents();
-
-        // Special: Lists need <ul> wrapper if not present? 
-        // Current requirement: "Convert *. "
-        // convertBlockTo 'li' ? 
-        // If we just make it an 'li', browser might wrap in clean ul or leave it. 
-        // Best to wrap in UL.
-
-        const lineBlock = getLineBlock(node);
-        if (lineBlock) {
-            const ul = document.createElement('ul');
-            const li = document.createElement('li');
-
-            // Move children to li
-            while (lineBlock.firstChild) {
-                li.appendChild(lineBlock.firstChild);
-            }
-            ul.appendChild(li);
-            lineBlock.replaceWith(ul);
-
-            const newRange = document.createRange();
-            newRange.selectNodeContents(li);
-            newRange.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-            saveCurrentNote();
-            return;
-        }
-    }
-
-
-    // --- 2. COMBINED SHORTCUTS (#head.center.red:) ---
-    // Trigger on ':'
-    if (e.data === ':') {
-        const textBeforeCursor = text.slice(0, offset);
-        // Regex: #head followed by dots and words, ending with :
-        // Capture group 1: modifiers (center.red)
-        const match = textBeforeCursor.match(/#head\.([a-zA-Z0-9.]+):$/);
-
-        if (match) {
-            const modifiersStr = match[1]; // e.g. "center.red"
-            const fullMatch = match[0];
-            const start = offset - fullMatch.length;
-
-            // Delete command
-            const rangeToDelete = document.createRange();
-            rangeToDelete.setStart(node, start);
-            rangeToDelete.setEnd(node, offset);
-            rangeToDelete.deleteContents();
-
-            // Parse Modifiers
-            const modifiers = modifiersStr.split('.');
-            const styles = {};
-
-            modifiers.forEach(mod => {
-                if (['center', 'left', 'right', 'justify'].includes(mod)) {
-                    styles.textAlign = mod;
-                } else {
-                    // Assume color
-                    styles.color = mod;
-                }
-            });
-
-            // Convert to H1 (per user request #head -> h1)
-            convertBlockTo('h1', styles);
-            return;
-        }
-    }
-
-    // --- 3. INLINE SHORTCUTS (Trigger: .) ---
-    if (e.data === '.') {
-        const textBeforeCursor = text.slice(0, offset);
-
-        // Colors: @red., @blue.
-        const colorMatch = textBeforeCursor.match(/@([a-zA-Z]+)\.$/);
-        if (colorMatch) {
-            const colorName = colorMatch[1];
-            const matchLength = colorMatch[0].length;
-            const start = offset - matchLength;
-
-            const rangeToDelete = document.createRange();
-            rangeToDelete.setStart(node, start);
-            rangeToDelete.setEnd(node, offset);
-            rangeToDelete.deleteContents();
-
-            const span = document.createElement('span');
-            span.style.color = colorName;
-            span.innerHTML = '&#8203;';
-
-            rangeToDelete.insertNode(span);
-
-            const newRange = document.createRange();
-            newRange.setStart(span.firstChild, 1);
-            newRange.collapse(true);
-
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-            saveCurrentNote();
-            return;
-        }
-
-        // Headings: @head.
-        if (textBeforeCursor.endsWith('@head.')) {
-            const start = offset - 6;
-            const rangeToDelete = document.createRange();
-            rangeToDelete.setStart(node, start);
-            rangeToDelete.setEnd(node, offset);
-            rangeToDelete.deleteContents();
-
-            const el = document.createElement('h2');
-            el.className = 'inline-heading';
-            el.style.display = 'inline'; // Ensure
-            el.innerHTML = '&#8203;';
-
-            rangeToDelete.insertNode(el);
-
-            const newRange = document.createRange();
-            newRange.setStart(el.firstChild, 1);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-            saveCurrentNote();
-            return;
-        }
-
-        // Subheadings: @subHead.
-        if (textBeforeCursor.endsWith('@subHead.')) {
-            const start = offset - 9;
-            const rangeToDelete = document.createRange();
-            rangeToDelete.setStart(node, start);
-            rangeToDelete.setEnd(node, offset);
-            rangeToDelete.deleteContents();
-
-            const el = document.createElement('h3');
-            el.className = 'inline-subheading';
-            el.style.display = 'inline';
-            el.innerHTML = '&#8203;';
-
-            rangeToDelete.insertNode(el);
-
-            const newRange = document.createRange();
-            newRange.setStart(el.firstChild, 1);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-            saveCurrentNote();
-            return;
-        }
-
-        // Code: @code.
-        if (textBeforeCursor.endsWith('@code.')) {
-            const start = offset - 6;
-            const rangeToReplace = document.createRange();
-            rangeToReplace.setStart(node, start);
-            rangeToReplace.setEnd(node, offset);
-            rangeToReplace.deleteContents();
-
-            const pre = document.createElement('pre');
-            const code = document.createElement('code');
-            code.textContent = '\u200B';
-            pre.appendChild(code);
-
-            rangeToReplace.insertNode(pre);
-
-            const newRange = document.createRange();
-            newRange.setStart(code.firstChild, 1);
-            newRange.collapse(true);
-
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-            saveCurrentNote();
-            return;
-        }
-    }
-}
-
-// Attach Event Listeners
 writingCanvas.addEventListener('input', handleInlineShortcuts);
-
-writingCanvas.addEventListener('keyup', (e) => {
-    if (processing) return;
-
-    if (e.key === 'Enter') {
-        processing = true;
-        const lineNode = getCurrentLine();
-
-        // --- Specific HR Handler for '---' ---
-        // processLineFormatting already handles '---', so we just need to ensure
-        // it's called. The existing logic below calls it.
-        // We will add a small safety check to ensure it doesn't leave '---' key presses
-        // if for some reason processLineFormatting fails or detects differently.
-        const processed = processLineFormatting(lineNode);
-        if (processed) showFormattingIndicator('Horizontal Rule inserted');
-
-        processing = false;
-    } else if (e.key === ' ') {
-        // Space triggers '===' (double line) in processLineFormatting
-        processing = true;
-        const lineNode = getCurrentLine();
-        const processed = processLineFormatting(lineNode);
-        if (processed) showFormattingIndicator('Line inserted');
-        processing = false;
-    }
-
-    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) updateFontDisplay();
+writingCanvas.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace') handleBackspace(e);
+    if (e.key === 'Enter') handleEnter(e);
 });
-
 writingCanvas.addEventListener('click', () => {
     updateFontDisplay();
 });
-
-// ==================== ENHANCED CONTEXT MENU ====================
-const noteContextMenu = document.getElementById('noteContextMenu');
-const ctxRename = document.getElementById('ctxRename');
-const ctxPin = document.getElementById('ctxPin');
-const ctxDelete = document.getElementById('ctxDelete');
-const moveToFolderItem = document.getElementById('moveToFolderItem');
-
-window.contextMenuNoteId = null;
-
-function hideContextMenu(keepId = false) {
-    noteContextMenu.classList.remove('show');
-    if (!keepId) {
-        window.contextMenuNoteId = null;
-    }
-}
-
-// Open context menu on right‑click
-noteChips.addEventListener('contextmenu', (e) => {
-    const chip = e.target.closest('.chip');
-    if (!chip) return;
-    e.preventDefault();
-
-    hideContextMenu(false); // Close any existing menu and clear ID first
-
-    window.contextMenuNoteId = chip.dataset.noteId;
-    const note = notes.find(n => n.id === window.contextMenuNoteId);
-    if (note) {
-        ctxPin.innerHTML = note.isPinned ? '<i class="fas fa-thumbtack-slash"></i> Unpin Note' : '<i class="fas fa-thumbtack"></i> Pin Note';
-    }
-
-    // Position menu, keep within viewport
-    const x = Math.min(e.pageX, window.innerWidth - 220);
-    const y = Math.min(e.pageY, window.innerHeight - 250);
-    noteContextMenu.style.left = `${x}px`;
-    noteContextMenu.style.top = `${y}px`;
-    noteContextMenu.classList.add('show');
+writingCanvas.addEventListener('keyup', (e) => {
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) updateFontDisplay();
 });
+writingCanvas.addEventListener('focus', () => updateFontDisplay());
 
-// Rename
-ctxRename.addEventListener('click', () => {
-    if (!window.contextMenuNoteId) return;
-    const note = notes.find(n => n.id === window.contextMenuNoteId);
-    if (note) {
-        renameNoteInput.value = note.name;
-        renameNoteModal.classList.add('show');
-        pushToModalStack(renameNoteModal);
-        setTimeout(() => renameNoteInput.focus(), 100);
-    }
-    hideContextMenu(true); // Keep ID for modal
-});
-
-// Pin - FIXED: undo before change, update UI
-ctxPin.addEventListener('click', () => {
-    if (!window.contextMenuNoteId) return;
-    const note = notes.find(n => n.id === window.contextMenuNoteId);
-    if (note) {
-        pushToUndo(); // capture state before toggle
-        note.isPinned = !note.isPinned;
-        saveToStorage();
-        renderNoteChips();
-        // If this is the active note, update the pin button in header
-        if (note.id === activeNoteId) {
-            updatePinButton();
-        }
-        showFormattingIndicator(note.isPinned ? 'Note pinned' : 'Note unpinned');
-    }
-    hideContextMenu(false);
-});
-
-// Delete
-ctxDelete.addEventListener('click', () => {
-    if (!window.contextMenuNoteId) return;
-    if (activeNoteId !== window.contextMenuNoteId) {
-        switchNote(window.contextMenuNoteId);
-    }
-    document.getElementById('deleteBtn').click(); // triggers confirm modal
-    // Note: deleteBtn click handler sets up the modal. We need to keep the ID.
-    // However, deleteBtn handler normally works on activeNoteId. 
-    // The modal uses window.contextMenuNoteId if set.
-    hideContextMenu(true);
-});
-
-// Move to – open move modal
-moveToFolderItem.addEventListener('click', () => {
-    if (!window.contextMenuNoteId) return;
-    openMoveModal(window.contextMenuNoteId);
-    hideContextMenu(true); // Keep ID for modal
-});
-
-// Close context menu when clicking elsewhere
-document.addEventListener('click', (e) => {
-    if (noteContextMenu.classList.contains('show') && !noteContextMenu.contains(e.target)) {
-        hideContextMenu();
+// Also update font when selection changes (for cursor moves)
+document.addEventListener('selectionchange', () => {
+    if (document.activeElement === writingCanvas) {
+        updateFontDisplay();
     }
 });
+
+// --- Ensure the font display is correct after the editor loads ---
+updateFontDisplay();

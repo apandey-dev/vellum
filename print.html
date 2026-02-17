@@ -192,34 +192,137 @@
         }
 
         /* --- CONTENT STYLING --- */
+
+        /* WHITESPACE PRESERVATION - Critical for code formatting */
+        #editor-print-container {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        #editor-print-container pre,
+        #editor-print-container code {
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
         #editor-print-container img {
             max-width: 100%;
             height: auto;
         }
 
+        /* Headings - Match editor sizes */
         #editor-print-container h1 {
             font-size: 2em;
-            margin-bottom: 0.5em;
+            margin: 0.5em 0;
+            padding: 0;
         }
 
         #editor-print-container h2 {
             font-size: 1.5em;
-            margin-bottom: 0.5em;
+            margin: 0.5em 0;
+            padding: 0;
         }
 
+        #editor-print-container h3 {
+            font-size: 1.17em;
+            margin: 0.5em 0;
+            padding: 0;
+        }
+
+        /* Lists */
         #editor-print-container ul,
         #editor-print-container ol {
             margin-left: 20px;
         }
 
+        /* Blockquote */
         #editor-print-container blockquote {
             border-left: 4px solid var(--accent-color);
-            margin: 0;
+            margin: 1em 0;
             padding-left: 15px;
             font-style: italic;
             opacity: 0.8;
         }
 
+        /* Horizontal Rule */
+        #editor-print-container hr,
+        #editor-print-container .horizontal-line {
+            border: none;
+            border-top: 2px solid var(--accent-color);
+            margin: 1.5em 0;
+        }
+
+        /* CHECKBOX / TASK ITEMS - Match editor exactly */
+        #editor-print-container .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin: 8px 0;
+            padding: 8px 0;
+        }
+
+        #editor-print-container .custom-checkbox-wrapper {
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #editor-print-container .custom-checkbox-wrapper input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        #editor-print-container .checkmark {
+            position: relative;
+            display: inline-block;
+            height: 20px;
+            width: 20px;
+            background-color: transparent;
+            border: 3px solid var(--accent-color);
+            border-radius: 5px;
+            transition: all 0.2s ease;
+        }
+
+        #editor-print-container .custom-checkbox-wrapper input:checked~.checkmark {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        #editor-print-container .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 5px;
+            top: 1px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        #editor-print-container .custom-checkbox-wrapper input:checked~.checkmark:after {
+            display: block;
+        }
+
+        #editor-print-container .task-item.completed span {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        #editor-print-container .task-item span {
+            flex: 1;
+        }
+
+        /* Page break control */
         #editor-print-container * {
             page-break-inside: avoid;
             break-inside: avoid;
@@ -403,10 +506,22 @@
             };
 
             // 1. Load Content
+            const title = localStorage.getItem('mindjournal_print_title') || 'Untitled Document';
+
             if (content) {
-                editorContainer.innerHTML = content;
+                // Inject title as H1 at the beginning
+                editorContainer.innerHTML = `<h1>${escapeHtml(title)}</h1>` + content;
+                // Update window title
+                document.title = `Print Preview - ${title}`;
             } else {
                 editorContainer.innerHTML = '<h1 style="color:red">Error: No content found to print.</h1><p>Please go back and try exporting again.</p>';
+            }
+
+            // Helper function to escape HTML
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
             }
 
             // 2. CSS Injector Function for Margins (@page)

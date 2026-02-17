@@ -51,6 +51,7 @@
                     <i class="fas fa-expand-alt"></i>
                 </div>
             </div>
+        </div>
     </nav>
 
     <div class="top-bar-wrapper" id="topBar">
@@ -111,7 +112,7 @@
         <span>Exit Focus</span>
     </div>
 
-    <!-- Context Menu -->
+    <!-- Context Menu for Notes (sidebar chips) -->
     <div class="context-menu" id="noteContextMenu">
         <div class="context-menu-item" id="ctxRename">
             <i class="fas fa-pencil-alt"></i> Rename
@@ -126,6 +127,39 @@
         <div class="divider-h"></div>
         <div class="context-menu-item delete-item" id="ctxDelete">
             <i class="fas fa-trash-alt"></i> Delete
+        </div>
+    </div>
+
+    <!-- Editor Context Menu -->
+    <div class="context-menu" id="editorContextMenu">
+        <div class="context-menu-item" data-action="heading1">
+            <i class="fas fa-heading"></i> Heading 1
+        </div>
+        <div class="context-menu-item" data-action="heading2">
+            <i class="fas fa-heading"></i> Heading 2
+        </div>
+        <div class="divider-h"></div>
+        <div class="context-menu-item" data-action="bulletList">
+            <i class="fas fa-list-ul"></i> Bullet List
+        </div>
+        <div class="context-menu-item" data-action="checkbox">
+            <i class="fas fa-check-square"></i> Checkbox
+        </div>
+        <div class="context-menu-item" data-action="blockquote">
+            <i class="fas fa-quote-right"></i> Blockquote
+        </div>
+        <div class="divider-h"></div>
+        <div class="context-menu-item has-submenu" id="colorSubmenuTrigger">
+            <i class="fas fa-palette"></i> Apply Color
+            <i class="fas fa-chevron-right" style="margin-left: auto;"></i>
+        </div>
+        <div class="context-menu-submenu" id="colorSubmenu">
+            <div class="context-menu-item" data-color="red">Red</div>
+            <div class="context-menu-item" data-color="blue">Blue</div>
+            <div class="context-menu-item" data-color="green">Green</div>
+            <div class="context-menu-item" data-color="orange">Orange</div>
+            <div class="context-menu-item" data-color="purple">Purple</div>
+            <div class="context-menu-item" data-color="brown">Brown</div>
         </div>
     </div>
 
@@ -245,7 +279,7 @@
         </div>
     </div>
 
-    <!-- Export Modal (no PDF options) -->
+    <!-- Export Modal -->
     <div class="form-modal" id="exportModal">
         <div class="form-box export-box">
             <h3><i class="fas fa-download" style="margin-right: 8px;"></i> Export Note</h3>
@@ -299,7 +333,7 @@
         </div>
     </div>
 
-    <!-- Move Note Modal (updated) -->
+    <!-- Move Note Modal -->
     <div class="form-modal" id="moveNoteModal">
         <div class="form-box">
             <h3>Move Note</h3>

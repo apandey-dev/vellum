@@ -45,7 +45,7 @@ const createAndMoveBtn = document.getElementById('createAndMoveBtn');
 const cancelMoveBtn = document.getElementById('cancelMoveBtn');
 const confirmMoveBtn = document.getElementById('confirmMoveBtn');
 
-// ADD THIS LINE (Share Modal)
+// Share Modal
 const shareModal = document.getElementById('shareModal');
 
 // Button elements
@@ -91,6 +91,11 @@ let modalStack = [];
 let undoStack = [];               // array of snapshots
 let undoIndex = -1;               // current position in stack (-1 means no state yet)
 const MAX_UNDO = 50;
+
+// ==================== FALLBACK FOR FONT FUNCTION (will be overwritten by app-editor.js) ====================
+function getCurrentFont() {
+    return 'Fredoka';
+}
 
 /**
  * Capture a deep copy of the entire state and push it onto the undo stack.
@@ -390,8 +395,6 @@ function loadActiveNote() {
 
 // --- PIN BUTTON ---
 function updatePinButton() {
-    // Always reset to base icon first (or just keep it static if logic allows, 
-    // but here we ensure consistency if innerHTML was previously changed)
     pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i>';
 
     if (!activeNoteId) {
@@ -956,8 +959,6 @@ async function exportAsPDF(fileName) {
     }
 }
 
-
-
 function exportAsMarkdown(fileName) {
     let content = writingCanvas.innerHTML;
     let markdown = content
@@ -1154,7 +1155,7 @@ function init() {
     renderFolderList();
     renderNoteChips();
     loadActiveNote();
-    const current = getCurrentFont();
+    const current = getCurrentFont();  // now safe – fallback exists
     document.getElementById('currentFont').textContent = current;
 
     // Push initial state to undo stack
