@@ -936,49 +936,38 @@ exportConfirmBtn.addEventListener('click', async () => {
 
 // PDF export (fixed)
 async function exportAsPDF(fileName) {
-    try {
-        const element = document.createElement('div');
-        element.innerHTML = writingCanvas.innerHTML;
-        element.className = 'pdf-export-content';
+    // Isolated Print Container Strategy
+    // 1. Create a dedicated print container
+    const printArea = document.createElement('div');
+    printArea.id = 'print-area';
 
-        // Apply current font
-        const currentFont = getCurrentFont();
-        element.style.fontFamily = formattingConfig.fonts[currentFont] || 'Fredoka, sans-serif';
-        element.style.fontVariant = 'normal';
-        element.style.fontFeatureSettings = 'normal';
+    // 2. Clone content
+    // We use innerHTML to get the formatted text.
+    printArea.innerHTML = writingCanvas.innerHTML;
 
-        // Ensure Clean UI: Force white background and black text for PDF
-        element.style.backgroundColor = '#ffffff';
-        element.style.color = '#000000';
-        element.style.padding = '20px';
-        element.style.lineHeight = '1.6';
-        element.style.fontSize = '12pt';
+    // 3. Apply basic print-specific styles inline to ensure they stick
+    const currentFont = getCurrentFont();
+    printArea.style.fontFamily = formattingConfig.fonts[currentFont] || 'Fredoka, sans-serif';
 
-        // Handle images to ensure they fit
-        const imgs = element.querySelectorAll('img');
-        imgs.forEach(img => {
-            img.style.maxWidth = '100%';
-            img.style.height = 'auto';
-        });
+    // 4. Append to body
+    document.body.appendChild(printArea);
 
-        const opt = {
-            margin: 10, // mm
-            filename: `${fileName}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-        };
+    // 5. Trigger Print
+    window.print();
 
-        // Use html2pdf
-        await html2pdf().set(opt).from(element).save();
-
-        showFormattingIndicator('PDF exported successfully!', 'success');
-    } catch (error) {
-        console.error(error);
-        showFormattingIndicator('Error exporting PDF: ' + error.message, 'error');
-    }
+    // 6. Cleanup after print dialog handles control back
+    // Note: window.print() is blocking in many browsers, but not all. 
+    // We'll use a small timeout or event listener, but for safety in modern async flows:
+    // We can remove it immediately after the thread returns, as the print view is generated synchronously.
+    // However, to be safe against race conditions in some browsers:
+    window.setTimeout(() => {
+        if (document.body.contains(printArea)) {
+            document.body.removeChild(printArea);
+        }
+    }, 1000);
 }
+
+
 
 function exportAsMarkdown(fileName) {
     let content = writingCanvas.innerHTML;
