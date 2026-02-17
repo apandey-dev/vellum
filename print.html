@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Preview - MindJournal</title>
+    <!-- Import Fonts to match Editor -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100..800&family=Patrick+Hand&family=Baloo+2:wght@400..800&family=Comic+Neue:wght@300;400;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* --- VARIABLES --- */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --page-width: 210mm;
+            /* A4 Default */
+            --page-height: 297mm;
+            --sidebar-width: 260px;
+            --sidebar-bg: #f5f5f5;
+            --sidebar-text: #333;
+            --accent-color: #000;
+        }
+
+        [data-theme="dark"] {
+            /* On screen preview dark mode */
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --sidebar-bg: #111;
+            --sidebar-text: #ccc;
+            --accent-color: #fff;
+        }
+
+        /* --- GLOBAL LAYOUT --- */
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #e0e0e0;
+            /* App background to contrast page */
+            font-family: 'Fredoka', sans-serif;
+            display: flex;
+            align-items: flex-start;
+            /* Prevent stretch issues if height is specified manually */
+            overflow: hidden;
+        }
+
+        /* --- SETTINGS SIDEBAR --- */
+        #settings-sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            min-height: 100vh;
+            box-sizing: border-box;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 1000;
+            overflow-y: auto;
+            flex-shrink: 0;
+            /* Prevent shrinking */
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            margin: 10px 0 5px 0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-row .control-group {
+            flex: 1;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        select,
+        button,
+        input {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-family: inherit;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input {
+            cursor: text;
+        }
+
+        button.primary {
+            background-color: var(--accent-color);
+            color: var(--sidebar-bg);
+            border: none;
+            font-weight: 600;
+            margin-top: 20px;
+            padding: 12px;
+        }
+
+        button.secondary {
+            background-color: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        /* --- PREVIEW AREA --- */
+        #preview-container {
+            flex: 1;
+            /* Allow scrolling, do NOT force height to match viewport */
+            height: 100vh;
+            overflow-y: auto;
+            display: block;
+            /* Remove flex to stop vertical centering */
+            padding: 40px;
+            background-color: #555;
+            box-sizing: border-box;
+        }
+
+        /* THE PHYSICAL PAPER (Visual Wrapper for Margins) */
+        #page-sheet {
+            background-color: var(--bg-color);
+            width: var(--page-width);
+            min-height: var(--page-height);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+            transition: width 0.3s ease, min-height 0.3s ease;
+            /* Center horizontally */
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        /* THE CONTENT CONTAINER (Visual Wrapper for Padding) */
+        #editor-print-container {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            /* Transparent to show paper styling if any */
+            color: var(--text-color);
+            box-sizing: border-box;
+            /* Typography Reset to match Editor exactly */
+            line-height: 1.6;
+            font-size: 12pt;
+            word-wrap: break-word;
+            overflow: hidden;
+            /* Prevent margin collapse from children */
+            display: flow-root;
+            /* Establish reliable block formatting context */
+
+            /* Inner Padding applied here */
+            padding: 40px;
+            /* Default */
+        }
+
+        /* Prevent first-child gap issues */
+        #editor-print-container> :first-child {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+            page-break-before: auto !important;
+            break-before: auto !important;
+        }
+
+        /* --- PAGE SIZE CLASSES --- */
+        /* Note: @page rules are injected dynamically by JS */
+        body.size-a4 {
+            --page-width: 210mm;
+            --page-height: 297mm;
+        }
+
+        body.size-a3 {
+            --page-width: 297mm;
+            --page-height: 420mm;
+        }
+
+        body.size-a5 {
+            --page-width: 148mm;
+            --page-height: 210mm;
+        }
+
+        body.size-letter {
+            --page-width: 215.9mm;
+            --page-height: 279.4mm;
+        }
+
+        body.size-legal {
+            --page-width: 215.9mm;
+            --page-height: 355.6mm;
+        }
+
+        /* INFINITY MODE */
+        body.size-infinity {
+            --page-width: 210mm;
+            /* Standard width for readability */
+            --page-height: auto;
+            height: auto;
+            overflow: visible;
+        }
+
+        body.size-infinity #page-sheet {
+            min-height: 100vh;
+            height: auto;
+            box-shadow: none;
+            margin-bottom: 0;
+            overflow: visible;
+        }
+
+        /* --- CONTENT STYLING (Fidelity) --- */
+        #editor-print-container img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        #editor-print-container h1 {
+            font-size: 2em;
+            margin-bottom: 0.5em;
+        }
+
+        #editor-print-container h2 {
+            font-size: 1.5em;
+            margin-bottom: 0.5em;
+        }
+
+        #editor-print-container ul,
+        #editor-print-container ol {
+            margin-left: 20px;
+        }
+
+        #editor-print-container blockquote {
+            border-left: 4px solid var(--accent-color);
+            margin: 0;
+            padding-left: 15px;
+            font-style: italic;
+            opacity: 0.8;
+        }
+
+        /* Preserve Whitespace/Breaks */
+        #editor-print-container * {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* --- PRINT MEDIA QUERIES --- */
+        @media print {
+            body {
+                background: none;
+                height: auto;
+                overflow: visible;
+                display: block;
+            }
+
+            #settings-sidebar {
+                display: none !important;
+            }
+
+            #preview-container {
+                padding: 0;
+                margin: 0;
+                background: none;
+                display: block;
+                overflow: visible;
+                height: auto;
+                width: 100%;
+            }
+
+            /* HIDE VISUAL MARGIN SIMULATION DURING PRINT */
+            /* We let browser handles margins based on @page */
+            #page-sheet {
+                padding: 0 !important;
+                /* CRITICAL: Remove visual padding, allow @page margin */
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                max-width: none;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+                height: auto;
+                overflow: visible;
+            }
+
+            #editor-print-container {
+                width: 100%;
+                /* Padding is kept here, as it's inner content padding */
+            }
+
+            /* Infinity Mode Rules */
+            body.size-infinity #page-sheet {
+                height: auto !important;
+                overflow: visible !important;
+            }
+        }
+    </style>
+
+    <!-- Dynamic Style Injection for @page -->
+    <style id="page-style-injection"></style>
+</head>
+
+<body class="size-infinity">
+
+    <!-- Settings Sidebar -->
+    <div id="settings-sidebar">
+        <h2>Print Settings</h2>
+
+        <div class="control-group">
+            <label for="sizeSelect">Page Size</label>
+            <select id="sizeSelect">
+                <!-- Size Options -->
+                <option value="size-infinity" selected>Infinity (Single Continuous Page)</option>
+                <option value="size-a4">A4</option>
+                <option value="size-a3">A3</option>
+                <option value="size-a5">A5</option>
+                <option value="size-letter">Letter</option>
+                <option value="size-legal">Legal</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="themeSelect">Theme</label>
+            <select id="themeSelect">
+                <option value="light">Light (White)</option>
+                <option value="dark">Dark (Black)</option>
+            </select>
+        </div>
+
+        <h3>Content Padding (px)</h3>
+        <div class="control-row">
+            <div class="control-group">
+                <label>Top</label>
+                <input type="number" id="paddingTop" value="40" min="0">
+            </div>
+            <div class="control-group">
+                <label>Bottom</label>
+                <input type="number" id="paddingBottom" value="40" min="0">
+            </div>
+        </div>
+        <div class="control-row">
+            <div class="control-group">
+                <label>Left</label>
+                <input type="number" id="paddingLeft" value="40" min="0">
+            </div>
+            <div class="control-group">
+                <label>Right</label>
+                <input type="number" id="paddingRight" value="40" min="0">
+            </div>
+        </div>
+
+        <div style="flex:1"></div> <!-- Spacer -->
+
+        <button class="primary" id="printBtn">🖨️ Print / Save PDF</button>
+        <button class="secondary" id="closeBtn">Close</button>
+    </div>
+
+    <!-- Content Preview -->
+    <div id="preview-container">
+        <!-- WRAPPER: Simulates Page Sheet (White paper) -->
+        <div id="page-sheet">
+            <!-- WRAPPER: Inner Content (Text area) -->
+            <div id="editor-print-container">
+                <!-- Content will be injected here -->
+                <p style="color: grey; text-align: center; margin-top: 50%;">Loading content...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const content = localStorage.getItem('mindjournal_print_content');
+            const pageSheet = document.getElementById('page-sheet');
+            const editorContainer = document.getElementById('editor-print-container');
+
+            const sizeSelect = document.getElementById('sizeSelect');
+            const themeSelect = document.getElementById('themeSelect');
+            const printBtn = document.getElementById('printBtn');
+            const closeBtn = document.getElementById('closeBtn');
+            const styleInjection = document.getElementById('page-style-injection');
+
+            // Padding Inputs (px)
+            // Applied as PADDING to #editor-print-container
+            const paddingInputs = {
+                top: document.getElementById('paddingTop'),
+                bottom: document.getElementById('paddingBottom'),
+                left: document.getElementById('paddingLeft'),
+                right: document.getElementById('paddingRight')
+            };
+
+            // 1. Load Content
+            if (content) {
+                editorContainer.innerHTML = content;
+            } else {
+                editorContainer.innerHTML = '<h1 style="color:red">Error: No content found to print.</h1><p>Please go back and try exporting again.</p>';
+            }
+
+            // 2. CSS Injector Function for Margins (@page)
+            function updatePageSize() {
+                const size = sizeSelect.value;
+                let pageRule = '';
+
+                if (size === 'size-infinity') {
+                    // TRUE INFINITY MODE logic (height calculation)
+                    const contentHeightPx = pageSheet.scrollHeight; // Measure the expanded sheet including padding
+                    // Approx 1px = 0.264583mm
+                    const heightMm = Math.ceil(contentHeightPx * 0.264583) + 20;
+
+                    // Force margin 0 to let padding handle spacing
+                    pageRule = `@page { size: 210mm ${heightMm}mm; margin: 0; }`;
+                } else {
+                    const sizeName = size.replace('size-', '');
+                    pageRule = `@page { size: ${sizeName}; margin: 0; }`;
+                }
+                styleInjection.textContent = pageRule;
+            }
+
+            // 3. Padding Update Function (Pixel-based, Real-time)
+            function updateContentPadding() {
+                // Get values, default to 0 if empty
+                let pt = parseInt(paddingInputs.top.value) || 0;
+                let pb = parseInt(paddingInputs.bottom.value) || 0;
+                let pl = parseInt(paddingInputs.left.value) || 0;
+                let pr = parseInt(paddingInputs.right.value) || 0;
+
+                // Clamp negative
+                pt = Math.max(0, pt);
+                pb = Math.max(0, pb);
+                pl = Math.max(0, pl);
+                pr = Math.max(0, pr);
+
+                // Apply directly to style
+                editorContainer.style.paddingTop = `${pt}px`;
+                editorContainer.style.paddingBottom = `${pb}px`;
+                editorContainer.style.paddingLeft = `${pl}px`;
+                editorContainer.style.paddingRight = `${pr}px`;
+            }
+
+            // 4. Setup Listeners
+            sizeSelect.addEventListener('change', (e) => {
+                document.body.className = e.target.value;
+                updatePageSize(); // Trigger recalc
+            });
+
+            themeSelect.addEventListener('change', (e) => {
+                const theme = e.target.value;
+                document.documentElement.setAttribute('data-theme', theme);
+            });
+
+            // Listen to Padding Inputs (Real-time 'input' event)
+            Object.values(paddingInputs).forEach(input => {
+                input.addEventListener('input', updateContentPadding);
+            });
+
+            // 5. Print Action
+            printBtn.addEventListener('click', () => {
+                if (sizeSelect.value === 'size-infinity') {
+                    updatePageSize();
+                }
+                window.print();
+            });
+
+            // 6. Close Action
+            closeBtn.addEventListener('click', () => {
+                window.close();
+            });
+
+            // Init
+            updatePageSize();
+            updateContentPadding();
+        });
+    </script>
+</body>
+
+</html>

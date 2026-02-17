@@ -936,35 +936,23 @@ exportConfirmBtn.addEventListener('click', async () => {
 
 // PDF export (fixed)
 async function exportAsPDF(fileName) {
-    // Isolated Print Container Strategy
-    // 1. Create a dedicated print container
-    const printArea = document.createElement('div');
-    printArea.id = 'print-area';
+    // Dedicated Print System Strategy
+    // 1. Get content
+    const content = writingCanvas.innerHTML;
 
-    // 2. Clone content
-    // We use innerHTML to get the formatted text.
-    printArea.innerHTML = writingCanvas.innerHTML;
+    // 2. Save to localStorage for print.html to pick up
+    localStorage.setItem('mindjournal_print_content', content);
 
-    // 3. Apply basic print-specific styles inline to ensure they stick
-    const currentFont = getCurrentFont();
-    printArea.style.fontFamily = formattingConfig.fonts[currentFont] || 'Fredoka, sans-serif';
+    // 3. Open print.html in new tab
+    const printWindow = window.open('print.html', '_blank');
 
-    // 4. Append to body
-    document.body.appendChild(printArea);
-
-    // 5. Trigger Print
-    window.print();
-
-    // 6. Cleanup after print dialog handles control back
-    // Note: window.print() is blocking in many browsers, but not all. 
-    // We'll use a small timeout or event listener, but for safety in modern async flows:
-    // We can remove it immediately after the thread returns, as the print view is generated synchronously.
-    // However, to be safe against race conditions in some browsers:
-    window.setTimeout(() => {
-        if (document.body.contains(printArea)) {
-            document.body.removeChild(printArea);
-        }
-    }, 1000);
+    // 4. Focus check (optional)
+    if (printWindow) {
+        printWindow.focus();
+        showFormattingIndicator('Opening Print Preview...', 'success');
+    } else {
+        showFormattingIndicator('Please allow popups to print.', 'error');
+    }
 }
 
 
