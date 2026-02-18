@@ -131,14 +131,13 @@
             margin-bottom: 60px;
             display: flex;
             justify-content: center;
-            gap: 40px;
             padding: 0 20px;
-            flex-wrap: wrap;
+            width: 100%;
         }
 
         .paper-container {
             width: 100%;
-            max-width: 800px;
+            max-width: 800px; /* Readable width */
         }
 
         .note-title {
@@ -163,60 +162,6 @@
 
         .note-content * {
             max-width: 100%;
-        }
-
-        /* Sidebar for Export (Right Side) */
-        .export-sidebar {
-            width: 280px;
-            flex-shrink: 0;
-        }
-
-        .export-card {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
-            position: sticky;
-            top: 100px;
-        }
-
-        .export-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .export-opt {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            width: 100%;
-            padding: 12px 16px;
-            margin-bottom: 10px;
-            background: var(--bg-canvas);
-            border: 1px solid transparent;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 15px;
-            font-weight: 500;
-            text-align: left;
-        }
-
-        .export-opt:hover {
-            border-color: var(--text-secondary);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .export-opt i {
-            font-size: 20px;
-            opacity: 0.7;
         }
 
         /* Error/Loading State */
@@ -359,129 +304,63 @@
             display: block;
         }
 
-        .heading-main {
-            font-size: 32px;
-            font-weight: bold;
-            margin: 24px 0 16px;
-        }
-
-        .heading-sub {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 20px 0 12px;
-        }
-
-        .code-block {
-            font-family: 'Courier New', monospace;
-            background: rgba(0, 0, 0, 0.05);
-            padding: 16px;
-            border-radius: 8px;
-            border-left: 4px solid var(--accent-color);
-            margin: 16px 0;
-        }
-
-        .chip-tag {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 500;
-            margin: 0 4px;
-        }
-
-        .chip-red {
-            background: #ef4444;
-            color: white;
-        }
-
-        .chip-blue {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .chip-green {
-            background: #10b981;
-            color: white;
-        }
-
-        .chip-yellow {
-            background: #f59e0b;
-            color: black;
-        }
-
-        .chip-purple {
-            background: #8b5cf6;
-            color: white;
-        }
-
-        .chip-pink {
-            background: #ec4899;
-            color: white;
-        }
-
-        /* --- PRINT STYLES (Vector Quality) --- */
+        /* --- PRINT STYLES (Infinite Page) --- */
         @media print {
-
             /* Hide UI */
-            .share-header,
-            .export-sidebar {
+            .share-header, .header-actions {
                 display: none !important;
             }
 
-            /* Reset Body */
-            body {
+            /* Main Layout Reset */
+            html, body {
+                margin: 0;
+                padding: 0;
                 background: white !important;
                 color: black !important;
-                display: block;
                 height: auto;
+                min-height: 100vh;
                 overflow: visible;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+                width: 100%;
             }
 
             .content-wrapper {
                 margin: 0;
                 padding: 0;
                 display: block;
+                width: 100%;
+                max-width: none;
             }
 
             .paper-container {
-                max-width: 100%;
                 width: 100%;
+                max-width: none;
+                margin: 0;
+                box-shadow: none;
             }
 
             .note-title {
+                padding: 20px 40px 0 40px; /* Padding for print */
+                margin-bottom: 20px;
                 color: black !important;
-                margin-top: 0;
             }
 
             .note-content {
                 border: none;
+                border-radius: 0;
                 box-shadow: none;
-                padding: 0;
+                padding: 0 40px 40px 40px; /* Padding for print */
+                min-height: 0;
                 background: white !important;
                 color: black !important;
             }
 
-            /* Ensure Colors Print nicely (converting dark colors to print safe) */
-            * {
-                box-shadow: none !important;
-                text-shadow: none !important;
-            }
-
-            /* Provide proper page breaks */
-            p,
-            div,
-            h1,
-            h2,
-            h3,
-            h4,
-            h5,
-            h6 {
-                page-break-inside: avoid;
-            }
+            /* Infinite Page Logic injected by JS via @page */
         }
     </style>
+    <!-- Placeholder for dynamic print styles -->
+    <style id="dynamic-print-style"></style>
 </head>
 
 <body>
@@ -494,42 +373,19 @@
             <button class="action-btn theme-btn" id="themeToggle" title="Toggle Theme">
                 <i class="ph ph-sun"></i>
             </button>
-            <button class="action-btn primary" onclick="window.print()">
-                <i class="ph ph-printer"></i> Print
+            <button class="action-btn primary" id="printBtn">
+                <i class="ph ph-printer"></i> Print / PDF
             </button>
         </div>
     </header>
 
-    <div id="app" class="content-wrapper">
-        <div class="state-msg">Loading note...</div>
-    </div>
+    <div id="app" class="content-wrapper"><div class="state-msg">Loading note...</div></div>
 
     <template id="noteTemplate">
         <div class="paper-container">
             <h1 class="note-title" id="displayTitle">Untitled Note</h1>
             <div class="note-content" id="displayContent"></div>
         </div>
-
-        <aside class="export-sidebar">
-            <div class="export-card">
-                <div class="export-title">Export Options</div>
-
-                <button class="export-opt" onclick="window.print()">
-                    <i class="ph ph-file-pdf"></i>
-                    <span>Save as PDF</span>
-                </button>
-
-                <button class="export-opt" id="exportMd">
-                    <i class="ph ph-markdown-logo"></i>
-                    <span>Markdown</span>
-                </button>
-
-                <button class="export-opt" id="exportTxt">
-                    <i class="ph ph-file-text"></i>
-                    <span>Plain Text</span>
-                </button>
-            </div>
-        </aside>
     </template>
 
     <script>
@@ -538,7 +394,9 @@
         const template = document.getElementById('noteTemplate');
         const app = document.getElementById('app');
         const themeToggle = document.getElementById('themeToggle');
+        const printBtn = document.getElementById('printBtn');
         const html = document.documentElement;
+        const dynamicStyle = document.getElementById('dynamic-print-style');
 
         // 1. Theme Logic
         function toggleTheme() {
@@ -588,13 +446,6 @@
                 clone.getElementById('displayTitle').textContent = note.name;
                 clone.getElementById('displayContent').innerHTML = note.content;
 
-                // Setup Exports
-                const exportMd = clone.getElementById('exportMd');
-                const exportTxt = clone.getElementById('exportTxt');
-
-                exportMd.onclick = () => downloadFile(note.name, note.content, 'md');
-                exportTxt.onclick = () => downloadFile(note.name, note.content, 'txt');
-
                 app.appendChild(clone);
 
             } catch (e) {
@@ -603,40 +454,23 @@
             }
         }
 
-        // 3. Download Helpers
-        function downloadFile(name, content, type) {
-            let text = content;
-            let mime = 'text/plain';
+        // 3. Smart "Infinity" Print
+        printBtn.addEventListener('click', () => {
+            // Calculate total height of the content
+            const bodyHeight = document.body.scrollHeight;
 
-            if (type === 'md') {
-                // Determine simplest markdown conversion 
-                // For now, simple replacement of html tags
-                text = convertToMarkdown(content);
-                mime = 'text/markdown';
-            } else {
-                text = app.querySelector('#displayContent').innerText; // Strip HTML
-            }
+            // Convert px to mm (approx 1px = 0.264583mm)
+            // Add some padding (e.g. 20mm)
+            const heightMm = Math.ceil(bodyHeight * 0.264583) + 20;
 
-            const blob = new Blob([text], { type: mime });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${name}.${type}`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
+            // Default width A4 is 210mm. We can use auto width or fixed A4 width.
+            // Using a specific height forces the browser to create a single page of that size.
 
-        function convertToMarkdown(html) {
-            // Basic HTML to MD converter for the user's content
-            const temp = document.createElement('div');
-            temp.innerHTML = html;
+            // Set dynamic @page rule
+            dynamicStyle.textContent = `@page { size: 210mm ${heightMm}mm; margin: 0; }`;
 
-            // This is a naive implementation; complex HTML needs a lib like turndown
-            // But for our editor's clean output, textContent usually suffices for "Plain"
-            // For MD, we'd wrap headers etc.
-            // Keeping it simple as requested: vector quality PDF was key.
-            return temp.innerText;
-        }
+            window.print();
+        });
 
         // Initialize
         loadNote();
