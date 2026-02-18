@@ -3,12 +3,11 @@
 // ========================================
 
 // --- SUPABASE CONFIG ---
-// This relies on config.js being loaded BEFORE this script
+// Use the global client, but don't redeclare 'supabase' if it exists in global scope
 const supabase = window.supabaseClient;
 
 if (!supabase) {
     console.error('Supabase client not initialized! Check config.js.');
-    // Fallback or halt
     throw new Error('Supabase client missing');
 }
 
@@ -1108,6 +1107,15 @@ function init() {
 
 // Expose init for SPA Router
 window.initDashboard = init;
+
+// Expose pushToUndo for editor (app-editor.js needs it)
+window.pushToUndo = pushToUndo;
+window.saveCurrentNote = saveCurrentNote;
+window.showFormattingIndicator = showFormattingIndicator;
+// Also need activeNoteId access? app-editor uses globals.
+// Since app-editor.js is also global, it expects 'notes', 'activeNoteId' to be global.
+// Breaking change: IIFE hides these.
+// We must expose shared state or keep app-core global but remove const redeclaration.
 
 // Modals Outside Click (Generic)
 window.onclick = (e) => {

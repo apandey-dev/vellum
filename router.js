@@ -2,6 +2,8 @@
 // mindJournal - ROUTER & SPA LOGIC
 // ========================================
 
+(function() {
+
 // Ensure we use the initialized client, not the global library
 const supabase = window.supabaseClient;
 
@@ -307,3 +309,5 @@ window.handleSignup = async (e) => {
         errorMsg.style.display = 'block';
     }
 };
+
+})();
