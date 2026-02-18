@@ -2,6 +2,9 @@
 // mindJournal - ROUTER & SPA LOGIC
 // ========================================
 
+// Ensure we use the initialized client, not the global library
+const supabase = window.supabaseClient;
+
 const appState = {
     currentView: null,
     publicNoteId: null,

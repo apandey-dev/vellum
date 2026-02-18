@@ -1,6 +1,7 @@
 User-agent: *
 Disallow: /dashboard
-Disallow: /login
-Disallow: /signup
+Allow: /public/
+Allow: /login
+Allow: /signup
 
-Sitemap: https://apandey-mindjournal.vercel.app/sitemap.xml
+Sitemap: https://your-domain.com/sitemap.xml
