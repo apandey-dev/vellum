@@ -119,9 +119,9 @@ function setCursorAtEnd(element) {
         range.setStart(element, element.length);
         range.collapse(true);
     } else {
-        // If element is contenteditable container, finding the last text node is safer
-        // But for simplicity, selectContent works if logic is sound.
         if (element.lastChild) {
+            // Check if last child is BR or empty text
+            // Just select end
             range.selectNodeContents(element);
             range.collapse(false);
         } else {
@@ -156,14 +156,6 @@ function applyColorAtCursor(colorName) {
     saveCurrentNote();
 }
 
-// --- Helper: Validate Color (Browser Check) ---
-function isValidColor(color) {
-    if (!color) return false;
-    const s = new Option().style;
-    s.color = color;
-    return s.color !== '';
-}
-
 // --- Transform current line based on typed pattern (called from input) ---
 function handleInlineShortcuts(e) {
     if (isProcessing) return;
@@ -176,11 +168,14 @@ function handleInlineShortcuts(e) {
     const text = node.textContent;
     const offset = range.startOffset;
 
+    // Use getCurrentBlock to correctly identify LI, Task, etc.
     const currentBlock = getCurrentBlock(node);
     if (!currentBlock) return;
 
+    // Helper to check if cursor is at start of line (ignoring leading whitespace)
     const textBeforeCursor = text.slice(0, offset);
 
+    // Improved start check
     function isSimulationOfStart(pattern) {
         if (!textBeforeCursor.endsWith(pattern)) return false;
         const prefix = textBeforeCursor.slice(0, -pattern.length);
@@ -188,8 +183,9 @@ function handleInlineShortcuts(e) {
         return true;
     }
 
-    // Generic Transform Function
+    // Generic Transform Function to handle LI splitting
     function transformCurrentBlock(newTagName, className = '') {
+        // Remove text (pattern + prefix) handled by caller if needed
         range.deleteContents();
 
         if (currentBlock.tagName === 'LI') {
@@ -197,12 +193,15 @@ function handleInlineShortcuts(e) {
             const newEl = document.createElement(newTagName);
             if (className) newEl.className = className;
 
+            // Move content
             while (currentBlock.firstChild) newEl.appendChild(currentBlock.firstChild);
             if (!newEl.innerHTML.trim()) newEl.innerHTML = '&#8203;';
 
+            // Split list logic
             const index = Array.from(parentUl.children).indexOf(currentBlock);
             const after = Array.from(parentUl.children).slice(index + 1);
 
+            // Insert newEl after parentUl (or what remains of it)
             parentUl.after(newEl);
 
             if (after.length > 0) {
@@ -216,6 +215,7 @@ function handleInlineShortcuts(e) {
 
             return newEl;
         } else {
+            // Normal conversion
             return convertBlockTo(newTagName, currentBlock, true, className);
         }
     }
@@ -225,9 +225,11 @@ function handleInlineShortcuts(e) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
+        // Adjust range to select pattern for deletion
         const matchLength = 3;
         range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
+
         const newBlock = transformCurrentBlock('h2');
         setCursorAtEnd(newBlock);
         saveCurrentNote();
@@ -241,12 +243,14 @@ function handleInlineShortcuts(e) {
         const matchLength = 4;
         range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
+
         const newBlock = transformCurrentBlock('h3');
         setCursorAtEnd(newBlock);
         saveCurrentNote();
         isProcessing = false;
         return;
     }
+    // New H4 Shortcut
     if (isSimulationOfStart('#### ')) {
         e.preventDefault();
         isProcessing = true;
@@ -254,6 +258,7 @@ function handleInlineShortcuts(e) {
         const matchLength = 5;
         range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
+
         const newBlock = transformCurrentBlock('h4');
         setCursorAtEnd(newBlock);
         saveCurrentNote();
@@ -264,6 +269,7 @@ function handleInlineShortcuts(e) {
     // 2. Bullet list
     if (isSimulationOfStart('* ')) {
         e.preventDefault();
+        // If already LI, do nothing
         if (currentBlock.tagName === 'LI') return;
 
         isProcessing = true;
@@ -275,6 +281,7 @@ function handleInlineShortcuts(e) {
 
         const ul = document.createElement('ul');
         const li = document.createElement('li');
+        // Move content
         if (currentBlock.nodeType === 3) {
              li.textContent = currentBlock.textContent;
         } else {
@@ -320,7 +327,6 @@ function handleInlineShortcuts(e) {
         // Move content
         const source = currentBlock;
         while (source.firstChild) contentSpan.appendChild(source.firstChild);
-        // Explicitly ensure ZERO WIDTH SPACE is present if empty
         if (!contentSpan.textContent.trim()) contentSpan.innerHTML = '&#8203;';
 
         if (source.tagName === 'LI') {
@@ -340,7 +346,6 @@ function handleInlineShortcuts(e) {
             source.replaceWith(taskDiv);
         }
 
-        // Critical: Set cursor inside the content span
         setCursorAtEnd(contentSpan);
         saveCurrentNote();
         isProcessing = false;
@@ -355,6 +360,7 @@ function handleInlineShortcuts(e) {
         const matchLength = 2;
         range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
+
         const newBlock = transformCurrentBlock('blockquote');
         setCursorAtEnd(newBlock);
         saveCurrentNote();
@@ -362,7 +368,7 @@ function handleInlineShortcuts(e) {
         return;
     }
 
-    // 5. Horizontal rule
+    // 5. Horizontal rule (---)
     if (isSimulationOfStart('---') && offset === text.length) {
         e.preventDefault();
         isProcessing = true;
@@ -377,8 +383,10 @@ function handleInlineShortcuts(e) {
              const parentUl = currentBlock.parentElement;
              const index = Array.from(parentUl.children).indexOf(currentBlock);
              const after = Array.from(parentUl.children).slice(index + 1);
+
              parentUl.after(hr);
              hr.after(p);
+
              if (after.length > 0) {
                  const ulAfter = document.createElement('ul');
                  after.forEach(li => ulAfter.appendChild(li));
@@ -390,6 +398,7 @@ function handleInlineShortcuts(e) {
              currentBlock.replaceWith(hr);
              hr.after(p);
         }
+
         setCursorAtEnd(p);
         saveCurrentNote();
         isProcessing = false;
@@ -399,8 +408,9 @@ function handleInlineShortcuts(e) {
     // 6. Dot Trigger (Alignment & Advanced $)
     if (textBeforeCursor.endsWith('.')) {
 
-        // --- Alignment Check ---
+        // --- Alignment Check (#center. #start. #end.) ---
         const alignMatch = textBeforeCursor.match(/#(center|start|end)\.$/);
+
         if (alignMatch) {
              e.preventDefault();
              isProcessing = true;
@@ -408,10 +418,13 @@ function handleInlineShortcuts(e) {
 
              const alignType = alignMatch[1];
              const matchLength = alignMatch[0].length;
+
+             // Remove shortcut text
              range.setStart(node, offset - matchLength);
              range.setEnd(node, offset);
              range.deleteContents();
 
+             // Apply alignment to block
              const alignMap = { 'center': 'center', 'start': 'left', 'end': 'right' };
              currentBlock.style.textAlign = alignMap[alignType] || 'left';
 
@@ -428,43 +441,25 @@ function handleInlineShortcuts(e) {
              const fullString = complexMatch[1]; // content between $ and .
              const parts = fullString.split('+');
 
-             // --- STRICT PARSING RULES ---
-             // Slot 1: Heading (Mandatory)
+             // First part is mandatory Heading Type
              const headingType = parts[0];
-             let newTag = 'div';
-             let isValidHeading = false;
 
-             if (headingType === 'head') { newTag = 'h2'; isValidHeading = true; }
-             else if (headingType === 'subhead') { newTag = 'h3'; isValidHeading = true; }
-             else if (headingType === 'subhead2') { newTag = 'h4'; isValidHeading = true; }
-
-             // CRITICAL RULE: If heading is invalid, abort everything.
-             if (!isValidHeading) {
-                 // Do not process. Treat as normal text.
-                 return;
-             }
-
-             // Slot 2: Color (Optional/Check)
+             // Subsequent parts are Optional (Color OR Alignment)
              let colorName = null;
-             if (parts.length > 1) {
-                 const part2 = parts[1];
-                 if (isValidColor(part2)) {
-                     colorName = part2;
-                 }
-                 // If invalid color, we skip (partial apply)
-             }
-
-             // Slot 3: Alignment (Optional/Check)
              let alignment = null;
-             if (parts.length > 2) {
-                 const part3 = parts[2];
-                 const alignKeywords = ['center', 'start', 'end'];
-                 if (alignKeywords.includes(part3)) {
-                     alignment = part3;
+
+             const alignKeywords = ['center', 'start', 'end'];
+
+             for (let i = 1; i < parts.length; i++) {
+                 const part = parts[i];
+                 if (alignKeywords.includes(part)) {
+                     alignment = part;
+                 } else {
+                     // Assume color if not alignment
+                     colorName = part;
                  }
              }
 
-             // Apply Formatting
              e.preventDefault();
              isProcessing = true;
              pushToUndo();
@@ -474,12 +469,18 @@ function handleInlineShortcuts(e) {
              range.setStart(node, offset - matchLength);
              range.setEnd(node, offset);
 
-             // Transform block
+             // Determine new tag
+             let newTag = 'div';
+             if (headingType === 'head') newTag = 'h2';
+             else if (headingType === 'subhead') newTag = 'h3';
+             else if (headingType === 'subhead2') newTag = 'h4';
+
+             // Transform block if tag changes
              let targetBlock = currentBlock;
              const currentTagName = currentBlock.tagName ? currentBlock.tagName.toLowerCase() : 'div';
 
              if (newTag !== currentTagName) {
-                 range.deleteContents(); // Delete shortcut
+                 range.deleteContents(); // Delete the shortcut text first
 
                  if (currentBlock.tagName === 'LI') {
                      // Split logic
@@ -507,12 +508,15 @@ function handleInlineShortcuts(e) {
                  range.deleteContents();
              }
 
-             // Apply styles (if valid)
+             // Apply styles
              if (colorName) targetBlock.style.color = colorName;
+             else targetBlock.style.color = ''; // Reset to default
 
              if (alignment) {
                  const alignMap = { 'center': 'center', 'start': 'left', 'end': 'right' };
                  targetBlock.style.textAlign = alignMap[alignment] || 'left';
+             } else {
+                 targetBlock.style.textAlign = '';
              }
 
              setCursorAtEnd(targetBlock);
@@ -521,7 +525,7 @@ function handleInlineShortcuts(e) {
              return;
         }
 
-        // --- Inline color ---
+        // --- Inline color (@color.) ---
         const match = textBeforeCursor.match(/@([a-zA-Z]+)\.$/);
         if (match) {
             e.preventDefault();
@@ -544,7 +548,7 @@ function handleInlineShortcuts(e) {
     }
 }
 
-// --- Backspace handler ---
+// --- Backspace handler (unwrap at start) ---
 function handleBackspace(e) {
     if (e.key !== 'Backspace' || isProcessing) return;
     const sel = window.getSelection();
@@ -552,11 +556,13 @@ function handleBackspace(e) {
     const range = sel.getRangeAt(0);
     const node = range.startContainer;
 
+    // Check if truly at start of block
     if (range.startOffset !== 0) return;
 
     const currentBlock = getCurrentBlock(node);
     if (!currentBlock) return;
 
+    // Check if block has custom styles (color, alignment) -> treat as special
     const hasStyle = (currentBlock.style && ((currentBlock.style.textAlign && currentBlock.style.textAlign !== 'left') ||
                      (currentBlock.style.color && currentBlock.style.color !== '')));
 
@@ -566,7 +572,7 @@ function handleBackspace(e) {
 
     if (!isSpecial) return;
 
-    // Check if at start of block content
+    // Check if previous sibling exists within the block
     let isAtStart = false;
     if (node === currentBlock) {
         isAtStart = true;
@@ -595,6 +601,7 @@ function handleBackspace(e) {
 
     if (currentBlock.tagName === 'LI') {
         const parentUl = currentBlock.parentNode;
+
         const newDiv = document.createElement('div');
         while (currentBlock.firstChild) newDiv.appendChild(currentBlock.firstChild);
 
@@ -621,25 +628,33 @@ function handleBackspace(e) {
     } else if (currentBlock.classList.contains('task-item')) {
         const checkboxWrapper = currentBlock.querySelector('.custom-checkbox-wrapper');
         if (checkboxWrapper) checkboxWrapper.remove();
+
         currentBlock.classList.remove('task-item');
         currentBlock.classList.remove('completed');
+
         if (!currentBlock.innerHTML.trim()) currentBlock.innerHTML = '<br>';
+
         const range = document.createRange();
         range.selectNodeContents(currentBlock);
         range.collapse(true);
         sel.removeAllRanges();
         sel.addRange(range);
     } else {
+        // H2, H3, H4, Blockquote -> P, OR just stripping styles
+        // unwrapBlock creates a clean div.
         const newDiv = unwrapBlock(currentBlock);
+
+        // Ensure styling is stripped
         newDiv.style.color = '';
         newDiv.style.textAlign = '';
+
         setCursorAtEnd(newDiv);
     }
     saveCurrentNote();
     isProcessing = false;
 }
 
-// --- Enter key handler ---
+// --- Enter key handler (create new line in lists/tasks) ---
 function handleEnter(e) {
     if (e.key !== 'Enter' || isProcessing) return;
     const sel = window.getSelection();
@@ -654,10 +669,12 @@ function handleEnter(e) {
         pushToUndo();
 
         const text = currentBlock.textContent.trim();
+        // Check if empty -> Escape list
         if (!text || text === '\u200B') {
              const parentUl = currentBlock.parentElement;
              const newP = document.createElement('div');
              newP.innerHTML = '<br>';
+
              if (parentUl.children.length === 1) {
                  parentUl.replaceWith(newP);
              } else {
@@ -669,6 +686,7 @@ function handleEnter(e) {
                      const after = Array.from(parentUl.children).slice(index + 1);
                      const ulAfter = document.createElement('ul');
                      after.forEach(li => ulAfter.appendChild(li));
+
                      currentBlock.remove();
                      parentUl.after(newP);
                      if (ulAfter.children.length > 0) newP.after(ulAfter);
@@ -676,6 +694,7 @@ function handleEnter(e) {
              }
              setCursorAtEnd(newP);
         } else {
+            // New LI
             const newLi = document.createElement('li');
             newLi.innerHTML = '&#8203;';
             currentBlock.after(newLi);
@@ -720,6 +739,7 @@ function handleEnter(e) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
+
         const newP = document.createElement('div');
         newP.innerHTML = '<br>';
         currentBlock.after(newP);
@@ -729,7 +749,7 @@ function handleEnter(e) {
     }
 }
 
-// --- Tab handler ---
+// --- Tab handler (Indentation) ---
 function handleTab(e) {
     if (e.key !== 'Tab' || isProcessing) return;
     const sel = window.getSelection();
@@ -744,6 +764,7 @@ function handleTab(e) {
         pushToUndo();
 
         if (e.shiftKey) {
+            // Unindent (Shift + Tab)
             const parentUl = currentBlock.parentElement;
             const grandparentLi = parentUl.parentElement;
 
@@ -754,6 +775,7 @@ function handleTab(e) {
                  setCursorAtEnd(currentBlock);
             }
         } else {
+            // Indent (Tab)
             const prevLi = currentBlock.previousElementSibling;
             if (prevLi && prevLi.tagName === 'LI') {
                 let nestedUl = prevLi.querySelector('ul');
@@ -770,7 +792,7 @@ function handleTab(e) {
     }
 }
 
-// --- Standard Shortcuts ---
+// --- Standard Shortcuts (Bold, Italic, Underline) ---
 function handleStandardShortcuts(e) {
     if (e.ctrlKey || e.metaKey) {
         let cmd = '';
@@ -787,146 +809,7 @@ function handleStandardShortcuts(e) {
     }
 }
 
-// --- Editor Context Menu ---
-const editorContextMenu = document.getElementById('editorContextMenu');
-const colorSubmenuTrigger = document.getElementById('colorSubmenuTrigger');
-const colorSubmenu = document.getElementById('colorSubmenu');
-
-writingCanvas.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    document.getElementById('noteContextMenu').classList.remove('show');
-    editorContextMenu.classList.remove('show');
-    const x = Math.min(e.pageX, window.innerWidth - 250);
-    const y = Math.min(e.pageY, window.innerHeight - 300);
-    editorContextMenu.style.left = x + 'px';
-    editorContextMenu.style.top = y + 'px';
-    editorContextMenu.classList.add('show');
-});
-
-document.addEventListener('click', (e) => {
-    if (!editorContextMenu.contains(e.target) && e.target !== writingCanvas) {
-        editorContextMenu.classList.remove('show');
-    }
-});
-
-colorSubmenuTrigger.addEventListener('mouseenter', () => {
-    const rect = colorSubmenuTrigger.getBoundingClientRect();
-    colorSubmenu.style.left = rect.width + 'px';
-    colorSubmenu.style.top = '0';
-});
-
-editorContextMenu.addEventListener('click', (e) => {
-    const target = e.target.closest('.context-menu-item');
-    if (!target || target.classList.contains('has-submenu')) return;
-
-    const action = target.dataset.action;
-    const color = target.dataset.color;
-    if (!action && !color) return;
-
-    e.preventDefault();
-    editorContextMenu.classList.remove('show');
-
-    const sel = window.getSelection();
-    let currentBlock = null;
-    if (sel.rangeCount) {
-        currentBlock = getCurrentBlock(sel.anchorNode);
-    }
-    if (!currentBlock) {
-        currentBlock = document.createElement('div');
-        writingCanvas.appendChild(currentBlock);
-    }
-
-    pushToUndo();
-
-    function transformBlockCtx(newTagName, className='') {
-         if (currentBlock.tagName === 'LI') {
-            const parentUl = currentBlock.parentElement;
-            const newEl = document.createElement(newTagName);
-            if (className) newEl.className = className;
-            while (currentBlock.firstChild) newEl.appendChild(currentBlock.firstChild);
-            if (!newEl.innerHTML.trim()) newEl.innerHTML = '&#8203;';
-            const index = Array.from(parentUl.children).indexOf(currentBlock);
-            const after = Array.from(parentUl.children).slice(index + 1);
-            parentUl.after(newEl);
-            if (after.length > 0) {
-                const ulAfter = document.createElement('ul');
-                after.forEach(li => ulAfter.appendChild(li));
-                newEl.after(ulAfter);
-            }
-            currentBlock.remove();
-            if (parentUl.children.length === 0) parentUl.remove();
-            return newEl;
-         } else {
-             return convertBlockTo(newTagName, currentBlock, true, className);
-         }
-    }
-
-    if (action === 'heading1') {
-        const newEl = transformBlockCtx('h2');
-        setCursorAtEnd(newEl);
-    } else if (action === 'heading2') {
-        const newEl = transformBlockCtx('h3');
-        setCursorAtEnd(newEl);
-    } else if (action === 'bulletList') {
-        if (currentBlock.tagName === 'LI') return;
-        const ul = document.createElement('ul');
-        const li = document.createElement('li');
-        if (currentBlock.nodeType === 3) {
-            li.textContent = currentBlock.textContent;
-        } else {
-            while (currentBlock.firstChild) li.appendChild(currentBlock.firstChild);
-        }
-        if (!li.textContent.trim()) li.innerHTML = '&#8203;';
-        ul.appendChild(li);
-        currentBlock.replaceWith(ul);
-        setCursorAtEnd(li);
-    } else if (action === 'checkbox') {
-        const taskDiv = document.createElement('div');
-        taskDiv.className = 'task-item';
-        taskDiv.innerHTML = `
-            <label class="custom-checkbox-wrapper" contenteditable="false">
-                <input type="checkbox">
-                <span class="checkmark"></span>
-            </label>
-            <span style="flex:1;">&#8203;</span>
-        `;
-        const cb = taskDiv.querySelector('input');
-        cb.addEventListener('click', function () {
-            this.closest('.task-item').classList.toggle('completed');
-            saveCurrentNote();
-        });
-        const contentSpan = taskDiv.querySelector('span:last-child');
-        const source = currentBlock;
-        while (source.firstChild) contentSpan.appendChild(source.firstChild);
-        if (!contentSpan.textContent.trim()) contentSpan.innerHTML = '&#8203;';
-        if (source.tagName === 'LI') {
-            const parentUl = source.parentElement;
-            const index = Array.from(parentUl.children).indexOf(source);
-            const after = Array.from(parentUl.children).slice(index + 1);
-            parentUl.after(taskDiv);
-            if (after.length > 0) {
-                const ulAfter = document.createElement('ul');
-                after.forEach(li => ulAfter.appendChild(li));
-                taskDiv.after(ulAfter);
-            }
-            source.remove();
-            if (parentUl.children.length === 0) parentUl.remove();
-        } else {
-            source.replaceWith(taskDiv);
-        }
-        setCursorAtEnd(contentSpan);
-    } else if (action === 'blockquote') {
-        const newEl = transformBlockCtx('blockquote');
-        setCursorAtEnd(newEl);
-    } else if (color) {
-        applyColorAtCursor(color);
-    }
-
-    saveCurrentNote();
-    showFormattingIndicator('Applied', 'success');
-});
-
-// --- FONT SELECTOR LOGIC ---
+// --- FONT SELECTOR LOGIC (using execCommand) ---
 const fontSelectorBtn = document.getElementById('fontSelectorBtn');
 const fontDropdown = document.getElementById('fontDropdown');
 const fontOptions = document.querySelectorAll('.font-option');
@@ -1004,6 +887,7 @@ writingCanvas.addEventListener('paste', (e) => {
         let html = '';
         for (let i = 0; i < lines.length; i++) {
             let line = escapeHtml(lines[i]);
+            // Preserve leading whitespace for code indentation
             line = line.replace(/^ +/g, (match) => '&nbsp;'.repeat(match.length));
             html += line;
             if (i < lines.length - 1) html += '<br>';
@@ -1060,10 +944,12 @@ writingCanvas.addEventListener('keyup', (e) => {
 });
 writingCanvas.addEventListener('focus', () => updateFontDisplay());
 
+// Also update font when selection changes (for cursor moves)
 document.addEventListener('selectionchange', () => {
     if (document.activeElement === writingCanvas) {
         updateFontDisplay();
     }
 });
 
+// --- Ensure the font display is correct after the editor loads ---
 updateFontDisplay();
