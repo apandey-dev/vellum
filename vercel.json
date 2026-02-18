@@ -5,6 +5,7 @@
     { "source": "/signup", "destination": "/index.html" },
     { "source": "/dashboard", "destination": "/index.html" },
     { "source": "/print", "destination": "/print.html" },
+    { "source": "/auth/confirm.html", "destination": "/auth/confirm.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
