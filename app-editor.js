@@ -49,14 +49,6 @@ function restoreCursorRange() {
 }
 function clearSavedCursorRange() { savedCursorRange = null; }
 
-// --- Get the top-level block (direct child of writingCanvas) containing node ---
-function getLineBlock(node) {
-    while (node && node.parentElement !== writingCanvas && node !== writingCanvas) {
-        node = node.parentElement;
-    }
-    return node === writingCanvas ? null : node;
-}
-
 // --- Get the current operational block (LI, Task, Heading, etc.) ---
 function getCurrentBlock(node) {
     let current = node;
@@ -435,6 +427,11 @@ function handleBackspace(e) {
     if (!sel.rangeCount || !sel.isCollapsed) return;
     const range = sel.getRangeAt(0);
     const node = range.startContainer;
+
+    // Check if truly at start of block
+    // Simplified check: if node is the first child (or first text node)
+    // and offset is 0.
+
     if (range.startOffset !== 0) return; // not at start of node
 
     // We need to check if we are effectively at the start of the BLOCK
@@ -443,14 +440,44 @@ function handleBackspace(e) {
     const currentBlock = getCurrentBlock(node);
     if (!currentBlock) return;
 
-    // Check if truly at start of block
-    // Simplified check: if node is the first child (or first text node)
-    // and offset is 0.
-    // NOTE: This logic is tricky. Browser handles text merging.
-    // We only care if we are about to delete the BLOCK TYPE (e.g. merge H2 into P, or unwrap LI).
+    // Additional check: Ensure we are really at the start of the block's content
+    // Find the first text node or child
+    // If current selection is at the start of that first node, then yes.
+
+    // Quick heuristic: if previous sibling exists, we are likely not at start of block content (unless empty text nodes?)
+    // But range.startContainer is specific.
+
+    // For now, assume if offset 0 in a text node that is first child, or similar.
+    // Let's rely on browser behavior for text merging unless we detect a special block change needed.
 
     const isSpecial = ['H2','H3','LI','BLOCKQUOTE'].includes(currentBlock.tagName) || currentBlock.classList.contains('task-item');
     if (!isSpecial) return;
+
+    // Check if previous sibling exists within the block
+    let isAtStart = false;
+    if (node === currentBlock) {
+        isAtStart = true;
+    } else if (node.parentNode === currentBlock && !node.previousSibling) {
+        isAtStart = true;
+    } else if (node.nodeType === 3 && node.parentNode === currentBlock && !node.previousSibling) {
+        isAtStart = true;
+    }
+
+    // If we are inside a deep structure (like task label), ignore backspace unless it is content
+    // But task label is contenteditable=false.
+    // If we are in the content span of task item...
+    if (currentBlock.classList.contains('task-item')) {
+        const contentSpan = currentBlock.querySelector('span:last-child');
+        if (contentSpan && (node === contentSpan || contentSpan.contains(node))) {
+             if (node === contentSpan && range.startOffset === 0) isAtStart = true;
+             else if (node.parentNode === contentSpan && !node.previousSibling && range.startOffset === 0) isAtStart = true;
+             else isAtStart = false;
+        } else {
+            isAtStart = false;
+        }
+    }
+
+    if (!isAtStart) return;
 
     e.preventDefault();
     isProcessing = true;
@@ -458,18 +485,6 @@ function handleBackspace(e) {
 
     if (currentBlock.tagName === 'LI') {
         const parentUl = currentBlock.parentNode;
-        // Logic: if empty or at start, unwrap LI to P (or merge with prev?)
-        // Standard behavior:
-        // 1. If indented, unindent.
-        // 2. If first item, unwrap to P.
-        // 3. If middle item, merge with previous LI.
-
-        // For simplicity and matching previous "unwrap" logic:
-        // Convert to P (break list) if at start.
-
-        // Check if there is a previous LI to merge with?
-        // Browser does this well. Maybe we should let browser handle merging?
-        // But if we want to "Unwrap" special blocks...
 
         const newDiv = document.createElement('div');
         while (currentBlock.firstChild) newDiv.appendChild(currentBlock.firstChild);
@@ -489,11 +504,6 @@ function handleBackspace(e) {
                  parentUl.before(newDiv);
                  if (after.length === 0) parentUl.remove();
              } else {
-                 // there are items before. newDiv comes after parentUl (which now only has before items)
-                 // Wait, we need to split parentUl.
-                 // Items before remain in parentUl.
-                 // newDiv is inserted after parentUl.
-                 // Items after are in ulAfter, inserted after newDiv.
                  parentUl.after(newDiv);
                  if (after.length > 0) newDiv.after(ulAfter);
                  // remove moved items from parentUl
