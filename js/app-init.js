@@ -14,39 +14,29 @@ import { setupExportListeners } from './export.js';
 import { setupUIListeners } from './ui-handlers.js';
 
 async function initApp() {
-    console.log('MindJournal: Starting initialization...');
+    console.log('MindJournal: Starting global initialization...');
 
     // 1. Immediate UI Setup (Non-blocking)
     setupModalListeners();
     attachGlobalListeners();
     console.log('MindJournal: Initial UI listeners attached.');
 
-    // 2. Validate session and profile
-    console.log('MindJournal: Checking auth status...');
-    const authStatus = await checkAuthAndProfile();
-    const path = window.location.pathname;
-
-    if (!authStatus.authenticated) {
-        if (path !== '/login' && path !== '/signup' && !path.startsWith('/public/')) {
-            console.log('MindJournal: Not authenticated, redirecting to login.');
-            window.location.href = '/login';
-            return;
-        }
-    }
-
-    // 3. Handle Routing (View switching)
+    // 2. Handle Routing (View switching)
+    // This will check auth and show appropriate view
     await handleRoute();
-    if (path === '/login' || path === '/signup' || path.startsWith('/public/')) {
-        console.log('MindJournal: On auth or public page, skipping dashboard init.');
-        return;
-    }
+    console.log('MindJournal: Global initialization complete.');
+}
 
-    const { user, profile, approved } = authStatus;
+export async function initDashboard(user, profile, approved) {
+    if (window.dashboardInitialized) return;
+    console.log('MindJournal: Starting dashboard initialization...');
+
     updateProfileUI(user);
 
     if (!approved) {
         console.log('MindJournal: User pending approval.');
         showPendingUI(profile);
+        window.dashboardInitialized = true;
         return;
     }
 
@@ -54,7 +44,7 @@ async function initApp() {
     console.log('MindJournal: Loading folders...');
     await loadFolders(user.id);
 
-    // 3. Ensure Default Folder
+    // Ensure Default Folder
     if (folders.length === 0) {
         const defaultFolder = await createFolder('General', user.id);
         if (defaultFolder) {
@@ -93,7 +83,8 @@ async function initApp() {
     setupExportListeners();
     setupUIListeners(user.id);
 
-    console.log('MindJournal: Initialization complete.');
+    window.dashboardInitialized = true;
+    console.log('MindJournal: Dashboard initialization complete.');
 }
 
 function showPendingUI(profile) {
