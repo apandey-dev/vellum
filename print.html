@@ -485,6 +485,7 @@
     </div>
 
     <!-- LOGIC -->
+    <script src="utils.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const content = localStorage.getItem('mindjournal_print_content');
@@ -517,12 +518,6 @@
                 editorContainer.innerHTML = '<h1 style="color:red">Error: No content found to print.</h1><p>Please go back and try exporting again.</p>';
             }
 
-            // Helper function to escape HTML
-            function escapeHtml(text) {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
 
             // 2. CSS Injector Function for Margins (@page)
             function updatePageSize() {
