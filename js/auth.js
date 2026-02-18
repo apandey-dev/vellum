@@ -26,13 +26,13 @@ export async function fetchUserProfile(userId) {
     return profile;
 }
 
-export function updateProfileUI(user) {
+export function updateProfileUI(user, profile) {
     if (!user) return;
-    const initial = (user.user_metadata?.full_name?.[0] || user.email?.[0] || 'U').toUpperCase();
+    const initial = (profile?.full_name?.[0] || user.user_metadata?.full_name?.[0] || user.email?.[0] || 'U').toUpperCase();
     const avatar = document.getElementById('userAvatar');
     if (avatar) avatar.textContent = initial;
 
-    // Also update modal if open
+    // Also update modal
     const modalAvatar = document.getElementById('modalAvatar');
     const profileName = document.getElementById('profileName');
     const profileEmail = document.getElementById('profileEmail');
@@ -40,11 +40,14 @@ export function updateProfileUI(user) {
     const profileStatus = document.getElementById('profileStatus');
 
     if (modalAvatar) modalAvatar.textContent = initial;
-    if (profileName) profileName.textContent = user.user_metadata?.full_name || 'User';
+    if (profileName) profileName.textContent = profile?.full_name || user.user_metadata?.full_name || 'User';
     if (profileEmail) profileEmail.textContent = user.email;
     if (profileDate) profileDate.textContent = new Date(user.created_at).toLocaleDateString();
 
-    // We'll need to fetch the profile status separately if not provided
+    if (profileStatus) {
+        profileStatus.textContent = profile?.status === 'active' ? 'Active' : 'Pending';
+        profileStatus.style.background = profile?.status === 'active' ? '#10b981' : '#f59e0b';
+    }
 }
 
 // Global auth state

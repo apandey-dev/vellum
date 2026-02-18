@@ -34,7 +34,7 @@ export function closeModal(modal) {
     if (modal.id === 'confirmFolderDeleteModal') {
         delete modal.dataset.pendingFolderId;
     }
-    if (modal.id === 'moveNoteModal') {
+    if (modal.id === 'moveNoteModal' || modal.id === 'renameNoteModal' || modal.id === 'confirmModal') {
         window.contextMenuNoteId = null;
     }
 }
@@ -48,7 +48,7 @@ export function closeTopModal() {
             if (topModal.id === 'confirmFolderDeleteModal') {
                 delete topModal.dataset.pendingFolderId;
             }
-            if (topModal.id === 'moveNoteModal') {
+            if (topModal.id === 'moveNoteModal' || topModal.id === 'renameNoteModal' || topModal.id === 'confirmModal') {
                 window.contextMenuNoteId = null;
             }
         }

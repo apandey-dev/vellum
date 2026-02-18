@@ -28,10 +28,13 @@ async function initApp() {
 }
 
 export async function initDashboard(user, profile, isActive) {
-    if (window.dashboardInitialized) return;
-    console.log('MindJournal: Starting dashboard initialization...');
+    // If already initialized and active, skip
+    if (window.dashboardInitialized && window.isUserActive) return;
 
-    updateProfileUI(user);
+    console.log('MindJournal: Starting dashboard initialization...');
+    window.isUserActive = isActive;
+
+    updateProfileUI(user, profile);
 
     if (!isActive) {
         console.log('MindJournal: User pending approval.');
@@ -39,6 +42,14 @@ export async function initDashboard(user, profile, isActive) {
         window.dashboardInitialized = true;
         return;
     }
+
+    // Restore UI if they were previously pending but are now active
+    const writingCanvas = document.getElementById('writingCanvas');
+    if (writingCanvas) {
+        writingCanvas.contentEditable = 'true';
+    }
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    if (addNoteBtn) addNoteBtn.classList.remove('disabled');
 
     // 4. Load Data
     console.log('MindJournal: Loading folders...');

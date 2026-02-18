@@ -10,10 +10,83 @@ import {
 import { openModal, closeModal } from '/js/modals.js';
 
 export function setupUIListeners(userId) {
+    // --- CONTEXT MENU ACTIONS ---
+    const ctxRename = document.getElementById('ctxRename');
+    if (ctxRename) {
+        ctxRename.addEventListener('click', () => {
+            const noteId = window.contextMenuNoteId || activeNoteId;
+            const note = notes.find(n => n.id === noteId);
+            if (note) {
+                const input = document.getElementById('renameNoteInput');
+                if (input) input.value = note.title;
+                openModal('renameNoteModal');
+            }
+            document.getElementById('noteContextMenu').classList.remove('show');
+        });
+    }
+
+    const ctxPin = document.getElementById('ctxPin');
+    if (ctxPin) {
+        ctxPin.addEventListener('click', async () => {
+            const noteId = window.contextMenuNoteId || activeNoteId;
+            const note = notes.find(n => n.id === noteId);
+            if (note) {
+                const newStatus = !note.is_pinned;
+                const { error } = await supabase
+                    .from('notes')
+                    .update({ is_pinned: newStatus })
+                    .eq('id', noteId);
+
+                if (!error) {
+                    note.is_pinned = newStatus;
+                    renderNoteChips();
+                    showFormattingIndicator(note.is_pinned ? 'Note pinned' : 'Note unpinned');
+                }
+            }
+            document.getElementById('noteContextMenu').classList.remove('show');
+        });
+    }
+
+    const moveToFolderItem = document.getElementById('moveToFolderItem');
+    if (moveToFolderItem) {
+        moveToFolderItem.addEventListener('click', () => {
+            const noteId = window.contextMenuNoteId || activeNoteId;
+            const note = notes.find(n => n.id === noteId);
+            if (note) {
+                const title = document.getElementById('moveNoteName');
+                if (title) title.textContent = `Moving: ${note.title}`;
+                const currentFolder = folders.find(f => f.id === note.folder_id);
+                const currentFolderText = document.getElementById('moveCurrentFolder');
+                if (currentFolderText) currentFolderText.textContent = `Current Folder: ${currentFolder ? currentFolder.name : 'None'}`;
+
+                renderMoveFolderOptions(noteId, userId);
+                openModal('moveNoteModal');
+            }
+            document.getElementById('noteContextMenu').classList.remove('show');
+        });
+    }
+
+    const ctxDelete = document.getElementById('ctxDelete');
+    if (ctxDelete) {
+        ctxDelete.addEventListener('click', () => {
+            openModal('confirmModal');
+            document.getElementById('noteContextMenu').classList.remove('show');
+        });
+    }
+
+    // Close context menu on click outside
+    document.addEventListener('click', () => {
+        const menu = document.getElementById('noteContextMenu');
+        if (menu) menu.classList.remove('show');
+    });
+
     // --- SIDEBAR BUTTONS ---
     const addNoteBtn = document.getElementById('addNoteBtn');
     if (addNoteBtn) {
-        addNoteBtn.addEventListener('click', () => openModal('newNoteModal'));
+        addNoteBtn.addEventListener('click', () => {
+            renderNewNoteFolderOptions();
+            openModal('newNoteModal');
+        });
     }
 
     // --- NEW NOTE MODAL ---
@@ -23,7 +96,7 @@ export function setupUIListeners(userId) {
             const nameInput = document.getElementById('newNoteName');
             const name = nameInput.value.trim();
             if (name) {
-                const folderId = activeFolderId; // Simplified for now, or use dropdown logic
+                const folderId = window.selectedNewNoteFolderId || activeFolderId;
                 const { data, error } = await supabase
                     .from('notes')
                     .insert([{
@@ -170,6 +243,86 @@ export function setupUIListeners(userId) {
         });
     }
 
+    // --- MOVE NOTE MODAL ---
+    const confirmMoveBtn = document.getElementById('confirmMoveBtn');
+    if (confirmMoveBtn) {
+        confirmMoveBtn.addEventListener('click', async () => {
+            const noteId = window.contextMenuNoteId || activeNoteId;
+            const targetFolderId = window.selectedMoveFolderId;
+            if (noteId && targetFolderId) {
+                const { error } = await supabase
+                    .from('notes')
+                    .update({ folder_id: targetFolderId })
+                    .eq('id', noteId);
+
+                if (error) {
+                    showFormattingIndicator('Error moving note', 'error');
+                    return;
+                }
+
+                const note = notes.find(n => n.id === noteId);
+                if (note) note.folder_id = targetFolderId;
+
+                if (noteId === activeNoteId && targetFolderId !== activeFolderId) {
+                     // Note moved out of current folder view
+                     const folderNotes = notes.filter(n => n.folder_id === activeFolderId);
+                     setActiveNote(folderNotes.length > 0 ? folderNotes[0].id : null);
+                }
+
+                renderNoteChips();
+                loadActiveNote();
+                closeModal(document.getElementById('moveNoteModal'));
+                showFormattingIndicator('Note moved!');
+            }
+        });
+    }
+
+    const createAndMoveBtn = document.getElementById('createAndMoveBtn');
+    if (createAndMoveBtn) {
+        createAndMoveBtn.addEventListener('click', async () => {
+            const nameInput = document.getElementById('moveNewFolderName');
+            const name = nameInput.value.trim();
+            const noteId = window.contextMenuNoteId || activeNoteId;
+            if (name && noteId) {
+                const { data: newFolder, error: folderError } = await supabase
+                    .from('folders')
+                    .insert([{ name: name, user_id: userId }])
+                    .select()
+                    .single();
+
+                if (folderError) {
+                    showFormattingIndicator('Error creating folder', 'error');
+                    return;
+                }
+
+                folders.push(newFolder);
+
+                const { error: moveError } = await supabase
+                    .from('notes')
+                    .update({ folder_id: newFolder.id })
+                    .eq('id', noteId);
+
+                if (moveError) {
+                    showFormattingIndicator('Error moving note', 'error');
+                    return;
+                }
+
+                const note = notes.find(n => n.id === noteId);
+                if (note) note.folder_id = newFolder.id;
+
+                if (noteId === activeNoteId && newFolder.id !== activeFolderId) {
+                    const folderNotes = notes.filter(n => n.folder_id === activeFolderId);
+                    setActiveNote(folderNotes.length > 0 ? folderNotes[0].id : null);
+                }
+
+                renderNoteChips();
+                loadActiveNote();
+                closeModal(document.getElementById('moveNoteModal'));
+                showFormattingIndicator('Folder created & Note moved!');
+            }
+        });
+    }
+
     // --- SHARE ---
     const shareBtn = document.getElementById('shareBtn');
     const shareToggle = document.getElementById('shareToggle');
@@ -194,6 +347,20 @@ export function setupUIListeners(userId) {
                 if (sharePrivateMsg) sharePrivateMsg.classList.add('visible');
             }
             openModal('shareModal');
+        });
+    }
+
+    // --- PROFILE ---
+    const profileBtn = document.getElementById('profileBtn');
+    if (profileBtn) {
+        profileBtn.addEventListener('click', () => openModal('profileModal'));
+    }
+
+    const modalLogoutBtn = document.getElementById('modalLogoutBtn');
+    if (modalLogoutBtn) {
+        modalLogoutBtn.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/login';
         });
     }
 
@@ -242,6 +409,77 @@ export function setupUIListeners(userId) {
                 if (sharePrivateMsg) sharePrivateMsg.classList.add('visible');
             }
         });
+    }
+}
+
+export function renderNewNoteFolderOptions() {
+    const optionsContainer = document.getElementById('folderSelectOptions');
+    const selectedName = document.getElementById('selectedFolderName');
+    if (!optionsContainer) return;
+
+    optionsContainer.innerHTML = '';
+    window.selectedNewNoteFolderId = activeFolderId;
+    const currentFolder = folders.find(f => f.id === activeFolderId);
+    if (selectedName) selectedName.textContent = currentFolder ? currentFolder.name : 'General';
+
+    folders.forEach(folder => {
+        const option = document.createElement('div');
+        option.className = 'select-option';
+        option.textContent = folder.name;
+        option.onclick = () => {
+            window.selectedNewNoteFolderId = folder.id;
+            if (selectedName) selectedName.textContent = folder.name;
+            document.getElementById('folderSelectWrapper').classList.remove('active');
+        };
+        optionsContainer.appendChild(option);
+    });
+
+    const trigger = document.getElementById('folderSelectTrigger');
+    if (trigger) {
+        trigger.onclick = (e) => {
+            e.stopPropagation();
+            document.getElementById('folderSelectWrapper').classList.toggle('active');
+        };
+    }
+}
+
+export function renderMoveFolderOptions(noteId, userId) {
+    const optionsContainer = document.getElementById('moveFolderSelectOptions');
+    const selectedName = document.getElementById('moveSelectedFolderName');
+    const confirmBtn = document.getElementById('confirmMoveBtn');
+    if (!optionsContainer) return;
+
+    optionsContainer.innerHTML = '';
+    window.selectedMoveFolderId = null;
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (selectedName) selectedName.textContent = 'Choose folder';
+
+    const note = notes.find(n => n.id === noteId);
+
+    folders.forEach(folder => {
+        const option = document.createElement('div');
+        option.className = 'select-option';
+        if (note && folder.id === note.folder_id) {
+            option.classList.add('disabled');
+            option.title = 'Already in this folder';
+        }
+        option.textContent = folder.name;
+        option.onclick = () => {
+            if (option.classList.contains('disabled')) return;
+            window.selectedMoveFolderId = folder.id;
+            if (selectedName) selectedName.textContent = folder.name;
+            if (confirmBtn) confirmBtn.disabled = false;
+            document.getElementById('moveFolderSelectWrapper').classList.remove('active');
+        };
+        optionsContainer.appendChild(option);
+    });
+
+    const trigger = document.getElementById('moveFolderSelectTrigger');
+    if (trigger) {
+        trigger.onclick = (e) => {
+            e.stopPropagation();
+            document.getElementById('moveFolderSelectWrapper').classList.toggle('active');
+        };
     }
 }
 
