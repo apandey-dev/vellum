@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - MindJournal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: var(--bg-canvas);
+        }
+        .auth-box {
+            background: var(--bg-panel);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--border-color);
+        }
+        .auth-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-canvas);
+            color: var(--text-primary);
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--text-primary);
+            color: var(--bg-panel);
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .auth-btn:hover { opacity: 0.9; }
+        .auth-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        .auth-link:hover { text-decoration: underline; }
+        .error-msg {
+            color: #ef4444;
+            font-size: 14px;
+            margin-bottom: 16px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-box">
+        <div class="auth-title">Welcome Back</div>
+        <div id="errorMsg" class="error-msg"></div>
+        <form id="loginForm">
+            <input type="email" id="email" class="auth-input" placeholder="Email" required>
+            <input type="password" id="password" class="auth-input" placeholder="Password" required>
+            <button type="submit" class="auth-btn">Log In</button>
+        </form>
+        <a href="signup.html" class="auth-link">Create an account</a>
+    </div>
+
+    <script>
+        const supabase = window.supabaseClient;
+        if (!supabase) alert("Supabase not configured in config.js");
+
+        const loginForm = document.getElementById('loginForm');
+        const errorMsg = document.getElementById('errorMsg');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.style.display = 'none';
+            errorMsg.textContent = '';
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) throw error;
+
+                // Check Profile Status
+                const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('status')
+                    .eq('id', data.user.id)
+                    .single();
+
+                if (profileError) throw profileError;
+
+                if (profile.status !== 'active') {
+                    await supabase.auth.signOut();
+                    throw new Error("Account is pending approval. Please wait.");
+                }
+
+                // Success
+                window.location.href = 'index.html';
+
+            } catch (err) {
+                errorMsg.textContent = err.message;
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
