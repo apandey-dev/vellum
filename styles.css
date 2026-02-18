@@ -581,11 +581,12 @@ body {
 .writing-canvas .task-item {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    margin: 6px 0;
+    gap: 8px;
+    margin: 2px 0;
+    /* Minimized margin for tight list feel */
+    padding: 0;
     line-height: 1.6;
     width: 100%;
-    /* Ensure full width for layout */
 }
 
 .custom-checkbox-wrapper {
@@ -593,9 +594,10 @@ body {
     position: relative;
     cursor: pointer;
     user-select: none;
-    margin-top: 4px;
-    /* Align with text baseline */
+    margin-top: 5px;
+    /* Precise visual alignment */
     flex-shrink: 0;
+    margin-left: 2px;
 }
 
 .custom-checkbox-wrapper input {
