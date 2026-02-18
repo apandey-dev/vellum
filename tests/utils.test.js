@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { escapeHtml } = require('../utils.js');
+const { escapeHtml } = require('../js/utils.js');
 
 test('escapeHtml', async (t) => {
     await t.test('escapes & correctly', () => {
