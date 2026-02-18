@@ -74,6 +74,31 @@
         </div>
     </div>
 
+    <!-- User Profile Modal -->
+    <div class="form-modal" id="profileModal">
+        <div class="form-box profile-box">
+            <h3>Your Profile</h3>
+            <div class="profile-info-grid">
+                <div class="profile-avatar-large" id="modalAvatar">U</div>
+                <div class="profile-details">
+                    <h4 id="profileName">Loading...</h4>
+                    <p id="profileEmail">user@example.com</p>
+                    <span class="status-badge" id="profileStatus">Active</span>
+                </div>
+            </div>
+            <div class="divider-h"></div>
+            <div class="profile-meta">
+                <small>Member since: <span id="profileDate">...</span></small>
+            </div>
+            <div class="form-actions" style="justify-content: space-between;">
+                <button class="form-btn secondary" id="closeProfileModal">Close</button>
+                <button class="form-btn logout-btn" id="modalLogoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Log Out
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ==================== VIEW: DASHBOARD ==================== -->
     <div id="view-dashboard" class="app-view hidden">
         <nav class="sidebar" id="sidebar">
@@ -99,15 +124,15 @@
 
                 <div class="divider"></div>
                 <div class="bottom-actions">
-                    <div class="tool-btn" id="logoutBtn" data-tooltip="Logout">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </div>
                     <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
                         <i class="fas fa-sun" id="themeIcon"></i>
                     </div>
                     <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode">
                         <i class="fas fa-expand-alt"></i>
                     </div>
+                <div class="profile-btn" id="profileBtn" data-tooltip="Profile">
+                    <div class="avatar-circle" id="userAvatar">U</div>
+                </div>
                 </div>
             </div>
         </nav>
