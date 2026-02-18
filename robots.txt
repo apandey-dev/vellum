@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /dashboard
+Allow: /public/
+Allow: /login
+Allow: /signup
+
+Sitemap: https://your-domain.com/sitemap.xml
