@@ -175,15 +175,18 @@ function handleInlineShortcuts(e) {
     // Helper to check if cursor is at start of line (ignoring leading whitespace)
     const textBeforeCursor = text.slice(0, offset);
 
+    // Improved start check
     function isSimulationOfStart(pattern) {
         if (!textBeforeCursor.endsWith(pattern)) return false;
         const prefix = textBeforeCursor.slice(0, -pattern.length);
-        return /^\s*$/.test(prefix);
+        if (!/^\s*$/.test(prefix)) return false;
+        return true;
     }
 
     // Generic Transform Function to handle LI splitting
     function transformCurrentBlock(newTagName, className = '') {
-        range.deleteContents(); // Delete the shortcut text (e.g. "## ")
+        // Remove text (pattern + prefix) handled by caller if needed
+        range.deleteContents();
 
         if (currentBlock.tagName === 'LI') {
             const parentUl = currentBlock.parentElement;
@@ -266,7 +269,7 @@ function handleInlineShortcuts(e) {
     // 2. Bullet list
     if (isSimulationOfStart('* ')) {
         e.preventDefault();
-        // If already LI, do nothing (or just delete pattern?)
+        // If already LI, do nothing
         if (currentBlock.tagName === 'LI') return;
 
         isProcessing = true;
@@ -302,11 +305,7 @@ function handleInlineShortcuts(e) {
         range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
 
-        // Custom transform for Checkbox because structure is complex
         range.deleteContents();
-
-        // If LI, split list first
-        // If not LI, just replace
 
         const taskDiv = document.createElement('div');
         taskDiv.className = 'task-item';
@@ -326,7 +325,6 @@ function handleInlineShortcuts(e) {
         const contentSpan = taskDiv.querySelector('span:last-child');
 
         // Move content
-        // Note: currentBlock might be LI
         const source = currentBlock;
         while (source.firstChild) contentSpan.appendChild(source.firstChild);
         if (!contentSpan.textContent.trim()) contentSpan.innerHTML = '&#8203;';
@@ -376,16 +374,12 @@ function handleInlineShortcuts(e) {
         isProcessing = true;
         pushToUndo();
 
-        // HR logic usually means replacing current block with HR + P
-        // But transformCurrentBlock is for wrapping content. HR doesn't have content.
-
         const hr = document.createElement('hr');
         hr.className = 'horizontal-line';
         const p = document.createElement('div');
         p.innerHTML = '<br>';
 
         if (currentBlock.tagName === 'LI') {
-            // Split list, insert HR, then P
             const parentUl = currentBlock.parentElement;
             const index = Array.from(parentUl.children).indexOf(currentBlock);
             const after = Array.from(parentUl.children).slice(index + 1);
@@ -415,7 +409,8 @@ function handleInlineShortcuts(e) {
     if (e.data === '.') {
         // --- Alignment Check (#center. #start. #end.) ---
         const alignMatch = textBeforeCursor.match(/#(center|start|end)\.$/);
-        if (alignMatch && isSimulationOfStart(alignMatch[0])) {
+
+        if (alignMatch) {
             e.preventDefault();
             isProcessing = true;
             pushToUndo();
@@ -429,7 +424,6 @@ function handleInlineShortcuts(e) {
             range.deleteContents();
 
             // Apply alignment to block
-            // Map types
             const alignMap = { 'center': 'center', 'start': 'left', 'end': 'right' };
             currentBlock.style.textAlign = alignMap[alignType] || 'left';
 
@@ -439,37 +433,55 @@ function handleInlineShortcuts(e) {
             return;
         }
 
-        // --- Advanced Combined Shortcut ($head+red+center.) ---
-        const complexMatch = textBeforeCursor.match(/\$([a-zA-Z0-9]+)\+([a-zA-Z]+)\+([a-zA-Z]+)\.$/);
+        // --- Advanced Combined Shortcut ($head+...) ---
+        // Matches $... until . with at least one part
+        const complexMatch = textBeforeCursor.match(/\$([a-zA-Z0-9+]+)\.$/);
+
         if (complexMatch && isSimulationOfStart(complexMatch[0])) {
+            const fullString = complexMatch[1]; // content between $ and .
+            const parts = fullString.split('+');
+
+            // First part is mandatory Heading Type
+            const headingType = parts[0];
+
+            // Subsequent parts are Optional (Color OR Alignment)
+            let colorName = null;
+            let alignment = null;
+
+            const alignKeywords = ['center', 'start', 'end'];
+
+            for (let i = 1; i < parts.length; i++) {
+                const part = parts[i];
+                if (alignKeywords.includes(part)) {
+                    alignment = part;
+                } else {
+                    // Assume color if not alignment
+                    colorName = part;
+                }
+            }
+
             e.preventDefault();
             isProcessing = true;
             pushToUndo();
 
-            const headingType = complexMatch[1];
-            const colorName = complexMatch[2];
-            const alignment = complexMatch[3];
+            // Delete the full shortcut text
             const matchLength = complexMatch[0].length;
-
-            // Remove shortcut text
             range.setStart(node, offset - matchLength);
             range.setEnd(node, offset);
 
             // Determine new tag
-            let newTag = 'div'; // default fallback
+            let newTag = 'div';
             if (headingType === 'head') newTag = 'h2';
             else if (headingType === 'subhead') newTag = 'h3';
             else if (headingType === 'subhead2') newTag = 'h4';
-            else newTag = 'div'; // if unknown type, fallback to div but apply styles
 
             // Transform block if tag changes
             let targetBlock = currentBlock;
             if (newTag !== currentBlock.tagName.toLowerCase()) {
-                // Use transform helper (handles deleting range content implicitly if passed range, but we need to delete specific range first)
-                range.deleteContents();
+                range.deleteContents(); // Delete the shortcut text first
 
-                // If LI, split it
                 if (currentBlock.tagName === 'LI') {
+                    // Split logic
                     const parentUl = currentBlock.parentElement;
                     const newEl = document.createElement(newTag);
                     while (currentBlock.firstChild) newEl.appendChild(currentBlock.firstChild);
@@ -494,11 +506,17 @@ function handleInlineShortcuts(e) {
                 range.deleteContents();
             }
 
-            // Apply styles to targetBlock
-            targetBlock.style.color = colorName;
+            // Apply styles
+            if (colorName) targetBlock.style.color = colorName;
+            else targetBlock.style.color = ''; // Reset if not provided? Or keep?
+            // User said: "default color apply ho". So if undefined, remove style.
 
-            const alignMap = { 'center': 'center', 'start': 'left', 'end': 'right' };
-            targetBlock.style.textAlign = alignMap[alignment] || 'left';
+            if (alignment) {
+                const alignMap = { 'center': 'center', 'start': 'left', 'end': 'right' };
+                targetBlock.style.textAlign = alignMap[alignment] || 'left';
+            } else {
+                targetBlock.style.textAlign = '';
+            }
 
             setCursorAtEnd(targetBlock);
             saveCurrentNote();
@@ -507,7 +525,6 @@ function handleInlineShortcuts(e) {
         }
 
         // --- Inline color (@color.) ---
-        // (Moved here because it also triggers on dot)
         const match = textBeforeCursor.match(/@([a-zA-Z]+)\.$/);
         if (match) {
             e.preventDefault();
@@ -539,7 +556,7 @@ function handleBackspace(e) {
     const node = range.startContainer;
 
     // Check if truly at start of block
-    if (range.startOffset !== 0) return; // not at start of node
+    if (range.startOffset !== 0) return;
 
     const currentBlock = getCurrentBlock(node);
     if (!currentBlock) return;
@@ -564,7 +581,6 @@ function handleBackspace(e) {
         isAtStart = true;
     }
 
-    // Task item check
     if (currentBlock.classList.contains('task-item')) {
         const contentSpan = currentBlock.querySelector('span:last-child');
         if (contentSpan && (node === contentSpan || contentSpan.contains(node))) {
@@ -588,7 +604,6 @@ function handleBackspace(e) {
         const newDiv = document.createElement('div');
         while (currentBlock.firstChild) newDiv.appendChild(currentBlock.firstChild);
 
-        // If it was part of a list, we need to handle splitting the list
         if (parentUl.children.length === 1) {
             parentUl.replaceWith(newDiv);
         } else {
@@ -598,32 +613,26 @@ function handleBackspace(e) {
             after.forEach(li => ulAfter.appendChild(li));
 
             currentBlock.remove();
-            // insert newDiv after previous items (or parentUl start if index 0)
             if (index === 0) {
                 parentUl.before(newDiv);
                 if (after.length === 0) parentUl.remove();
             } else {
                 parentUl.after(newDiv);
                 if (after.length > 0) newDiv.after(ulAfter);
-                // remove moved items from parentUl
-                after.forEach(li => li.remove()); // they are already moved to ulAfter
-                currentBlock.remove(); // already removed
+                after.forEach(li => li.remove());
             }
         }
         setCursorAtEnd(newDiv);
 
     } else if (currentBlock.classList.contains('task-item')) {
-        // Strip task item style
         const checkboxWrapper = currentBlock.querySelector('.custom-checkbox-wrapper');
         if (checkboxWrapper) checkboxWrapper.remove();
 
         currentBlock.classList.remove('task-item');
         currentBlock.classList.remove('completed');
 
-        // It becomes a div. Ensure it has content or BR
         if (!currentBlock.innerHTML.trim()) currentBlock.innerHTML = '<br>';
 
-        // Reset cursor to start
         const range = document.createRange();
         range.selectNodeContents(currentBlock);
         range.collapse(true);
@@ -633,6 +642,11 @@ function handleBackspace(e) {
         // H2, H3, H4, Blockquote -> P, OR just stripping styles
         // unwrapBlock creates a clean div.
         const newDiv = unwrapBlock(currentBlock);
+
+        // Ensure styling is stripped
+        newDiv.style.color = '';
+        newDiv.style.textAlign = '';
+
         setCursorAtEnd(newDiv);
     }
     saveCurrentNote();
@@ -655,9 +669,7 @@ function handleEnter(e) {
 
         const text = currentBlock.textContent.trim();
         // Check if empty -> Escape list
-        // Note: textContent might contain zero-width space
         if (!text || text === '\u200B') {
-            // Empty LI: Escape list
             const parentUl = currentBlock.parentElement;
             const newP = document.createElement('div');
             newP.innerHTML = '<br>';
@@ -669,10 +681,8 @@ function handleEnter(e) {
                     currentBlock.remove();
                     parentUl.after(newP);
                 } else {
-                    // Split list
                     const index = Array.from(parentUl.children).indexOf(currentBlock);
                     const after = Array.from(parentUl.children).slice(index + 1);
-
                     const ulAfter = document.createElement('ul');
                     after.forEach(li => ulAfter.appendChild(li));
 
@@ -697,14 +707,12 @@ function handleEnter(e) {
         pushToUndo();
 
         const text = currentBlock.textContent.trim();
-        // Check if empty -> Escape task list
         if (!text || text === '\u200B') {
             const newP = document.createElement('div');
             newP.innerHTML = '<br>';
             currentBlock.replaceWith(newP);
             setCursorAtEnd(newP);
         } else {
-            // Continue Task List
             const newTask = document.createElement('div');
             newTask.className = 'task-item';
             newTask.innerHTML = `
@@ -749,7 +757,6 @@ function handleTab(e) {
     const currentBlock = getCurrentBlock(node);
     if (!currentBlock) return;
 
-    // Only handle Tab for LIs for now
     if (currentBlock.tagName === 'LI') {
         e.preventDefault();
         isProcessing = true;
@@ -760,12 +767,9 @@ function handleTab(e) {
             const parentUl = currentBlock.parentElement;
             const grandparentLi = parentUl.parentElement;
 
-            // Check if nested inside another LI (e.g. UL > LI > UL > LI)
             if (grandparentLi && grandparentLi.tagName === 'LI') {
-                // Move current LI after grandparent LI
                 const greatGrandparentUl = grandparentLi.parentElement;
                 greatGrandparentUl.insertBefore(currentBlock, grandparentLi.nextSibling);
-                // Cleanup empty UL
                 if (parentUl.children.length === 0) parentUl.remove();
                 setCursorAtEnd(currentBlock);
             }
@@ -870,11 +874,9 @@ editorContextMenu.addEventListener('click', (e) => {
             const newEl = document.createElement(newTagName);
             if (className) newEl.className = className;
 
-            // Move content
             while (currentBlock.firstChild) newEl.appendChild(currentBlock.firstChild);
             if (!newEl.innerHTML.trim()) newEl.innerHTML = '&#8203;';
 
-            // Split list logic
             const index = Array.from(parentUl.children).indexOf(currentBlock);
             const after = Array.from(parentUl.children).slice(index + 1);
 
