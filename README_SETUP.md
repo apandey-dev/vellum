@@ -12,11 +12,10 @@ This document summarizes the recent architectural changes and provides instructi
 ---
 
 ## 🗄️ Database Setup (SQL)
-Run the following SQL in your Supabase SQL Editor to ensure your tables and policies are correctly configured.
+Run the following SQL in your Supabase SQL Editor. This script is **idempotent**, meaning you can run it multiple times safely even if the tables already exist.
 
 ```sql
 -- 1. PROFILES TABLE
--- This table automatically gets a row when a new user signs up.
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT,
@@ -29,8 +28,15 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Profiles Policies
-CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+    CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+    CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
 -- 2. FOLDERS TABLE
 CREATE TABLE IF NOT EXISTS public.folders (
@@ -41,7 +47,10 @@ CREATE TABLE IF NOT EXISTS public.folders (
 );
 
 ALTER TABLE public.folders ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can CRUD own folders" ON public.folders FOR ALL USING (auth.uid() = user_id);
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can CRUD own folders" ON public.folders;
+    CREATE POLICY "Users can CRUD own folders" ON public.folders FOR ALL USING (auth.uid() = user_id);
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
 -- 3. NOTES TABLE
 CREATE TABLE IF NOT EXISTS public.notes (
@@ -60,16 +69,19 @@ CREATE TABLE IF NOT EXISTS public.notes (
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
 -- Only allow CRUD if user status is 'active'
-CREATE POLICY "Active users can CRUD own notes"
-ON public.notes FOR ALL
-USING (
-    auth.uid() = user_id
-    AND EXISTS (
-        SELECT 1 FROM public.profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.status = 'active'
-    )
-);
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Active users can CRUD own notes" ON public.notes;
+    CREATE POLICY "Active users can CRUD own notes"
+    ON public.notes FOR ALL
+    USING (
+        auth.uid() = user_id
+        AND EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.status = 'active'
+        )
+    );
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
 -- 4. AUTO-CREATE PROFILE TRIGGER
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -81,8 +93,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Uncomment the next line if the trigger doesn't exist yet
--- CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+DO $$ BEGIN
+    DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+    CREATE TRIGGER on_auth_user_created
+      AFTER INSERT ON auth.users
+      FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 ```
 
 ---
@@ -141,4 +157,7 @@ To approve a user and allow them to start writing notes:
 2. Select the `profiles` table.
 3. Find the user's row and change the `status` from `pending` to `active`.
 
-The user's dashboard will automatically unlock on their next refresh or navigation.
+Alternatively, run this SQL for a specific user:
+```sql
+UPDATE public.profiles SET status = 'active' WHERE email = 'user@example.com';
+```

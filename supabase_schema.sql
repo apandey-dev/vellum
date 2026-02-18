@@ -1,11 +1,10 @@
 -- ==========================================================
--- SUPABASE MIGRATION SCRIPT
+-- SUPABASE MIGRATION SCRIPT (Idempotent Version)
 -- Project: MindJournal (LocalStorage -> Supabase)
 -- ==========================================================
 
 -- 1. PROFILES TABLE
--- Handles user data and approval status
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT,
     full_name TEXT,
@@ -17,18 +16,18 @@ CREATE TABLE public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Profiles Policies
--- User can view their own profile
-CREATE POLICY "Users can view own profile"
-ON public.profiles FOR SELECT
-USING (auth.uid() = id);
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+    CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
--- User can update their own profile (e.g. name), but NOT status (handled by admin)
-CREATE POLICY "Users can update own profile"
-ON public.profiles FOR UPDATE
-USING (auth.uid() = id);
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+    CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
 -- 2. FOLDERS TABLE
-CREATE TABLE public.folders (
+CREATE TABLE IF NOT EXISTS public.folders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -38,25 +37,29 @@ CREATE TABLE public.folders (
 -- Enable RLS
 ALTER TABLE public.folders ENABLE ROW LEVEL SECURITY;
 
--- Folders Policies (Strict Isolation)
-CREATE POLICY "Users can view own folders"
-ON public.folders FOR SELECT
-USING (auth.uid() = user_id);
+-- Folders Policies
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can view own folders" ON public.folders;
+    CREATE POLICY "Users can view own folders" ON public.folders FOR SELECT USING (auth.uid() = user_id);
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
-CREATE POLICY "Users can insert own folders"
-ON public.folders FOR INSERT
-WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can insert own folders" ON public.folders;
+    CREATE POLICY "Users can insert own folders" ON public.folders FOR INSERT WITH CHECK (auth.uid() = user_id);
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
-CREATE POLICY "Users can update own folders"
-ON public.folders FOR UPDATE
-USING (auth.uid() = user_id);
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can update own folders" ON public.folders;
+    CREATE POLICY "Users can update own folders" ON public.folders FOR UPDATE USING (auth.uid() = user_id);
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
-CREATE POLICY "Users can delete own folders"
-ON public.folders FOR DELETE
-USING (auth.uid() = user_id);
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Users can delete own folders" ON public.folders;
+    CREATE POLICY "Users can delete own folders" ON public.folders FOR DELETE USING (auth.uid() = user_id);
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
 -- 3. NOTES TABLE
-CREATE TABLE public.notes (
+CREATE TABLE IF NOT EXISTS public.notes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     folder_id UUID REFERENCES public.folders(id) ON DELETE SET NULL,
@@ -69,35 +72,34 @@ CREATE TABLE public.notes (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Indexes
-CREATE INDEX idx_notes_user_id ON public.notes(user_id);
-CREATE INDEX idx_notes_folder_id ON public.notes(folder_id);
-CREATE INDEX idx_notes_public ON public.notes(is_public, public_expires_at);
-
 -- Enable RLS
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
 -- Notes Policies
--- 1. Owner Access (CRUD) - RESTRICTED TO ACTIVE USERS
-CREATE POLICY "Active users can CRUD own notes"
-ON public.notes FOR ALL
-USING (
-    auth.uid() = user_id
-    AND EXISTS (
-        SELECT 1 FROM public.profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.status = 'active'
-    )
-);
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Active users can CRUD own notes" ON public.notes;
+    CREATE POLICY "Active users can CRUD own notes" ON public.notes FOR ALL USING (
+        auth.uid() = user_id
+        AND EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.status = 'active'
+        )
+    );
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
--- 2. Public Read Access (Safe Sharing)
--- Allows anonymous or other users to SELECT if public AND not expired
-CREATE POLICY "Public read access"
-ON public.notes FOR SELECT
-USING (
-    is_public = true
-    AND public_expires_at > now()
-);
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Public read access" ON public.notes;
+    CREATE POLICY "Public read access" ON public.notes FOR SELECT USING (
+        is_public = true
+        AND public_expires_at > now()
+    );
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
+
+-- Indexes (Handle errors if they already exist)
+CREATE INDEX IF NOT EXISTS idx_notes_user_id ON public.notes(user_id);
+CREATE INDEX IF NOT EXISTS idx_notes_folder_id ON public.notes(folder_id);
+CREATE INDEX IF NOT EXISTS idx_notes_public ON public.notes(is_public, public_expires_at);
 
 -- ==========================================================
 -- TRIGGERS & FUNCTIONS
@@ -113,9 +115,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+DO $$ BEGIN
+    DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+    CREATE TRIGGER on_auth_user_created
+      AFTER INSERT ON auth.users
+      FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
 -- 2. Auto-update updated_at timestamp
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
@@ -126,11 +131,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER on_note_update
-  BEFORE UPDATE ON public.notes
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_updated_at();
+DO $$ BEGIN
+    DROP TRIGGER IF EXISTS on_note_update ON public.notes;
+    CREATE TRIGGER on_note_update
+      BEFORE UPDATE ON public.notes
+      FOR EACH ROW EXECUTE PROCEDURE public.handle_updated_at();
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
 -- ==========================================================
 -- INSTRUCTIONS FOR ADMIN
 -- ==========================================================
--- To approve a user, go to Table Editor -> profiles -> set status to 'active'.
+-- To approve a user:
+-- UPDATE profiles SET status = 'active' WHERE email = 'user@example.com';

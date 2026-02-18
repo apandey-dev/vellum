@@ -1,6 +1,6 @@
-const test = require('node:test');
-const assert = require('node:assert');
-const { escapeHtml } = require('../js/utils.js');
+import test from 'node:test';
+import assert from 'node:assert';
+import { escapeHtml } from '../js/utils.js';
 
 test('escapeHtml', async (t) => {
     await t.test('escapes & correctly', () => {

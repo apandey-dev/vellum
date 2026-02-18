@@ -23,7 +23,3 @@ export function escapeHtml(unsafe) {
 if (typeof window !== 'undefined') {
     window.escapeHtml = escapeHtml;
 }
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { escapeHtml };
-}
