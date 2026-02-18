@@ -104,7 +104,8 @@ let modalStack = [];
 async function checkAuth() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-        window.location.href = 'login.html';
+        if (window.navigateTo) window.navigateTo('/login');
+        else window.location.href = '/login';
         return;
     }
     currentUser = session.user;
@@ -118,7 +119,8 @@ async function checkAuth() {
 
     if (error || profile.status !== 'active') {
         await supabase.auth.signOut();
-        window.location.href = 'login.html';
+        if (window.navigateTo) window.navigateTo('/login');
+        else window.location.href = '/login';
     }
 }
 
@@ -126,7 +128,8 @@ async function checkAuth() {
 if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
         await supabase.auth.signOut();
-        window.location.href = 'login.html';
+        // Force full reload to clear memory state
+        window.location.href = '/login';
     });
 }
 
@@ -795,7 +798,8 @@ shareBtn.addEventListener('click', () => {
         document.getElementById('shareToggle').classList.add('public');
         document.getElementById('shareLinkSection').classList.add('visible');
         document.getElementById('sharePrivateMsg').classList.remove('visible');
-        document.getElementById('shareLinkInput').value = `https://your-domain.com/share.html?id=${note.id}`;
+        // Use current origin and new route structure
+        document.getElementById('shareLinkInput').value = `${window.location.origin}/public/${note.id}`;
     } else {
         document.getElementById('shareToggle').classList.remove('public');
         document.getElementById('shareLinkSection').classList.remove('visible');
@@ -933,7 +937,7 @@ async function exportAsPDF(fileName) {
     const content = writingCanvas.innerHTML;
     localStorage.setItem('mindjournal_print_content', content);
     localStorage.setItem('mindjournal_print_title', fileName);
-    const printWindow = window.open('print.html', '_blank');
+    const printWindow = window.open('/print', '_blank');
     if (printWindow) {
         printWindow.focus();
         showFormattingIndicator('Opening Print Preview...', 'success');
@@ -1073,12 +1077,15 @@ function init() {
     });
 }
 
+// Expose init for SPA Router
+window.initDashboard = init;
+
 // Modals Outside Click (Generic)
 window.onclick = (e) => {
     if (e.target.classList.contains('form-modal') || e.target.classList.contains('confirm-modal')) {
         e.target.classList.remove('show');
     }
-    if (!noteContextMenu.contains(e.target)) {
+    if (noteContextMenu && !noteContextMenu.contains(e.target)) {
         noteContextMenu.classList.remove('show');
     }
 };
@@ -1138,4 +1145,4 @@ setupEnterKeySubmission('renameNoteInput', 'confirmRenameBtn');
 setupEnterKeySubmission('exportFileName', 'exportConfirmBtn');
 setupEnterKeySubmission('moveNewFolderName', 'createAndMoveBtn');
 
-init();
+// Auto-init removed for SPA. Router calls window.initDashboard();
