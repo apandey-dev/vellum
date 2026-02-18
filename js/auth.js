@@ -59,13 +59,13 @@ export async function checkAuthAndProfile() {
 
     currentProfile = await fetchUserProfile(currentUser.id);
 
-    if (!currentProfile || currentProfile.status !== 'approved') {
+    if (!currentProfile || currentProfile.status !== 'active') {
         // If pending or not found, we might still allow login but restricted
-        // According to the new spec: "Until approved: User can login. BUT: Their data must not persist..."
-        return { authenticated: true, approved: false, user: currentUser, profile: currentProfile };
+        // According to the spec: "Until active: User can login. BUT: Their data must not persist..."
+        return { authenticated: true, isActive: false, user: currentUser, profile: currentProfile };
     }
 
-    return { authenticated: true, approved: true, user: currentUser, profile: currentProfile };
+    return { authenticated: true, isActive: true, user: currentUser, profile: currentProfile };
 }
 
 window.validateSession = validateSession;

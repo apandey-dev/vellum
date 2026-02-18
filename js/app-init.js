@@ -27,13 +27,13 @@ async function initApp() {
     console.log('MindJournal: Global initialization complete.');
 }
 
-export async function initDashboard(user, profile, approved) {
+export async function initDashboard(user, profile, isActive) {
     if (window.dashboardInitialized) return;
     console.log('MindJournal: Starting dashboard initialization...');
 
     updateProfileUI(user);
 
-    if (!approved) {
+    if (!isActive) {
         console.log('MindJournal: User pending approval.');
         showPendingUI(profile);
         window.dashboardInitialized = true;

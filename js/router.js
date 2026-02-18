@@ -66,7 +66,7 @@ export async function handleRoute() {
         const authStatus = await checkAuthAndProfile();
         if (authStatus.authenticated) {
             const { initDashboard } = await import('./app-init.js');
-            initDashboard(authStatus.user, authStatus.profile, authStatus.approved);
+            initDashboard(authStatus.user, authStatus.profile, authStatus.isActive);
         }
     } else {
         navigateTo(user ? ROUTES.DASHBOARD : ROUTES.LOGIN);
@@ -92,7 +92,7 @@ export async function handleLogin(e) {
             .eq('id', data.user.id)
             .single();
 
-        if (!profile || profile.status !== 'approved') {
+        if (!profile || profile.status !== 'active') {
             // We still navigate to dashboard, but dashboard init will show pending UI
         }
 

@@ -78,10 +78,17 @@ CREATE INDEX idx_notes_public ON public.notes(is_public, public_expires_at);
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
 -- Notes Policies
--- 1. Owner Access (CRUD)
-CREATE POLICY "Users can CRUD own notes"
+-- 1. Owner Access (CRUD) - RESTRICTED TO ACTIVE USERS
+CREATE POLICY "Active users can CRUD own notes"
 ON public.notes FOR ALL
-USING (auth.uid() = user_id);
+USING (
+    auth.uid() = user_id
+    AND EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.status = 'active'
+    )
+);
 
 -- 2. Public Read Access (Safe Sharing)
 -- Allows anonymous or other users to SELECT if public AND not expired
