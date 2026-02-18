@@ -57,6 +57,28 @@ function getLineBlock(node) {
     return node === writingCanvas ? null : node;
 }
 
+// --- Get the current operational block (LI, Task, Heading, etc.) ---
+function getCurrentBlock(node) {
+    let current = node;
+
+    // Special handling for text nodes
+    if (current && current.nodeType === 3) {
+        if (current.parentElement === writingCanvas) return current;
+        current = current.parentElement;
+    }
+
+    while (current && current !== writingCanvas) {
+        if (current.tagName === 'LI') return current;
+        if (current.classList.contains('task-item')) return current;
+        if (['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE'].includes(current.tagName)) return current;
+        // If it's a direct child of writingCanvas (like a P div), return it
+        if (current.parentElement === writingCanvas) return current;
+        current = current.parentElement;
+    }
+    return null;
+}
+
+
 // --- Convert a block to a new element, preserving content ---
 function convertBlockTo(newTagName, lineBlock, preserveContent = true, className = '') {
     if (!lineBlock) return null;
@@ -99,16 +121,21 @@ function unwrapBlock(lineBlock) {
 function setCursorAtEnd(element) {
     const range = document.createRange();
     const sel = window.getSelection();
+    if (!element) return;
+
     if (element.nodeType === 3) {
         range.setStart(element, element.length);
         range.collapse(true);
     } else {
         if (element.lastChild) {
-            range.setStartAfter(element.lastChild);
+            // Check if last child is BR or empty text
+            // Just select end
+            range.selectNodeContents(element);
+            range.collapse(false);
         } else {
             range.selectNodeContents(element);
+            range.collapse(false);
         }
-        range.collapse(false);
     }
     sel.removeAllRanges();
     sel.addRange(range);
@@ -148,19 +175,54 @@ function handleInlineShortcuts(e) {
 
     const text = node.textContent;
     const offset = range.startOffset;
-    const lineBlock = getLineBlock(node);
-    if (!lineBlock) return;
+
+    // Use getCurrentBlock to correctly identify LI, Task, etc.
+    const currentBlock = getCurrentBlock(node);
+    if (!currentBlock) return;
 
     // Helper to check if cursor is at start of line (ignoring leading whitespace)
     const textBeforeCursor = text.slice(0, offset);
-    // We only care if the *pattern* is at the end of textBeforeCursor, 
-    // AND if the things before the pattern are just whitespace.
 
     function isSimulationOfStart(pattern) {
-        // pattern e.g. "## "
         if (!textBeforeCursor.endsWith(pattern)) return false;
         const prefix = textBeforeCursor.slice(0, -pattern.length);
         return /^\s*$/.test(prefix);
+    }
+
+    // Generic Transform Function to handle LI splitting
+    function transformCurrentBlock(newTagName, className = '') {
+        range.deleteContents(); // Delete the shortcut text (e.g. "## ")
+
+        if (currentBlock.tagName === 'LI') {
+            const parentUl = currentBlock.parentElement;
+            const newEl = document.createElement(newTagName);
+            if (className) newEl.className = className;
+
+            // Move content
+            while (currentBlock.firstChild) newEl.appendChild(currentBlock.firstChild);
+            if (!newEl.innerHTML.trim()) newEl.innerHTML = '&#8203;';
+
+            // Split list logic
+            const index = Array.from(parentUl.children).indexOf(currentBlock);
+            const after = Array.from(parentUl.children).slice(index + 1);
+
+            // Insert newEl after parentUl (or what remains of it)
+            parentUl.after(newEl);
+
+            if (after.length > 0) {
+                const ulAfter = document.createElement('ul');
+                after.forEach(li => ulAfter.appendChild(li));
+                newEl.after(ulAfter);
+            }
+
+            currentBlock.remove();
+            if (parentUl.children.length === 0) parentUl.remove();
+
+            return newEl;
+        } else {
+            // Normal conversion
+            return convertBlockTo(newTagName, currentBlock, true, className);
+        }
     }
 
     // 1. Headings
@@ -168,13 +230,12 @@ function handleInlineShortcuts(e) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
-        // Calculate where the pattern starts
+        // Adjust range to select pattern for deletion
         const matchLength = 3;
-        const patternStart = offset - matchLength;
-        range.setStart(node, patternStart);
+        range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
-        range.deleteContents();
-        const newBlock = convertBlockTo('h2', lineBlock);
+
+        const newBlock = transformCurrentBlock('h2');
         setCursorAtEnd(newBlock);
         saveCurrentNote();
         isProcessing = false;
@@ -185,11 +246,10 @@ function handleInlineShortcuts(e) {
         isProcessing = true;
         pushToUndo();
         const matchLength = 4;
-        const patternStart = offset - matchLength;
-        range.setStart(node, patternStart);
+        range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
-        range.deleteContents();
-        const newBlock = convertBlockTo('h3', lineBlock);
+
+        const newBlock = transformCurrentBlock('h3');
         setCursorAtEnd(newBlock);
         saveCurrentNote();
         isProcessing = false;
@@ -199,6 +259,9 @@ function handleInlineShortcuts(e) {
     // 2. Bullet list
     if (isSimulationOfStart('* ')) {
         e.preventDefault();
+        // If already LI, do nothing (or just delete pattern?)
+        if (currentBlock.tagName === 'LI') return;
+
         isProcessing = true;
         pushToUndo();
         const matchLength = 2;
@@ -208,14 +271,15 @@ function handleInlineShortcuts(e) {
 
         const ul = document.createElement('ul');
         const li = document.createElement('li');
-        if (lineBlock.nodeType === 3) {
-            li.textContent = lineBlock.textContent;
+        // Move content
+        if (currentBlock.nodeType === 3) {
+             li.textContent = currentBlock.textContent;
         } else {
-            while (lineBlock.firstChild) li.appendChild(lineBlock.firstChild);
+             while (currentBlock.firstChild) li.appendChild(currentBlock.firstChild);
         }
         if (!li.textContent.trim()) li.innerHTML = '&#8203;';
         ul.appendChild(li);
-        lineBlock.replaceWith(ul);
+        currentBlock.replaceWith(ul);
         setCursorAtEnd(li);
         saveCurrentNote();
         isProcessing = false;
@@ -230,40 +294,53 @@ function handleInlineShortcuts(e) {
         const matchLength = 3;
         range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
+
+        // Custom transform for Checkbox because structure is complex
         range.deleteContents();
+
+        // If LI, split list first
+        // If not LI, just replace
 
         const taskDiv = document.createElement('div');
         taskDiv.className = 'task-item';
-
-        const label = document.createElement('label');
-        label.className = 'custom-checkbox-wrapper';
-        label.contentEditable = 'false';
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.addEventListener('click', function () {
+        taskDiv.innerHTML = `
+            <label class="custom-checkbox-wrapper" contenteditable="false">
+                <input type="checkbox">
+                <span class="checkmark"></span>
+            </label>
+            <span style="flex:1;">&#8203;</span>
+        `;
+        const cb = taskDiv.querySelector('input');
+        cb.addEventListener('click', function () {
             this.closest('.task-item').classList.toggle('completed');
             saveCurrentNote();
         });
 
-        const checkmark = document.createElement('span');
-        checkmark.className = 'checkmark';
+        const contentSpan = taskDiv.querySelector('span:last-child');
 
-        label.appendChild(checkbox);
-        label.appendChild(checkmark);
-
-        const contentSpan = document.createElement('span');
-        contentSpan.style.flex = '1';
-        if (lineBlock.nodeType === 3) {
-            contentSpan.textContent = lineBlock.textContent;
-        } else {
-            while (lineBlock.firstChild) contentSpan.appendChild(lineBlock.firstChild);
-        }
+        // Move content
+        // Note: currentBlock might be LI
+        const source = currentBlock;
+        while (source.firstChild) contentSpan.appendChild(source.firstChild);
         if (!contentSpan.textContent.trim()) contentSpan.innerHTML = '&#8203;';
 
-        taskDiv.appendChild(label);
-        taskDiv.appendChild(contentSpan);
-        lineBlock.replaceWith(taskDiv);
+        if (source.tagName === 'LI') {
+            const parentUl = source.parentElement;
+            const index = Array.from(parentUl.children).indexOf(source);
+            const after = Array.from(parentUl.children).slice(index + 1);
+
+            parentUl.after(taskDiv);
+            if (after.length > 0) {
+                const ulAfter = document.createElement('ul');
+                after.forEach(li => ulAfter.appendChild(li));
+                taskDiv.after(ulAfter);
+            }
+            source.remove();
+            if (parentUl.children.length === 0) parentUl.remove();
+        } else {
+            source.replaceWith(taskDiv);
+        }
+
         setCursorAtEnd(contentSpan);
         saveCurrentNote();
         isProcessing = false;
@@ -278,25 +355,49 @@ function handleInlineShortcuts(e) {
         const matchLength = 2;
         range.setStart(node, offset - matchLength);
         range.setEnd(node, offset);
-        range.deleteContents();
-        const newBlock = convertBlockTo('blockquote', lineBlock);
+
+        const newBlock = transformCurrentBlock('blockquote');
         setCursorAtEnd(newBlock);
         saveCurrentNote();
         isProcessing = false;
         return;
     }
 
-    // 5. Horizontal rule (---) – must be the whole line
+    // 5. Horizontal rule (---)
     if (isSimulationOfStart('---') && offset === text.length) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
+
+        // HR logic usually means replacing current block with HR + P
+        // But transformCurrentBlock is for wrapping content. HR doesn't have content.
+
         const hr = document.createElement('hr');
         hr.className = 'horizontal-line';
         const p = document.createElement('div');
         p.innerHTML = '<br>';
-        lineBlock.replaceWith(hr);
-        hr.after(p);
+
+        if (currentBlock.tagName === 'LI') {
+             // Split list, insert HR, then P
+             const parentUl = currentBlock.parentElement;
+             const index = Array.from(parentUl.children).indexOf(currentBlock);
+             const after = Array.from(parentUl.children).slice(index + 1);
+
+             parentUl.after(hr);
+             hr.after(p);
+
+             if (after.length > 0) {
+                 const ulAfter = document.createElement('ul');
+                 after.forEach(li => ulAfter.appendChild(li));
+                 p.after(ulAfter);
+             }
+             currentBlock.remove();
+             if (parentUl.children.length === 0) parentUl.remove();
+        } else {
+             currentBlock.replaceWith(hr);
+             hr.after(p);
+        }
+
         setCursorAtEnd(p);
         saveCurrentNote();
         isProcessing = false;
@@ -334,93 +435,94 @@ function handleBackspace(e) {
     if (!sel.rangeCount || !sel.isCollapsed) return;
     const range = sel.getRangeAt(0);
     const node = range.startContainer;
-    if (range.startOffset !== 0) return; // not at start
+    if (range.startOffset !== 0) return; // not at start of node
 
-    const lineBlock = getLineBlock(node);
-    if (!lineBlock) return;
+    // We need to check if we are effectively at the start of the BLOCK
+    // If node is text node, and previous sibling exists, we are not at start of block.
+    // getCurrentBlock is better here.
+    const currentBlock = getCurrentBlock(node);
+    if (!currentBlock) return;
 
-    const isSpecial = lineBlock.tagName === 'H2' || lineBlock.tagName === 'H3' ||
-        lineBlock.tagName === 'LI' || lineBlock.tagName === 'BLOCKQUOTE' ||
-        lineBlock.classList.contains('task-item');
+    // Check if truly at start of block
+    // Simplified check: if node is the first child (or first text node)
+    // and offset is 0.
+    // NOTE: This logic is tricky. Browser handles text merging.
+    // We only care if we are about to delete the BLOCK TYPE (e.g. merge H2 into P, or unwrap LI).
 
+    const isSpecial = ['H2','H3','LI','BLOCKQUOTE'].includes(currentBlock.tagName) || currentBlock.classList.contains('task-item');
     if (!isSpecial) return;
 
     e.preventDefault();
     isProcessing = true;
     pushToUndo();
 
-    // For list items, need to handle list structure
-    if (lineBlock.tagName === 'LI') {
-        const parentUl = lineBlock.parentNode;
+    if (currentBlock.tagName === 'LI') {
+        const parentUl = currentBlock.parentNode;
+        // Logic: if empty or at start, unwrap LI to P (or merge with prev?)
+        // Standard behavior:
+        // 1. If indented, unindent.
+        // 2. If first item, unwrap to P.
+        // 3. If middle item, merge with previous LI.
+
+        // For simplicity and matching previous "unwrap" logic:
+        // Convert to P (break list) if at start.
+
+        // Check if there is a previous LI to merge with?
+        // Browser does this well. Maybe we should let browser handle merging?
+        // But if we want to "Unwrap" special blocks...
+
+        const newDiv = document.createElement('div');
+        while (currentBlock.firstChild) newDiv.appendChild(currentBlock.firstChild);
+
+        // If it was part of a list, we need to handle splitting the list
         if (parentUl.children.length === 1) {
-            // Only one item, replace whole ul with div
-            const newDiv = document.createElement('div');
-            while (lineBlock.firstChild) newDiv.appendChild(lineBlock.firstChild);
             parentUl.replaceWith(newDiv);
-            setCursorAtEnd(newDiv);
         } else {
-            // More than one item, split the list
-            const index = Array.from(parentUl.children).indexOf(lineBlock);
-            const before = Array.from(parentUl.children).slice(0, index);
-            const after = Array.from(parentUl.children).slice(index + 1);
+             const index = Array.from(parentUl.children).indexOf(currentBlock);
+             const after = Array.from(parentUl.children).slice(index + 1);
+             const ulAfter = document.createElement('ul');
+             after.forEach(li => ulAfter.appendChild(li));
 
-            const newDiv = document.createElement('div');
-            while (lineBlock.firstChild) newDiv.appendChild(lineBlock.firstChild);
-
-            // Replace the current li with newDiv, then reinsert remaining lists
-            const fragment = document.createDocumentFragment();
-            if (before.length) {
-                const ulBefore = document.createElement('ul');
-                before.forEach(li => ulBefore.appendChild(li));
-                fragment.appendChild(ulBefore);
-            }
-            fragment.appendChild(newDiv);
-            if (after.length) {
-                const ulAfter = document.createElement('ul');
-                after.forEach(li => ulAfter.appendChild(li));
-                fragment.appendChild(ulAfter);
-            }
-            parentUl.replaceWith(fragment);
-            setCursorAtEnd(newDiv);
+             currentBlock.remove();
+             // insert newDiv after previous items (or parentUl start if index 0)
+             if (index === 0) {
+                 parentUl.before(newDiv);
+                 if (after.length === 0) parentUl.remove();
+             } else {
+                 // there are items before. newDiv comes after parentUl (which now only has before items)
+                 // Wait, we need to split parentUl.
+                 // Items before remain in parentUl.
+                 // newDiv is inserted after parentUl.
+                 // Items after are in ulAfter, inserted after newDiv.
+                 parentUl.after(newDiv);
+                 if (after.length > 0) newDiv.after(ulAfter);
+                 // remove moved items from parentUl
+                 after.forEach(li => li.remove()); // they are already moved to ulAfter
+                 currentBlock.remove(); // already removed
+             }
         }
-    } else if (lineBlock.classList.contains('task-item')) {
-        // Handle Task Item Backspace directly
-        // Purpose: Cleanly convert to regular text without residual styles
+        setCursorAtEnd(newDiv);
 
-        // 1. Remove the checkbox UI
-        const checkboxWrapper = lineBlock.querySelector('.custom-checkbox-wrapper');
+    } else if (currentBlock.classList.contains('task-item')) {
+        // Strip task item style
+        const checkboxWrapper = currentBlock.querySelector('.custom-checkbox-wrapper');
         if (checkboxWrapper) checkboxWrapper.remove();
 
-        // 2. Remove class to strip styling (margins/flex)
-        lineBlock.classList.remove('task-item');
-        lineBlock.classList.remove('completed');
+        currentBlock.classList.remove('task-item');
+        currentBlock.classList.remove('completed');
 
-        // 3. Ensure it's just a div (unwrapBlock might be overkill if we just strip classes)
-        // If unwrapBlock does more (like handling tag changes), we can use it, but stripping usually works for DIVs
-        if (lineBlock.tagName !== 'DIV') {
-            const newDiv = unwrapBlock(lineBlock);
-            setCursorAtEnd(newDiv);
-        } else {
-            // It's already a DIV, just stripped of class. Ensure cursor is at start? 
-            // Backspace at start usually implies merging with previous if not special, 
-            // but here we are converting special to normal. Cursor should stay at start of content.
-            // But logic says: "removal process". 
-            // If I backspace at start of "[ ] Text", I expect "Text". 
+        // It becomes a div. Ensure it has content or BR
+        if (!currentBlock.innerHTML.trim()) currentBlock.innerHTML = '<br>';
 
-            // Ensure lineBlock is clean
-            if (!lineBlock.textContent.trim()) lineBlock.innerHTML = '<br>'; // Handle empty case
-
-            // We need to place cursor at start of text
-            const range = document.createRange();
-            range.selectNodeContents(lineBlock);
-            range.collapse(true); // Start
-            const sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-        }
+        // Reset cursor to start
+        const range = document.createRange();
+        range.selectNodeContents(currentBlock);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
     } else {
-        // Non-list special blocks
-        const newDiv = unwrapBlock(lineBlock);
+        // H2, H3, Blockquote -> P
+        const newDiv = unwrapBlock(currentBlock);
         setCursorAtEnd(newDiv);
     }
     saveCurrentNote();
@@ -433,80 +535,162 @@ function handleEnter(e) {
     const sel = window.getSelection();
     if (!sel.rangeCount) return;
     const node = sel.anchorNode;
-    const lineBlock = getLineBlock(node);
-    if (!lineBlock) return;
+    const currentBlock = getCurrentBlock(node);
+    if (!currentBlock) return;
 
-    if (lineBlock.tagName === 'LI') {
+    if (currentBlock.tagName === 'LI') {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
 
-        // Check if empty (escape list)
-        const text = lineBlock.textContent.trim();
-        if (!text) {
-            // Convert to paragraph
-            const newP = document.createElement('div');
-            newP.innerHTML = '<br>';
+        const text = currentBlock.textContent.trim();
+        // Check if empty -> Escape list
+        // Note: textContent might contain zero-width space
+        if (!text || text === '\u200B') {
+             // Empty LI: Escape list
+             const parentUl = currentBlock.parentElement;
+             const newP = document.createElement('div');
+             newP.innerHTML = '<br>';
 
-            const parentUl = lineBlock.parentNode;
-            if (parentUl.children.length === 1) {
-                parentUl.replaceWith(newP);
-            } else {
-                // Split list logic similar to backspace but for Enter
-                // Or simpler: insert newP after UL?
-                // Standard behavior: break the list.
-                const index = Array.from(parentUl.children).indexOf(lineBlock);
-                const after = Array.from(parentUl.children).slice(index + 1);
+             if (parentUl.children.length === 1) {
+                 parentUl.replaceWith(newP);
+             } else {
+                 if (currentBlock === parentUl.lastElementChild) {
+                     currentBlock.remove();
+                     parentUl.after(newP);
+                 } else {
+                     // Split list
+                     const index = Array.from(parentUl.children).indexOf(currentBlock);
+                     const after = Array.from(parentUl.children).slice(index + 1);
 
-                const fragment = document.createDocumentFragment();
-                fragment.appendChild(newP);
-                if (after.length) {
-                    const ulAfter = document.createElement('ul');
-                    after.forEach(li => ulAfter.appendChild(li));
-                    fragment.appendChild(ulAfter);
-                }
+                     const ulAfter = document.createElement('ul');
+                     after.forEach(li => ulAfter.appendChild(li));
 
-                // Remove current LI
-                lineBlock.remove();
-
-                // Insert after parentUl
-                parentUl.parentNode.insertBefore(fragment, parentUl.nextSibling);
-            }
-            setCursorAtEnd(newP);
+                     currentBlock.remove();
+                     parentUl.after(newP);
+                     if (ulAfter.children.length > 0) newP.after(ulAfter);
+                 }
+             }
+             setCursorAtEnd(newP);
         } else {
+            // New LI
             const newLi = document.createElement('li');
             newLi.innerHTML = '&#8203;';
-            lineBlock.parentNode.insertBefore(newLi, lineBlock.nextSibling);
+            currentBlock.after(newLi);
             setCursorAtEnd(newLi);
         }
         saveCurrentNote();
         isProcessing = false;
-    } else if (lineBlock.classList.contains('task-item')) {
+    } else if (currentBlock.classList.contains('task-item')) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
 
-        // Always exit list on Enter (User preference)
-        const newP = document.createElement('div');
-        newP.innerHTML = '<br>';
+        const text = currentBlock.textContent.trim();
+        // Check if empty -> Escape task list
+        if (!text || text === '\u200B') {
+            const newP = document.createElement('div');
+            newP.innerHTML = '<br>';
+            currentBlock.replaceWith(newP);
+            setCursorAtEnd(newP);
+        } else {
+             // Continue Task List
+             const newTask = document.createElement('div');
+             newTask.className = 'task-item';
+             newTask.innerHTML = `
+                <label class="custom-checkbox-wrapper" contenteditable="false">
+                    <input type="checkbox">
+                    <span class="checkmark"></span>
+                </label>
+                <span style="flex:1;">&#8203;</span>
+            `;
+             const cb = newTask.querySelector('input');
+             cb.addEventListener('click', function () {
+                this.closest('.task-item').classList.toggle('completed');
+                saveCurrentNote();
+             });
 
-        // Insert new line after current task
-        lineBlock.parentNode.insertBefore(newP, lineBlock.nextSibling);
-        setCursorAtEnd(newP);
-
+             currentBlock.after(newTask);
+             const contentSpan = newTask.querySelector('span:last-child');
+             setCursorAtEnd(contentSpan);
+        }
         saveCurrentNote();
         isProcessing = false;
-    } else if (lineBlock.tagName === 'H2' || lineBlock.tagName === 'H3' || lineBlock.tagName === 'BLOCKQUOTE') {
+    } else if (['H1','H2','H3','BLOCKQUOTE'].includes(currentBlock.tagName)) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
 
         const newP = document.createElement('div');
         newP.innerHTML = '<br>';
-        lineBlock.parentNode.insertBefore(newP, lineBlock.nextSibling);
+        currentBlock.after(newP);
         setCursorAtEnd(newP);
         saveCurrentNote();
         isProcessing = false;
+    }
+}
+
+// --- Tab handler (Indentation) ---
+function handleTab(e) {
+    if (e.key !== 'Tab' || isProcessing) return;
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const node = sel.anchorNode;
+    const currentBlock = getCurrentBlock(node);
+    if (!currentBlock) return;
+
+    // Only handle Tab for LIs for now
+    if (currentBlock.tagName === 'LI') {
+        e.preventDefault();
+        isProcessing = true;
+        pushToUndo();
+
+        if (e.shiftKey) {
+            // Unindent (Shift + Tab)
+            const parentUl = currentBlock.parentElement;
+            const grandparentLi = parentUl.parentElement;
+
+            // Check if nested inside another LI (e.g. UL > LI > UL > LI)
+            if (grandparentLi && grandparentLi.tagName === 'LI') {
+                 // Move current LI after grandparent LI
+                 const greatGrandparentUl = grandparentLi.parentElement;
+                 greatGrandparentUl.insertBefore(currentBlock, grandparentLi.nextSibling);
+                 // Cleanup empty UL
+                 if (parentUl.children.length === 0) parentUl.remove();
+                 setCursorAtEnd(currentBlock);
+            }
+        } else {
+            // Indent (Tab)
+            const prevLi = currentBlock.previousElementSibling;
+            if (prevLi && prevLi.tagName === 'LI') {
+                let nestedUl = prevLi.querySelector('ul');
+                if (!nestedUl) {
+                    nestedUl = document.createElement('ul');
+                    prevLi.appendChild(nestedUl);
+                }
+                nestedUl.appendChild(currentBlock);
+                setCursorAtEnd(currentBlock);
+            }
+        }
+        saveCurrentNote();
+        isProcessing = false;
+    }
+}
+
+// --- Standard Shortcuts (Bold, Italic, Underline) ---
+function handleStandardShortcuts(e) {
+    if (e.ctrlKey || e.metaKey) {
+        let cmd = '';
+        if (e.key === 'b') cmd = 'bold';
+        else if (e.key === 'i') cmd = 'italic';
+        else if (e.key === 'u') cmd = 'underline';
+
+        if (cmd) {
+            e.preventDefault();
+            document.execCommand(cmd, false, null);
+            saveCurrentNote();
+            updateFontDisplay();
+        }
     }
 }
 
@@ -557,37 +741,73 @@ editorContextMenu.addEventListener('click', (e) => {
 
     // Get current line block
     const sel = window.getSelection();
-    let lineBlock = null;
+    let currentBlock = null;
     if (sel.rangeCount) {
-        lineBlock = getLineBlock(sel.anchorNode);
+        currentBlock = getCurrentBlock(sel.anchorNode);
     }
-    if (!lineBlock) {
+    if (!currentBlock) {
         // If no selection, use first child? fallback: create new line at end
-        lineBlock = document.createElement('div');
-        writingCanvas.appendChild(lineBlock);
+        currentBlock = document.createElement('div');
+        writingCanvas.appendChild(currentBlock);
     }
 
     pushToUndo();
 
+    // Helper for transformation inside Context Menu
+    function transformBlockCtx(newTagName, className='') {
+         if (currentBlock.tagName === 'LI') {
+            const parentUl = currentBlock.parentElement;
+            const newEl = document.createElement(newTagName);
+            if (className) newEl.className = className;
+
+            // Move content
+            while (currentBlock.firstChild) newEl.appendChild(currentBlock.firstChild);
+            if (!newEl.innerHTML.trim()) newEl.innerHTML = '&#8203;';
+
+            // Split list logic
+            const index = Array.from(parentUl.children).indexOf(currentBlock);
+            const after = Array.from(parentUl.children).slice(index + 1);
+
+            parentUl.after(newEl);
+
+            if (after.length > 0) {
+                const ulAfter = document.createElement('ul');
+                after.forEach(li => ulAfter.appendChild(li));
+                newEl.after(ulAfter);
+            }
+
+            currentBlock.remove();
+            if (parentUl.children.length === 0) parentUl.remove();
+
+            return newEl;
+         } else {
+             return convertBlockTo(newTagName, currentBlock, true, className);
+         }
+    }
+
     if (action === 'heading1') {
-        const newEl = convertBlockTo('h2', lineBlock); // using h2 for heading1
+        const newEl = transformBlockCtx('h2');
         setCursorAtEnd(newEl);
     } else if (action === 'heading2') {
-        const newEl = convertBlockTo('h3', lineBlock);
+        const newEl = transformBlockCtx('h3');
         setCursorAtEnd(newEl);
     } else if (action === 'bulletList') {
+        // Converting TO list
+        if (currentBlock.tagName === 'LI') return;
+
         const ul = document.createElement('ul');
         const li = document.createElement('li');
-        if (lineBlock.nodeType === 3) {
-            li.textContent = lineBlock.textContent;
+        if (currentBlock.nodeType === 3) {
+            li.textContent = currentBlock.textContent;
         } else {
-            while (lineBlock.firstChild) li.appendChild(lineBlock.firstChild);
+            while (currentBlock.firstChild) li.appendChild(currentBlock.firstChild);
         }
         if (!li.textContent.trim()) li.innerHTML = '&#8203;';
         ul.appendChild(li);
-        lineBlock.replaceWith(ul);
+        currentBlock.replaceWith(ul);
         setCursorAtEnd(li);
     } else if (action === 'checkbox') {
+        // Converting TO checkbox
         const taskDiv = document.createElement('div');
         taskDiv.className = 'task-item';
         taskDiv.innerHTML = `
@@ -602,18 +822,32 @@ editorContextMenu.addEventListener('click', (e) => {
             this.closest('.task-item').classList.toggle('completed');
             saveCurrentNote();
         });
-        // Move content if any
+
         const contentSpan = taskDiv.querySelector('span:last-child');
-        if (lineBlock.nodeType === 3) {
-            contentSpan.textContent = lineBlock.textContent;
-        } else {
-            while (lineBlock.firstChild) contentSpan.appendChild(lineBlock.firstChild);
-        }
+        const source = currentBlock;
+        while (source.firstChild) contentSpan.appendChild(source.firstChild);
         if (!contentSpan.textContent.trim()) contentSpan.innerHTML = '&#8203;';
-        lineBlock.replaceWith(taskDiv);
+
+        if (source.tagName === 'LI') {
+            const parentUl = source.parentElement;
+            const index = Array.from(parentUl.children).indexOf(source);
+            const after = Array.from(parentUl.children).slice(index + 1);
+
+            parentUl.after(taskDiv);
+            if (after.length > 0) {
+                const ulAfter = document.createElement('ul');
+                after.forEach(li => ulAfter.appendChild(li));
+                taskDiv.after(ulAfter);
+            }
+            source.remove();
+            if (parentUl.children.length === 0) parentUl.remove();
+        } else {
+            source.replaceWith(taskDiv);
+        }
         setCursorAtEnd(contentSpan);
+
     } else if (action === 'blockquote') {
-        const newEl = convertBlockTo('blockquote', lineBlock);
+        const newEl = transformBlockCtx('blockquote');
         setCursorAtEnd(newEl);
     } else if (color) {
         applyColorAtCursor(color);
@@ -747,6 +981,8 @@ writingCanvas.addEventListener('input', handleInlineShortcuts);
 writingCanvas.addEventListener('keydown', (e) => {
     if (e.key === 'Backspace') handleBackspace(e);
     if (e.key === 'Enter') handleEnter(e);
+    if (e.key === 'Tab') handleTab(e);
+    handleStandardShortcuts(e);
 });
 writingCanvas.addEventListener('click', () => {
     updateFontDisplay();
