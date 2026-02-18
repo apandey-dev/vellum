@@ -1,13 +1,13 @@
 // js/ui-handlers.js
 // Handlers for sidebar and header buttons
 
-import { supabase } from './supabase-client.js';
+import { supabase } from '/js/supabase-client.js';
 import {
     activeNoteId, notes, folders, renderNoteChips, loadActiveNote,
     showFormattingIndicator, setActiveFolder, setActiveNote, saveCurrentNote,
     loadFolders, loadNotes, activeFolderId
-} from './editor.js';
-import { openModal, closeModal } from './modals.js';
+} from '/js/editor.js';
+import { openModal, closeModal } from '/js/modals.js';
 
 export function setupUIListeners(userId) {
     // --- SIDEBAR BUTTONS ---

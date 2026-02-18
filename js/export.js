@@ -1,8 +1,8 @@
 // js/export.js
 // Export functionality (PDF, Markdown, Text)
 
-import { notes, activeNoteId, showFormattingIndicator } from './editor.js';
-import { openModal, closeModal } from './modals.js';
+import { notes, activeNoteId, showFormattingIndicator } from '/js/editor.js';
+import { openModal, closeModal } from '/js/modals.js';
 
 export function setupExportListeners() {
     const exportBtn = document.getElementById('exportBtn');

@@ -1,8 +1,8 @@
 // js/editor.js
 // Editor functionality and Note management
 
-import { supabase } from './supabase-client.js';
-import { escapeHtml } from './utils.js';
+import { supabase } from '/js/supabase-client.js';
+import { escapeHtml } from '/js/utils.js';
 
 // --- CONFIG ---
 const formattingConfig = {

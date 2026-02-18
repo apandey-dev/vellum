@@ -1,17 +1,17 @@
 // js/app-init.js
 // Main application initialization sequence
 
-import { checkAuthAndProfile, updateProfileUI } from './auth.js';
-import { handleRoute } from './router.js';
+import { checkAuthAndProfile, updateProfileUI } from '/js/auth.js';
+import { handleRoute } from '/js/router.js';
 import {
     loadFolders, createFolder, loadNotes, createNote,
     renderNoteChips, loadActiveNote, setActiveFolder, setActiveNote,
     setupEditorListeners, folders, notes
-} from './editor.js';
-import { setupModalListeners } from './modals.js';
-import { setupSearchListeners } from './search.js';
-import { setupExportListeners } from './export.js';
-import { setupUIListeners } from './ui-handlers.js';
+} from '/js/editor.js';
+import { setupModalListeners } from '/js/modals.js';
+import { setupSearchListeners } from '/js/search.js';
+import { setupExportListeners } from '/js/export.js';
+import { setupUIListeners } from '/js/ui-handlers.js';
 
 async function initApp() {
     console.log('MindJournal: Starting global initialization...');

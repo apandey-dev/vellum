@@ -1,9 +1,9 @@
 // js/search.js
 // Search functionality
 
-import { notes, folders, setActiveFolder, setActiveNote, renderNoteChips, loadActiveNote, saveCurrentNote, activeNoteId } from './editor.js';
-import { escapeHtml } from './utils.js';
-import { openModal, closeModal } from './modals.js';
+import { notes, folders, setActiveFolder, setActiveNote, renderNoteChips, loadActiveNote, saveCurrentNote, activeNoteId } from '/js/editor.js';
+import { escapeHtml } from '/js/utils.js';
+import { openModal, closeModal } from '/js/modals.js';
 
 export function setupSearchListeners() {
     const searchBtn = document.getElementById('searchBtn');

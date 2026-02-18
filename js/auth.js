@@ -1,7 +1,7 @@
 // js/auth.js
 // Authentication and session management
 
-import { supabase } from './supabase-client.js';
+import { supabase } from '/js/supabase-client.js';
 
 export async function validateSession() {
     const { data: { session }, error } = await supabase.auth.getSession();

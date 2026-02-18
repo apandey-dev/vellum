@@ -9,10 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #f8fafc;
+            --bg-color: #f2f4f7;
+            --grid-color: #e4e7ec;
             --card-bg: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
+            --text-primary: #101828;
+            --text-secondary: #667085;
             --accent-color: #3b82f6;
             --success-color: #10b981;
             --error-color: #ef4444;
@@ -21,6 +22,8 @@
         body {
             font-family: 'Fredoka', sans-serif;
             background-color: var(--bg-color);
+            background-image: radial-gradient(var(--grid-color) 1px, transparent 1px);
+            background-size: 24px 24px;
             color: var(--text-primary);
             display: flex;
             align-items: center;
@@ -96,6 +99,17 @@
 <body>
 
     <div class="confirm-card">
+        <div style="margin-bottom: 24px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 3C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3H5Z" fill="#3B82F6"/>
+                <path d="M7 8H17" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M7 12H17" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M7 16H13" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M16 16L19 13" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="18.5" cy="14.5" r="1.5" fill="white"/>
+            </svg>
+        </div>
+
         <!-- LOADING STATE -->
         <div id="state-loading">
             <div class="icon-box">⏳</div>
@@ -123,7 +137,7 @@
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module">
-        import { supabase } from '../js/supabase-client.js';
+        import { supabase } from '/js/supabase-client.js';
 
         async function handleConfirmation() {
             const urlParams = new URLSearchParams(window.location.search);

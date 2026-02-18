@@ -8,6 +8,8 @@ This document summarizes the recent architectural changes and provides instructi
 - **Improved Initialization:** The app now follows a strict lifecycle: Session Check → Routing → Data Loading → UI Rendering.
 - **Robust Modals:** Modal handling now uses event delegation and is less prone to "undefined" errors.
 - **Custom Confirmation Flow:** A professional verification screen has been added at `/auth/confirm.html`.
+- **Absolute Pathing:** The app now uses absolute paths for all assets and JS modules, ensuring reliability across deep routes.
+- **Automated Testing:** Added a test suite for core utility functions in `tests/utils.test.mjs`.
 
 ---
 
@@ -146,6 +148,15 @@ Replace the content of the "Confirm Signup" template with the following HTML.
 </body>
 </html>
 ```
+
+---
+
+## 🧪 Testing
+The project includes a suite of unit tests for core logic. To run the tests:
+```bash
+node tests/utils.test.mjs
+```
+This ensures that critical functions like `escapeHtml` are working correctly.
 
 ---
 

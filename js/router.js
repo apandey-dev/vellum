@@ -1,8 +1,8 @@
 // js/router.js
 // Router and View management
 
-import { supabase } from './supabase-client.js';
-import { checkAuthAndProfile } from './auth.js';
+import { supabase } from '/js/supabase-client.js';
+import { checkAuthAndProfile } from '/js/auth.js';
 
 export const VIEWS = {
     DASHBOARD: 'view-dashboard',
@@ -38,7 +38,7 @@ export async function handleRoute() {
     if (path.startsWith(ROUTES.PUBLIC)) {
         const noteId = path.split('/').pop();
         if (noteId) {
-            // Public note logic...
+            await loadPublicNote(noteId);
             return;
         }
     }
@@ -65,11 +65,43 @@ export async function handleRoute() {
         // Trigger dashboard initialization if authenticated
         const authStatus = await checkAuthAndProfile();
         if (authStatus.authenticated) {
-            const { initDashboard } = await import('./app-init.js');
+            const { initDashboard } = await import('/js/app-init.js');
             initDashboard(authStatus.user, authStatus.profile, authStatus.isActive);
         }
     } else {
         navigateTo(user ? ROUTES.DASHBOARD : ROUTES.LOGIN);
+    }
+}
+
+async function loadPublicNote(noteId) {
+    showView(VIEWS.LOADING);
+    try {
+        const { data, error } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('id', noteId)
+            .eq('is_public', true)
+            .single();
+
+        if (error || !data) {
+            showView(VIEWS.PUBLIC);
+            document.getElementById('public-note-title').textContent = "Note Not Found";
+            document.getElementById('public-note-content').textContent = "This note does not exist or is no longer public.";
+            return;
+        }
+
+        showView(VIEWS.PUBLIC);
+        document.getElementById('public-note-title').textContent = data.title || "Untitled";
+        document.getElementById('public-note-content').innerHTML = data.content || "";
+
+        // Update document title and meta for SEO
+        document.title = `${data.title || 'Untitled'} - MindJournal Public Note`;
+
+    } catch (err) {
+        console.error("Error loading public note:", err);
+        showView(VIEWS.PUBLIC);
+        document.getElementById('public-note-title').textContent = "Error";
+        document.getElementById('public-note-content').textContent = "An error occurred while loading this note.";
     }
 }
 
