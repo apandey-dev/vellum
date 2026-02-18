@@ -65,17 +65,20 @@ export function setupModalListeners() {
 
     // Outside click to close
     window.addEventListener('click', (e) => {
-        if (e.target.classList && (e.target.classList.contains('form-modal') || e.target.classList.contains('confirm-modal'))) {
+        if (!e.target || !e.target.classList) return;
+        if (typeof e.target.classList.contains === 'function' &&
+            (e.target.classList.contains('form-modal') || e.target.classList.contains('confirm-modal'))) {
             closeModal(e.target);
         }
     });
 
-    // Close buttons
-    document.querySelectorAll('.form-btn.secondary, .confirm-btn.cancel, [id^="close"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const modal = e.target.closest('.form-modal, .confirm-modal');
+    // Close buttons (using Event Delegation for robustness)
+    document.addEventListener('click', (e) => {
+        const closeBtn = e.target.closest('.form-btn.secondary, .confirm-btn.cancel, [id^="close"]');
+        if (closeBtn) {
+            const modal = closeBtn.closest('.form-modal, .confirm-modal');
             if (modal) closeModal(modal);
-        });
+        }
     });
 }
 

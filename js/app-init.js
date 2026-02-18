@@ -14,34 +14,44 @@ import { setupExportListeners } from './export.js';
 import { setupUIListeners } from './ui-handlers.js';
 
 async function initApp() {
-    console.log('Initializing MindJournal...');
+    console.log('MindJournal: Starting initialization...');
 
-    // 1. Validate session and profile
+    // 1. Immediate UI Setup (Non-blocking)
+    setupModalListeners();
+    attachGlobalListeners();
+    console.log('MindJournal: Initial UI listeners attached.');
+
+    // 2. Validate session and profile
+    console.log('MindJournal: Checking auth status...');
     const authStatus = await checkAuthAndProfile();
     const path = window.location.pathname;
 
     if (!authStatus.authenticated) {
         if (path !== '/login' && path !== '/signup' && !path.startsWith('/public/')) {
-            console.log('Not authenticated, redirecting...');
+            console.log('MindJournal: Not authenticated, redirecting to login.');
             window.location.href = '/login';
             return;
         }
     }
 
-    // 0. Handle Routing (View switching)
+    // 3. Handle Routing (View switching)
     await handleRoute();
-    if (path === '/login' || path === '/signup' || path.startsWith('/public/')) return;
+    if (path === '/login' || path === '/signup' || path.startsWith('/public/')) {
+        console.log('MindJournal: On auth or public page, skipping dashboard init.');
+        return;
+    }
 
     const { user, profile, approved } = authStatus;
     updateProfileUI(user);
 
     if (!approved) {
-        console.log('User pending approval.');
+        console.log('MindJournal: User pending approval.');
         showPendingUI(profile);
         return;
     }
 
-    // 2. Load Folders
+    // 4. Load Data
+    console.log('MindJournal: Loading folders...');
     await loadFolders(user.id);
 
     // 3. Ensure Default Folder
@@ -54,10 +64,11 @@ async function initApp() {
         setActiveFolder(folders[0].id);
     }
 
-    // 4. Load Notes
+    // 5. Load Notes
+    console.log('MindJournal: Loading notes...');
     await loadNotes(user.id);
 
-    // 5. Ensure Default Note
+    // 6. Ensure Default Note
     const currentFolderId = folders[0]?.id;
     const folderNotes = notes.filter(n => n.folder_id === currentFolderId);
 
@@ -70,19 +81,19 @@ async function initApp() {
         setActiveNote(folderNotes[0].id);
     }
 
-    // 6. Render UI
+    // 7. Render UI
+    console.log('MindJournal: Rendering UI...');
     renderNoteChips();
     loadActiveNote();
 
-    // 7. Attach Listeners
+    // 8. Feature Setup
+    console.log('MindJournal: Setting up features...');
     setupEditorListeners();
-    setupModalListeners();
     setupSearchListeners();
     setupExportListeners();
     setupUIListeners(user.id);
-    attachGlobalListeners();
 
-    console.log('MindJournal initialized successfully.');
+    console.log('MindJournal: Initialization complete.');
 }
 
 function showPendingUI(profile) {

@@ -200,6 +200,7 @@ export function setupUIListeners(userId) {
     if (shareToggle) {
         shareToggle.addEventListener('click', async () => {
             if (!activeNoteId) return;
+            if (!shareToggle.classList) return;
             const isNowPublic = !shareToggle.classList.contains('public');
             const shareLinkSection = document.getElementById('shareLinkSection');
             const sharePrivateMsg = document.getElementById('sharePrivateMsg');

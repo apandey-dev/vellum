@@ -723,7 +723,13 @@ export function setupEditorListeners() {
     if (fontSelectorBtn && fontDropdown) {
         fontSelectorBtn.addEventListener('mousedown', saveCursorRange);
         fontSelectorBtn.addEventListener('click', (e) => { e.stopPropagation(); fontSelectorBtn.classList.toggle('active'); fontDropdown.classList.toggle('active'); });
-        document.addEventListener('click', (e) => { if (!fontSelectorBtn.contains(e.target) && !fontDropdown.contains(e.target)) { fontSelectorBtn.classList.remove('active'); fontDropdown.classList.remove('active'); } });
+        document.addEventListener('click', (e) => {
+            if (!fontSelectorBtn || !fontDropdown) return;
+            if (!fontSelectorBtn.contains(e.target) && !fontDropdown.contains(e.target)) {
+                fontSelectorBtn.classList.remove('active');
+                fontDropdown.classList.remove('active');
+            }
+        });
         fontOptions.forEach(option => {
             option.addEventListener('click', () => { const selectedFont = option.dataset.font; applyFontAtCursor(selectedFont); fontSelectorBtn.classList.remove('active'); fontDropdown.classList.remove('active'); });
         });
