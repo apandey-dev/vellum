@@ -845,16 +845,43 @@ function getCurrentFont() {
     const selection = window.getSelection();
     if (!selection.rangeCount) return 'Fredoka';
     let node = selection.getRangeAt(0).startContainer;
-    if (node.nodeType === 3) node = node.parentElement;
+
+    // Check if collapsed
+    if (selection.isCollapsed) {
+        // If caret, check current element's computed style, but prioritize any immediate span parent
+        if (node.nodeType === 3) node = node.parentElement;
+
+        while (node && node !== writingCanvas) {
+            if (node.tagName === 'SPAN' && node.style.fontFamily) {
+                // Return font from span if explicitly set
+                // Need to match against formattingConfig
+                const fam = node.style.fontFamily;
+                for (const [name, val] of Object.entries(formattingConfig.fonts)) {
+                    if (fam.includes(name) || val.includes(fam)) return name;
+                }
+            }
+            node = node.parentElement;
+        }
+        // If not found in spans, check computed style?
+        // Better to return default if no span found, or check last active command?
+        // Let's rely on standard computed style fallback
+    } else {
+        if (node.nodeType === 3) node = node.parentElement;
+    }
+
+    // Standard check
     while (node && node !== writingCanvas) {
         const computed = window.getComputedStyle(node).fontFamily;
         for (const [name, fam] of Object.entries(formattingConfig.fonts)) {
-            if (computed.includes(name.replace(/\s+/g, ''))) return name;
+            // Check if computed font family matches our known fonts
+            // computed usually returns quoted "Fredoka", sans-serif
+            if (computed.includes(name)) return name;
         }
         node = node.parentElement;
     }
     return 'Fredoka';
 }
+
 function updateFontDisplay() {
     const current = getCurrentFont();
     currentFontSpan.textContent = current;
@@ -863,10 +890,41 @@ function updateFontDisplay() {
         if (opt.dataset.font === current) opt.classList.add('active');
     });
 }
+
 function applyFontAtCursor(fontName) {
     if (savedCursorRange) restoreCursorRange();
     else writingCanvas.focus();
-    document.execCommand('fontName', false, fontName);
+
+    const selection = window.getSelection();
+    if (selection.isCollapsed) {
+        // --- REALTIME FONT APPLICATION FIX ---
+        // If selection is just a cursor, insert a zero-width space wrapped in a span with the font.
+        // This ensures the NEXT character typed falls into this span.
+
+        const span = document.createElement('span');
+        span.style.fontFamily = formattingConfig.fonts[fontName];
+        span.innerHTML = '&#8203;'; // Zero-width space
+
+        const range = selection.getRangeAt(0);
+        range.deleteContents(); // Should be empty anyway
+        range.insertNode(span);
+
+        // Move cursor inside the span, after the zero-width space?
+        // Actually, replacing content usually selects it? No.
+        // We need to place cursor *inside* the span.
+
+        range.setStart(span, 1); // After the char
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        // Update display immediately
+        updateFontDisplay();
+    } else {
+        // Standard behavior for selected text
+        document.execCommand('fontName', false, formattingConfig.fonts[fontName]);
+    }
+
     saveCurrentNote();
 }
 
