@@ -8,6 +8,7 @@ This document summarizes the recent architectural changes and provides instructi
 - **Improved Initialization:** The app now follows a strict lifecycle: Session Check → Routing → Data Loading → UI Rendering.
 - **Robust Modals:** Modal handling now uses event delegation and is less prone to "undefined" errors.
 - **Custom Confirmation Flow:** A professional verification screen has been added at `/auth/confirm.html`.
+- **Automated Activation:** Accounts are now automatically activated as soon as the user confirms their email.
 - **Absolute Pathing:** The app now uses absolute paths for all assets and JS modules, ensuring reliability across deep routes.
 - **Automated Testing:** Added a test suite for core utility functions in `tests/utils.test.mjs`.
 
@@ -22,9 +23,13 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT,
     full_name TEXT,
-    status TEXT CHECK (status IN ('pending', 'active')) DEFAULT 'pending',
+    status TEXT DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+-- Ensure correct check constraint
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_status_check;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_status_check CHECK (status IN ('pending', 'active'));
 
 -- Enable RLS
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -101,6 +106,24 @@ DO $$ BEGIN
       AFTER INSERT ON auth.users
       FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 EXCEPTION WHEN undefined_object THEN NULL; END $$;
+
+-- 5. AUTO-ACTIVATE ON EMAIL CONFIRM TRIGGER
+CREATE OR REPLACE FUNCTION public.activate_profile_on_confirm()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.email_confirmed_at IS NOT NULL AND (OLD.email_confirmed_at IS NULL OR OLD.email_confirmed_at IS DISTINCT FROM NEW.email_confirmed_at) THEN
+    UPDATE public.profiles SET status = 'active' WHERE id = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DO $$ BEGIN
+    DROP TRIGGER IF EXISTS on_auth_user_confirmed ON auth.users;
+    CREATE TRIGGER on_auth_user_confirmed
+      AFTER UPDATE ON auth.users
+      FOR EACH ROW EXECUTE PROCEDURE public.activate_profile_on_confirm();
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
 ```
 
 ---
@@ -160,10 +183,14 @@ This ensures that critical functions like `escapeHtml` are working correctly.
 
 ---
 
-## 🛡️ Admin Instructions: Approving Users
-When a user signs up, their status is `pending` by default. They will see the "Account Pending Approval" screen.
+## 🛡️ User Activation
+By default, the system is **automated**:
+1. When a user signs up, their status is `pending`.
+2. As soon as they click the link in their **confirmation email**, the database trigger automatically updates their status to `active`.
+3. They can then immediately access the dashboard and start writing.
 
-To approve a user and allow them to start writing notes:
+### Manual Activation (Admin)
+If you need to manually approve a user without them confirming their email:
 1. Go to the **Supabase Table Editor**.
 2. Select the `profiles` table.
 3. Find the user's row and change the `status` from `pending` to `active`.

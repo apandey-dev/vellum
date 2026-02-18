@@ -8,9 +8,13 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT,
     full_name TEXT,
-    status TEXT CHECK (status IN ('pending', 'active')) DEFAULT 'pending',
+    status TEXT DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+-- Fix/Ensure the status check constraint
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_status_check;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_status_check CHECK (status IN ('pending', 'active'));
 
 -- Enable RLS
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -122,7 +126,25 @@ DO $$ BEGIN
       FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
--- 2. Auto-update updated_at timestamp
+-- 2. Auto-activate Profile on Email Confirmation
+CREATE OR REPLACE FUNCTION public.activate_profile_on_confirm()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.email_confirmed_at IS NOT NULL AND (OLD.email_confirmed_at IS NULL OR OLD.email_confirmed_at IS DISTINCT FROM NEW.email_confirmed_at) THEN
+    UPDATE public.profiles SET status = 'active' WHERE id = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DO $$ BEGIN
+    DROP TRIGGER IF EXISTS on_auth_user_confirmed ON auth.users;
+    CREATE TRIGGER on_auth_user_confirmed
+      AFTER UPDATE ON auth.users
+      FOR EACH ROW EXECUTE PROCEDURE public.activate_profile_on_confirm();
+EXCEPTION WHEN undefined_object THEN NULL; END $$;
+
+-- 3. Auto-update updated_at timestamp
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -139,7 +161,12 @@ DO $$ BEGIN
 EXCEPTION WHEN undefined_object THEN NULL; END $$;
 
 -- ==========================================================
--- INSTRUCTIONS FOR ADMIN
+-- INSTRUCTIONS
 -- ==========================================================
--- To approve a user:
--- UPDATE profiles SET status = 'active' WHERE email = 'user@example.com';
+-- The system is now AUTOMATED:
+-- 1. User signs up -> Profile created as 'pending'.
+-- 2. User confirms email -> Trigger automatically sets status to 'active'.
+-- 3. User can now use the app immediately!
+
+-- Manual approval (if needed):
+-- UPDATE public.profiles SET status = 'active' WHERE email = 'user@example.com';
