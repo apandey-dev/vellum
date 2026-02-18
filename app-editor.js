@@ -273,9 +273,9 @@ function handleInlineShortcuts(e) {
         const li = document.createElement('li');
         // Move content
         if (currentBlock.nodeType === 3) {
-            li.textContent = currentBlock.textContent;
+             li.textContent = currentBlock.textContent;
         } else {
-            while (currentBlock.firstChild) li.appendChild(currentBlock.firstChild);
+             while (currentBlock.firstChild) li.appendChild(currentBlock.firstChild);
         }
         if (!li.textContent.trim()) li.innerHTML = '&#8203;';
         ul.appendChild(li);
@@ -378,24 +378,24 @@ function handleInlineShortcuts(e) {
         p.innerHTML = '<br>';
 
         if (currentBlock.tagName === 'LI') {
-            // Split list, insert HR, then P
-            const parentUl = currentBlock.parentElement;
-            const index = Array.from(parentUl.children).indexOf(currentBlock);
-            const after = Array.from(parentUl.children).slice(index + 1);
+             // Split list, insert HR, then P
+             const parentUl = currentBlock.parentElement;
+             const index = Array.from(parentUl.children).indexOf(currentBlock);
+             const after = Array.from(parentUl.children).slice(index + 1);
 
-            parentUl.after(hr);
-            hr.after(p);
+             parentUl.after(hr);
+             hr.after(p);
 
-            if (after.length > 0) {
-                const ulAfter = document.createElement('ul');
-                after.forEach(li => ulAfter.appendChild(li));
-                p.after(ulAfter);
-            }
-            currentBlock.remove();
-            if (parentUl.children.length === 0) parentUl.remove();
+             if (after.length > 0) {
+                 const ulAfter = document.createElement('ul');
+                 after.forEach(li => ulAfter.appendChild(li));
+                 p.after(ulAfter);
+             }
+             currentBlock.remove();
+             if (parentUl.children.length === 0) parentUl.remove();
         } else {
-            currentBlock.replaceWith(hr);
-            hr.after(p);
+             currentBlock.replaceWith(hr);
+             hr.after(p);
         }
 
         setCursorAtEnd(p);
@@ -449,7 +449,7 @@ function handleBackspace(e) {
     // NOTE: This logic is tricky. Browser handles text merging.
     // We only care if we are about to delete the BLOCK TYPE (e.g. merge H2 into P, or unwrap LI).
 
-    const isSpecial = ['H2', 'H3', 'LI', 'BLOCKQUOTE'].includes(currentBlock.tagName) || currentBlock.classList.contains('task-item');
+    const isSpecial = ['H2','H3','LI','BLOCKQUOTE'].includes(currentBlock.tagName) || currentBlock.classList.contains('task-item');
     if (!isSpecial) return;
 
     e.preventDefault();
@@ -459,7 +459,7 @@ function handleBackspace(e) {
     if (currentBlock.tagName === 'LI') {
         const parentUl = currentBlock.parentNode;
         // Logic: if empty or at start, unwrap LI to P (or merge with prev?)
-        // Standard behavior: 
+        // Standard behavior:
         // 1. If indented, unindent.
         // 2. If first item, unwrap to P.
         // 3. If middle item, merge with previous LI.
@@ -478,28 +478,28 @@ function handleBackspace(e) {
         if (parentUl.children.length === 1) {
             parentUl.replaceWith(newDiv);
         } else {
-            const index = Array.from(parentUl.children).indexOf(currentBlock);
-            const after = Array.from(parentUl.children).slice(index + 1);
-            const ulAfter = document.createElement('ul');
-            after.forEach(li => ulAfter.appendChild(li));
+             const index = Array.from(parentUl.children).indexOf(currentBlock);
+             const after = Array.from(parentUl.children).slice(index + 1);
+             const ulAfter = document.createElement('ul');
+             after.forEach(li => ulAfter.appendChild(li));
 
-            currentBlock.remove();
-            // insert newDiv after previous items (or parentUl start if index 0)
-            if (index === 0) {
-                parentUl.before(newDiv);
-                if (after.length === 0) parentUl.remove();
-            } else {
-                // there are items before. newDiv comes after parentUl (which now only has before items)
-                // Wait, we need to split parentUl.
-                // Items before remain in parentUl.
-                // newDiv is inserted after parentUl.
-                // Items after are in ulAfter, inserted after newDiv.
-                parentUl.after(newDiv);
-                if (after.length > 0) newDiv.after(ulAfter);
-                // remove moved items from parentUl
-                after.forEach(li => li.remove()); // they are already moved to ulAfter
-                currentBlock.remove(); // already removed
-            }
+             currentBlock.remove();
+             // insert newDiv after previous items (or parentUl start if index 0)
+             if (index === 0) {
+                 parentUl.before(newDiv);
+                 if (after.length === 0) parentUl.remove();
+             } else {
+                 // there are items before. newDiv comes after parentUl (which now only has before items)
+                 // Wait, we need to split parentUl.
+                 // Items before remain in parentUl.
+                 // newDiv is inserted after parentUl.
+                 // Items after are in ulAfter, inserted after newDiv.
+                 parentUl.after(newDiv);
+                 if (after.length > 0) newDiv.after(ulAfter);
+                 // remove moved items from parentUl
+                 after.forEach(li => li.remove()); // they are already moved to ulAfter
+                 currentBlock.remove(); // already removed
+             }
         }
         setCursorAtEnd(newDiv);
 
@@ -547,31 +547,31 @@ function handleEnter(e) {
         // Check if empty -> Escape list
         // Note: textContent might contain zero-width space
         if (!text || text === '\u200B') {
-            // Empty LI: Escape list
-            const parentUl = currentBlock.parentElement;
-            const newP = document.createElement('div');
-            newP.innerHTML = '<br>';
+             // Empty LI: Escape list
+             const parentUl = currentBlock.parentElement;
+             const newP = document.createElement('div');
+             newP.innerHTML = '<br>';
 
-            if (parentUl.children.length === 1) {
-                parentUl.replaceWith(newP);
-            } else {
-                if (currentBlock === parentUl.lastElementChild) {
-                    currentBlock.remove();
-                    parentUl.after(newP);
-                } else {
-                    // Split list
-                    const index = Array.from(parentUl.children).indexOf(currentBlock);
-                    const after = Array.from(parentUl.children).slice(index + 1);
+             if (parentUl.children.length === 1) {
+                 parentUl.replaceWith(newP);
+             } else {
+                 if (currentBlock === parentUl.lastElementChild) {
+                     currentBlock.remove();
+                     parentUl.after(newP);
+                 } else {
+                     // Split list
+                     const index = Array.from(parentUl.children).indexOf(currentBlock);
+                     const after = Array.from(parentUl.children).slice(index + 1);
 
-                    const ulAfter = document.createElement('ul');
-                    after.forEach(li => ulAfter.appendChild(li));
+                     const ulAfter = document.createElement('ul');
+                     after.forEach(li => ulAfter.appendChild(li));
 
-                    currentBlock.remove();
-                    parentUl.after(newP);
-                    if (ulAfter.children.length > 0) newP.after(ulAfter);
-                }
-            }
-            setCursorAtEnd(newP);
+                     currentBlock.remove();
+                     parentUl.after(newP);
+                     if (ulAfter.children.length > 0) newP.after(ulAfter);
+                 }
+             }
+             setCursorAtEnd(newP);
         } else {
             // New LI
             const newLi = document.createElement('li');
@@ -594,29 +594,29 @@ function handleEnter(e) {
             currentBlock.replaceWith(newP);
             setCursorAtEnd(newP);
         } else {
-            // Continue Task List
-            const newTask = document.createElement('div');
-            newTask.className = 'task-item';
-            newTask.innerHTML = `
+             // Continue Task List
+             const newTask = document.createElement('div');
+             newTask.className = 'task-item';
+             newTask.innerHTML = `
                 <label class="custom-checkbox-wrapper" contenteditable="false">
                     <input type="checkbox">
                     <span class="checkmark"></span>
                 </label>
                 <span style="flex:1;">&#8203;</span>
             `;
-            const cb = newTask.querySelector('input');
-            cb.addEventListener('click', function () {
+             const cb = newTask.querySelector('input');
+             cb.addEventListener('click', function () {
                 this.closest('.task-item').classList.toggle('completed');
                 saveCurrentNote();
-            });
+             });
 
-            currentBlock.after(newTask);
-            const contentSpan = newTask.querySelector('span:last-child');
-            setCursorAtEnd(contentSpan);
+             currentBlock.after(newTask);
+             const contentSpan = newTask.querySelector('span:last-child');
+             setCursorAtEnd(contentSpan);
         }
         saveCurrentNote();
         isProcessing = false;
-    } else if (['H1', 'H2', 'H3', 'BLOCKQUOTE'].includes(currentBlock.tagName)) {
+    } else if (['H1','H2','H3','BLOCKQUOTE'].includes(currentBlock.tagName)) {
         e.preventDefault();
         isProcessing = true;
         pushToUndo();
@@ -652,12 +652,12 @@ function handleTab(e) {
 
             // Check if nested inside another LI (e.g. UL > LI > UL > LI)
             if (grandparentLi && grandparentLi.tagName === 'LI') {
-                // Move current LI after grandparent LI
-                const greatGrandparentUl = grandparentLi.parentElement;
-                greatGrandparentUl.insertBefore(currentBlock, grandparentLi.nextSibling);
-                // Cleanup empty UL
-                if (parentUl.children.length === 0) parentUl.remove();
-                setCursorAtEnd(currentBlock);
+                 // Move current LI after grandparent LI
+                 const greatGrandparentUl = grandparentLi.parentElement;
+                 greatGrandparentUl.insertBefore(currentBlock, grandparentLi.nextSibling);
+                 // Cleanup empty UL
+                 if (parentUl.children.length === 0) parentUl.remove();
+                 setCursorAtEnd(currentBlock);
             }
         } else {
             // Indent (Tab)
@@ -754,8 +754,8 @@ editorContextMenu.addEventListener('click', (e) => {
     pushToUndo();
 
     // Helper for transformation inside Context Menu
-    function transformBlockCtx(newTagName, className = '') {
-        if (currentBlock.tagName === 'LI') {
+    function transformBlockCtx(newTagName, className='') {
+         if (currentBlock.tagName === 'LI') {
             const parentUl = currentBlock.parentElement;
             const newEl = document.createElement(newTagName);
             if (className) newEl.className = className;
@@ -780,9 +780,9 @@ editorContextMenu.addEventListener('click', (e) => {
             if (parentUl.children.length === 0) parentUl.remove();
 
             return newEl;
-        } else {
-            return convertBlockTo(newTagName, currentBlock, true, className);
-        }
+         } else {
+             return convertBlockTo(newTagName, currentBlock, true, className);
+         }
     }
 
     if (action === 'heading1') {
