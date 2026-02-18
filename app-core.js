@@ -3,12 +3,11 @@
 // ========================================
 
 // --- SUPABASE CONFIG ---
-// This relies on config.js being loaded BEFORE this script
+// Use the global client, but don't redeclare 'supabase' if it exists in global scope
 const supabase = window.supabaseClient;
 
 if (!supabase) {
     console.error('Supabase client not initialized! Check config.js.');
-    // Fallback or halt
     throw new Error('Supabase client missing');
 }
 
@@ -23,9 +22,11 @@ const themeIcon = document.getElementById('themeIcon');
 const html = document.documentElement;
 const writingCanvas = document.getElementById('writingCanvas');
 const formattingIndicator = document.getElementById('formattingIndicator');
-const logoutBtn = document.getElementById('logoutBtn'); // New
+// const logoutBtn = document.getElementById('logoutBtn'); // Removed for Profile UI
 
 // Modal elements
+const profileModal = document.getElementById('profileModal');
+const profileBtn = document.getElementById('profileBtn');
 const confirmModal = document.getElementById('confirmModal');
 const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
@@ -121,17 +122,44 @@ async function checkAuth() {
         await supabase.auth.signOut();
         if (window.navigateTo) window.navigateTo('/login');
         else window.location.href = '/login';
+    } else {
+        // Init Profile UI if active
+        updateProfileUI();
     }
 }
 
-// Logout Logic
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-        await supabase.auth.signOut();
-        // Force full reload to clear memory state
-        window.location.href = '/login';
+// Profile Logic
+function updateProfileUI() {
+    if (!currentUser) return;
+    const initial = (currentUser.user_metadata?.full_name?.[0] || currentUser.email?.[0] || 'U').toUpperCase();
+    const avatar = document.getElementById('userAvatar');
+    if (avatar) avatar.textContent = initial;
+}
+
+if (profileBtn) {
+    profileBtn.addEventListener('click', () => {
+        if (!currentUser) return;
+
+        // Populate Modal
+        document.getElementById('modalAvatar').textContent = document.getElementById('userAvatar').textContent;
+        document.getElementById('profileName').textContent = currentUser.user_metadata?.full_name || 'User';
+        document.getElementById('profileEmail').textContent = currentUser.email;
+        document.getElementById('profileDate').textContent = new Date(currentUser.created_at).toLocaleDateString();
+
+        // Show Modal
+        profileModal.classList.add('show');
+        pushToModalStack(profileModal);
     });
 }
+
+document.getElementById('closeProfileModal')?.addEventListener('click', () => {
+    profileModal.classList.remove('show');
+});
+
+document.getElementById('modalLogoutBtn')?.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+});
 
 // ==================== UNDO / REDO (Text Only for Supabase) ====================
 let undoStack = [];
@@ -1080,6 +1108,15 @@ function init() {
 // Expose init for SPA Router
 window.initDashboard = init;
 
+// Expose pushToUndo for editor (app-editor.js needs it)
+window.pushToUndo = pushToUndo;
+window.saveCurrentNote = saveCurrentNote;
+window.showFormattingIndicator = showFormattingIndicator;
+// Also need activeNoteId access? app-editor uses globals.
+// Since app-editor.js is also global, it expects 'notes', 'activeNoteId' to be global.
+// Breaking change: IIFE hides these.
+// We must expose shared state or keep app-core global but remove const redeclaration.
+
 // Modals Outside Click (Generic)
 window.onclick = (e) => {
     if (e.target.classList.contains('form-modal') || e.target.classList.contains('confirm-modal')) {
@@ -1089,6 +1126,8 @@ window.onclick = (e) => {
         noteContextMenu.classList.remove('show');
     }
 };
+
+// Ensure modal stack is respected for outside clicks if we want deep integration (optional for now, generic handler covers it)
 
 // Modal Close Buttons
 document.querySelectorAll('.form-btn.secondary, .confirm-btn.cancel').forEach(btn => {

@@ -2,6 +2,11 @@
 // mindJournal - ROUTER & SPA LOGIC
 // ========================================
 
+(function() {
+
+// Ensure we use the initialized client, not the global library
+const supabase = window.supabaseClient;
+
 const appState = {
     currentView: null,
     publicNoteId: null,
@@ -41,6 +46,19 @@ document.addEventListener('DOMContentLoaded', () => {
             navigateTo(e.target.pathname);
         }
     });
+
+    // 4. Session Persistence Handler
+    if (supabase) {
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT' || !session) {
+                // If on protected route, force redirect to login
+                const path = window.location.pathname;
+                if (path === ROUTES.DASHBOARD || path === ROUTES.ROOT) {
+                    navigateTo(ROUTES.LOGIN);
+                }
+            }
+        });
+    }
 });
 
 // --- NAVIGATION ---
@@ -102,6 +120,22 @@ async function handleRoute() {
         updateMeta('Sign Up - MindJournal', 'Create a new account.');
     } else if (path === ROUTES.DASHBOARD || path === ROUTES.ROOT) {
         // Init Dashboard Logic if first time
+        // IMPORTANT: Only run after auth check is passed (which is guaranteed here by redirects above)
+
+        // Final Profile Check (Double security)
+        if (user) {
+            try {
+                const { data: profile } = await supabase.from('profiles').select('status').eq('id', user.id).single();
+                if (profile && profile.status !== 'active') {
+                    await supabase.auth.signOut();
+                    navigateTo(ROUTES.LOGIN);
+                    return;
+                }
+            } catch (err) {
+                console.error("Profile check failed", err);
+            }
+        }
+
         if (!appState.initialized) {
             if (window.initDashboard) window.initDashboard();
             appState.initialized = true;
@@ -275,3 +309,5 @@ window.handleSignup = async (e) => {
         errorMsg.style.display = 'block';
     }
 };
+
+})();
