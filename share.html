@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindJournal - Shared Note</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        /* Shared variables from styles.css for consistency */
+        :root {
+            /* Light Mode Default */
+            --bg-canvas: #f2f4f7;
+            --bg-panel: #ffffff;
+            --text-primary: #101828;
+            --text-secondary: #667085;
+            --border-color: #eaecf0;
+            --accent-color: #000000;
+            --grid-color: #e4e7ec;
+
+            /* Colors matching editor */
+            --color-red: #ef4444;
+            --color-blue: #3b82f6;
+            --color-green: #10b981;
+            --color-yellow: #f59e0b;
+            --color-purple: #8b5cf6;
+            --color-pink: #ec4899;
+        }
+
+        [data-theme="dark"] {
+            --bg-canvas: #09090b;
+            --bg-panel: #141415;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --border-color: #2a2a2a;
+            --accent-color: #3b82f6;
+            --grid-color: #1f1f22;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: 'Fredoka', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Top Bar */
+        .share-header {
+            height: 70px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .action-btn {
+            height: 40px;
+            padding: 0 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: var(--border-color);
+        }
+
+        .action-btn.primary {
+            background-color: var(--text-primary);
+            color: var(--bg-canvas);
+            border-color: var(--text-primary);
+        }
+
+        .theme-btn {
+            width: 40px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        /* Main Content */
+        .content-wrapper {
+            margin-top: 100px;
+            margin-bottom: 60px;
+            display: flex;
+            justify-content: center;
+            padding: 0 20px;
+            width: 100%;
+        }
+
+        .paper-container {
+            width: 100%;
+            max-width: 800px; /* Readable width */
+        }
+
+        .note-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            line-height: 1.2;
+        }
+
+        .note-content {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 50px;
+            min-height: 500px;
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .note-content * {
+            max-width: 100%;
+        }
+
+        /* Error/Loading State */
+        .state-msg {
+            text-align: center;
+            margin-top: 100px;
+            font-size: 20px;
+            color: var(--text-secondary);
+        }
+
+        /* --- STYLES FROM EDITOR FOR COMPATIBILITY --- */
+
+        /* 1. Checkboxes (Circular) */
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin: 2px 0;
+            padding: 0;
+            line-height: 1.6;
+            width: 100%;
+        }
+
+        .custom-checkbox-wrapper {
+            display: inline-flex;
+            position: relative;
+            cursor: default; /* Read only */
+            user-select: none;
+            margin-top: 5px;
+            flex-shrink: 0;
+            margin-left: 2px;
+        }
+
+        .custom-checkbox-wrapper input {
+            position: absolute;
+            opacity: 0;
+            cursor: default;
+            height: 0;
+            width: 0;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .checkmark {
+            height: 20px;
+            width: 20px;
+            background-color: transparent;
+            border: 3px solid var(--border-color);
+            border-radius: 50%; /* Circular */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-checkbox-wrapper input:checked ~ .checkmark {
+            background-color: var(--text-primary); /* Use text color for print contrast */
+            border-color: var(--text-primary);
+        }
+
+        .checkmark:after {
+            content: "";
+            display: none;
+            width: 5px;
+            height: 9px;
+            border: solid var(--bg-panel);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin-bottom: 2px;
+        }
+
+        .custom-checkbox-wrapper input:checked ~ .checkmark:after {
+            display: block;
+        }
+
+        .task-item.completed span {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        /* 2. Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--accent-color);
+            margin: 8px 0;
+            padding: 8px 16px;
+            background: rgba(128, 128, 128, 0.05);
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        /* 3. Horizontal Line */
+        .horizontal-line {
+            display: block;
+            width: 100%;
+            height: 1px;
+            background: var(--border-color);
+            margin: 24px 0;
+            border: none;
+        }
+
+        /* 4. Lists */
+        ul {
+            margin: 8px 0;
+            padding-left: 24px;
+            list-style-type: disc;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        /* 5. Headings */
+        h1 { font-size: 2em; margin: 0; padding: 0; line-height: 1.4; }
+        h2 { font-size: 1.5em; margin: 0; padding: 0; line-height: 1.4; }
+        h3 { font-size: 1.25em; margin: 0; padding: 0; line-height: 1.4; }
+        h4 { font-size: 1.1em; margin: 0; padding: 0; line-height: 1.4; font-weight: bold; }
+
+        .text-bold {
+            font-weight: bold;
+        }
+
+        .text-italic {
+            font-style: italic;
+        }
+
+        .text-underline {
+            text-decoration: underline;
+        }
+
+        .text-strike {
+            text-decoration: line-through;
+        }
+
+        .text-center {
+            text-align: center;
+            display: block;
+        }
+
+        .text-right {
+            text-align: right;
+            display: block;
+        }
+
+        /* --- PRINT STYLES (Infinite Page) --- */
+        @media print {
+            /* Hide UI */
+            .share-header, .header-actions {
+                display: none !important;
+            }
+
+            /* Main Layout Reset */
+            html, body {
+                margin: 0;
+                padding: 0;
+                background: white !important;
+                color: black !important;
+                height: auto;
+                min-height: 100vh;
+                overflow: visible;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                width: 100%;
+            }
+
+            .content-wrapper {
+                margin: 0;
+                padding: 0;
+                display: block;
+                width: 100%;
+                max-width: none;
+            }
+
+            .paper-container {
+                width: 100%;
+                max-width: none;
+                margin: 0;
+                box-shadow: none;
+            }
+
+            .note-title {
+                padding: 20px 40px 0 40px; /* Padding for print */
+                margin-bottom: 20px;
+                color: black !important;
+            }
+
+            .note-content {
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+                padding: 0 40px 40px 40px; /* Padding for print */
+                min-height: 0;
+                background: white !important;
+                color: black !important;
+            }
+
+            /* Infinite Page Logic injected by JS via @page */
+        }
+    </style>
+    <!-- Placeholder for dynamic print styles -->
+    <style id="dynamic-print-style"></style>
+</head>
+
+<body>
+
+    <header class="share-header">
+        <div class="header-left">
+            <div class="brand">FocusPad</div>
+        </div>
+        <div class="header-actions">
+            <button class="action-btn theme-btn" id="themeToggle" title="Toggle Theme">
+                <i class="ph ph-sun"></i>
+            </button>
+            <button class="action-btn primary" id="printBtn">
+                <i class="ph ph-printer"></i> Print / PDF
+            </button>
+        </div>
+    </header>
+
+    <div id="app" class="content-wrapper"><div class="state-msg">Loading note...</div></div>
+
+    <template id="noteTemplate">
+        <div class="paper-container">
+            <h1 class="note-title" id="displayTitle">Untitled Note</h1>
+            <div class="note-content" id="displayContent"></div>
+        </div>
+    </template>
+
+    <script>
+        // --- LOGIC ---
+        const NOTES_KEY = 'focuspad_notes';
+        const template = document.getElementById('noteTemplate');
+        const app = document.getElementById('app');
+        const themeToggle = document.getElementById('themeToggle');
+        const printBtn = document.getElementById('printBtn');
+        const html = document.documentElement;
+        const dynamicStyle = document.getElementById('dynamic-print-style');
+
+        // 1. Theme Logic
+        function toggleTheme() {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+
+            const icon = themeToggle.querySelector('i');
+            if (next === 'dark') {
+                icon.className = 'ph ph-moon';
+            } else {
+                icon.className = 'ph ph-sun';
+            }
+        }
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // 2. Load Note
+        function loadNote() {
+            const params = new URLSearchParams(window.location.search);
+            const noteId = params.get('id');
+
+            if (!noteId) {
+                app.innerHTML = '<div class="state-msg">No note ID specified.</div>';
+                return;
+            }
+
+            try {
+                const savedNotes = localStorage.getItem(NOTES_KEY);
+                const notes = savedNotes ? JSON.parse(savedNotes) : [];
+                const note = notes.find(n => n.id === noteId);
+
+                if (!note) {
+                    app.innerHTML = '<div class="state-msg">Note not found or deleted.</div>';
+                    return;
+                }
+
+                // Check Privacy (Simulated)
+                if (note.isPublic === false) {
+                    app.innerHTML = '<div class="state-msg"><i class="ph ph-lock-key"></i><br>This note is private.</div>';
+                    return;
+                }
+
+                // Render
+                app.innerHTML = '';
+                const clone = template.content.cloneNode(true);
+
+                clone.getElementById('displayTitle').textContent = note.name;
+                clone.getElementById('displayContent').innerHTML = note.content;
+
+                app.appendChild(clone);
+
+            } catch (e) {
+                console.error(e);
+                app.innerHTML = '<div class="state-msg">Error loading note.</div>';
+            }
+        }
+
+        // 3. Smart "Infinity" Print
+        printBtn.addEventListener('click', () => {
+            // Calculate total height of the content
+            const bodyHeight = document.body.scrollHeight;
+
+            // Convert px to mm (approx 1px = 0.264583mm)
+            // Add some padding (e.g. 20mm)
+            const heightMm = Math.ceil(bodyHeight * 0.264583) + 20;
+
+            // Default width A4 is 210mm. We can use auto width or fixed A4 width.
+            // Using a specific height forces the browser to create a single page of that size.
+
+            // Set dynamic @page rule
+            dynamicStyle.textContent = `@page { size: 210mm ${heightMm}mm; margin: 0; }`;
+
+            window.print();
+        });
+
+        // Initialize
+        loadNote();
+
+    </script>
+</body>
+
+</html>
