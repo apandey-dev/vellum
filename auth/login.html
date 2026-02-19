@@ -110,7 +110,7 @@
             <button type="submit" class="auth-btn">Login</button>
         </form>
         <div class="auth-footer">
-            Don't have an account? <a href="signup.html">Sign Up</a>
+            Don't have an account? <a href="/signup">Sign Up</a>
         </div>
     </div>
     <script>
@@ -118,12 +118,12 @@
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
             // Simulated login
-            localStorage.setItem('mj_user', JSON.stringify({ name: email.split('@')[0], email: email }));
-            window.location.href = '../index.html';
+            localStorage.setItem('vellum_user', JSON.stringify({ name: email.split('@')[0], email: email }));
+            window.location.href = '/';
         });
 
         // Load theme
-        const savedTheme = localStorage.getItem('focuspad_theme') || 'light';
+        const savedTheme = localStorage.getItem('vellum_theme') || localStorage.getItem('focuspad_theme') || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
 </body>

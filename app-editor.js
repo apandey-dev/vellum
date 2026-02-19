@@ -373,5 +373,20 @@ writingCanvas.addEventListener('paste', (e) => {
     }
 });
 
+    // --- Mobile Toolbar Listeners ---
+    const mobileToolbar = document.getElementById('mobileToolbar');
+    if (mobileToolbar) {
+        const toolbarBtns = mobileToolbar.querySelectorAll('.toolbar-btn[data-command]');
+        toolbarBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const cmd = btn.dataset.command;
+                execCommand(cmd);
+                window.saveCurrentNote();
+                updateFontDisplay();
+            });
+        });
+    }
+
 // Start the editor
 initEditor();

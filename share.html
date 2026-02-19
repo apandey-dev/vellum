@@ -408,8 +408,22 @@
     </template>
 
     <script>
+        // --- URL GUARD ---
+        if (window.location.pathname.endsWith('.html') && !window.location.pathname.includes('error.html')) {
+            const cleanPath = window.location.pathname.replace('.html', '');
+            window.location.replace(cleanPath);
+        }
+
         // --- LOGIC ---
-        const NOTES_KEY = 'focuspad_notes';
+        const NOTES_KEY = 'vellum_notes';
+        const OLD_NOTES_KEY = 'focuspad_notes';
+
+        // Quick migration for share page if needed
+        const oldNotes = localStorage.getItem(OLD_NOTES_KEY);
+        if (oldNotes && !localStorage.getItem(NOTES_KEY)) {
+            localStorage.setItem(NOTES_KEY, oldNotes);
+        }
+
         const template = document.getElementById('noteTemplate');
         const app = document.getElementById('app');
         const themeToggle = document.getElementById('themeToggle');
@@ -418,19 +432,33 @@
         const dynamicStyle = document.getElementById('dynamic-print-style');
 
         // 1. Theme Logic
-        function toggleTheme() {
-            const current = html.getAttribute('data-theme');
-            const next = current === 'dark' ? 'light' : 'dark';
-            html.setAttribute('data-theme', next);
+        const THEME_KEY = 'vellum_theme';
+        const OLD_THEME_KEY = 'focuspad_theme';
 
+        function initTheme() {
+            const saved = localStorage.getItem(THEME_KEY) || localStorage.getItem(OLD_THEME_KEY) || 'light';
+            html.setAttribute('data-theme', saved);
+            updateThemeIcon(saved);
+        }
+
+        function updateThemeIcon(theme) {
             const icon = themeToggle.querySelector('i');
-            if (next === 'dark') {
+            if (theme === 'dark') {
                 icon.className = 'ph ph-moon';
             } else {
                 icon.className = 'ph ph-sun';
             }
         }
+
+        function toggleTheme() {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem(THEME_KEY, next);
+            updateThemeIcon(next);
+        }
         themeToggle.addEventListener('click', toggleTheme);
+        initTheme();
 
         // 2. Load Note
         function loadNote() {
