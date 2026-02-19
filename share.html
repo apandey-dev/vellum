@@ -410,8 +410,8 @@
     <script>
         // --- URL GUARD ---
         if (window.location.pathname.endsWith('.html') && !window.location.pathname.includes('error.html')) {
-            const cleanPath = window.location.pathname.replace('.html', '');
-            window.location.replace(cleanPath);
+            const cleanPath = window.location.pathname.replace('.html', '').replace('/index', '/');
+            window.location.replace(cleanPath || '/');
         }
 
         // --- LOGIC ---
