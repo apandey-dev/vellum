@@ -29,10 +29,11 @@ export function getCurrentBlock(node, writingCanvas) {
 /**
  * Converts a block to a new tag while preserving content.
  */
-export function convertBlockTo(lineBlock, newTagName, className = '') {
+export function convertBlockTo(lineBlock, newTagName, className = '', options = {}) {
     if (!lineBlock) return null;
     const newEl = document.createElement(newTagName);
     if (className) newEl.className = className;
+    if (options.fontFamily) newEl.style.fontFamily = options.fontFamily;
 
     if (lineBlock.nodeType === 3) { // text node
         newEl.textContent = lineBlock.textContent;
@@ -70,10 +71,11 @@ export function unwrapBlock(lineBlock) {
 /**
  * Splits a list at the current block.
  */
-export function splitList(currentBlock, newTagName, className = '') {
+export function splitList(currentBlock, newTagName, className = '', options = {}) {
     const parentUl = currentBlock.parentElement;
     const newEl = document.createElement(newTagName);
     if (className) newEl.className = className;
+    if (options.fontFamily) newEl.style.fontFamily = options.fontFamily;
 
     while (currentBlock.firstChild) newEl.appendChild(currentBlock.firstChild);
     if (!newEl.innerHTML.trim()) newEl.innerHTML = '&#8203;';

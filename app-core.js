@@ -56,6 +56,10 @@ const addNoteBtn = document.getElementById('addNoteBtn');
 const pinBtn = document.getElementById('pinBtn');
 const manageFoldersBtn = document.getElementById('manageFoldersBtn');
 const shareBtn = document.getElementById('shareBtn');
+const userProfileBtn = document.getElementById('userProfileBtn');
+const userProfileModal = document.getElementById('userProfileModal');
+const closeProfileModalBtn = document.getElementById('closeProfileModal');
+const logoutBtn = document.getElementById('logoutBtn');
 
 // Note chips container
 const noteChips = document.getElementById('noteChips');
@@ -277,7 +281,7 @@ function setupModalClose(modalElement) {
 }
 
 // Apply to all modals
-[confirmModal, newNoteModal, manageFoldersModal, exportModal, confirmFolderDeleteModal, renameNoteModal, shareModal, searchModal, moveNoteModal].forEach(modal => {
+[confirmModal, newNoteModal, manageFoldersModal, exportModal, confirmFolderDeleteModal, renameNoteModal, shareModal, searchModal, moveNoteModal, userProfileModal].forEach(modal => {
     if (modal) setupModalClose(modal);
 });
 
@@ -1267,8 +1271,41 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// --- USER PROFILE & AUTH ---
+function updateProfileUI() {
+    const userData = localStorage.getItem('mj_user');
+    if (userData) {
+        const user = JSON.parse(userData);
+        document.getElementById('profileName').textContent = user.name;
+        document.getElementById('profileEmail').textContent = user.email;
+    }
+}
+
+userProfileBtn.addEventListener('click', () => {
+    updateProfileUI();
+    userProfileModal.classList.add('show');
+    pushToModalStack(userProfileModal);
+});
+
+closeProfileModalBtn.addEventListener('click', () => {
+    userProfileModal.classList.remove('show');
+    const index = modalStack.indexOf(userProfileModal);
+    if (index > -1) modalStack.splice(index, 1);
+});
+
+logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('mj_user');
+    window.location.href = 'auth/login.html';
+});
+
 // --- INITIALIZATION ---
 function init() {
+    // Check Auth
+    if (!localStorage.getItem('mj_user')) {
+        window.location.href = 'auth/login.html';
+        return;
+    }
+
     loadTheme();
     loadFromStorage();
     renderFolderList();

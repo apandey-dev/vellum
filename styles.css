@@ -16,7 +16,7 @@
     --bg-canvas: #f2f4f7;
     --bg-panel: #ffffff;
     --bg-glass: rgba(255, 255, 255, 0.95);
-    --text-primary: #101828;
+    --text-primary: #000000;
     --text-secondary: #667085;
     --toggle-text: black;
     --border-color: #eaecf0;
@@ -190,6 +190,8 @@ body {
     flex-direction: column;
     gap: 12px;
     align-items: center;
+    margin-top: auto;
+    padding-bottom: 10px;
 }
 
 /* --- Top Bar --- */
@@ -507,6 +509,8 @@ body {
     line-height: inherit;
     vertical-align: baseline;
     display: inline; /* Keep them inline to avoid block shifts */
+    color: inherit; /* Ensure they inherit color from parent unless explicitly set */
+    font-family: inherit; /* Ensure they inherit font from parent */
 }
 
 /* Strict Heading Resets */
@@ -1110,6 +1114,69 @@ pre code {
 .share-private-msg i {
     font-size: 32px;
     opacity: 0.5;
+}
+
+/* ==================== USER PROFILE MODAL ==================== */
+.user-profile-box {
+    max-width: 400px !important;
+    text-align: center;
+}
+
+.profile-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.profile-pfp {
+    width: 80px;
+    height: 80px;
+    background: var(--hover-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: var(--accent-color);
+    border: 2px solid var(--border-color);
+}
+
+.profile-info h4 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.profile-info p {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.profile-actions {
+    flex-direction: column !important;
+    gap: 12px !important;
+}
+
+.logout-btn {
+    background: #ef4444 !important;
+    color: white !important;
+    width: 100% !important;
+    margin: 0 !important;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logout-btn:hover {
+    background: #dc2626 !important;
+    transform: translateY(-2px);
 }
 
 /* ==================== EXPORT MODAL ==================== */

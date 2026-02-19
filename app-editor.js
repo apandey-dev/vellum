@@ -16,6 +16,7 @@ import {
     applyColor,
     execCommand,
     getCurrentFontName,
+    getFontFamilyValue,
     formattingConfig
 } from './editor/formattingEngine.js';
 
@@ -196,7 +197,11 @@ function handleEnter(e) {
         newP.innerHTML = '<br>';
         // Reset styles for the new paragraph after a heading
         newP.style.color = '';
-        newP.style.fontFamily = '';
+
+        // Maintain the currently selected font even after heading reset
+        const currentFont = getCurrentFontName(writingCanvas);
+        newP.style.fontFamily = getFontFamilyValue(currentFont);
+
         newP.style.fontWeight = 'normal';
         newP.style.textAlign = 'left';
 
