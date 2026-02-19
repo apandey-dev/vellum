@@ -482,7 +482,7 @@ body {
     overflow-y: auto;
     outline: none;
     font-size: 18px;
-    line-height: 1.6;
+    line-height: 1.5; /* Normalized line-height */
     transition: all 0.3s ease;
     font-family: 'Fredoka', sans-serif;
     min-height: 400px;
@@ -493,6 +493,20 @@ body {
     white-space: pre-wrap;
     max-width: 100%;
     color: var(--text-primary) !important;
+
+    /* Caret Normalization */
+    caret-color: var(--text-primary);
+}
+
+/* Ensure all inline elements have consistent metrics to prevent cursor jumping */
+.writing-canvas span,
+.writing-canvas b,
+.writing-canvas i,
+.writing-canvas u,
+.writing-canvas code {
+    line-height: inherit;
+    vertical-align: baseline;
+    display: inline; /* Keep them inline to avoid block shifts */
 }
 
 /* Strict Heading Resets */
@@ -505,7 +519,13 @@ body {
     margin: 0;
     padding: 0;
     font-weight: bold;
-    line-height: 1.4;
+    line-height: 1.2; /* Tighter line-height for headings */
+    display: block;
+}
+
+.writing-canvas div {
+    line-height: inherit;
+    min-height: 1.5em;
 }
 
 .writing-canvas h1 {
