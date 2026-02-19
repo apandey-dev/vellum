@@ -3,13 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - MindJournal</title>
+    <title>Login - Vellum</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../mobile.css">
     <style>
+        .auth-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .auth-brand img {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 10px;
+        }
+        [data-theme="dark"] .auth-brand img {
+            filter: invert(1);
+        }
+        .auth-brand h1 {
+            font-size: 26px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
         body {
             display: flex;
             align-items: center;
@@ -72,6 +93,10 @@
 </head>
 <body>
     <div class="auth-container">
+        <div class="auth-brand">
+            <img src="../assets/logo.svg" alt="Vellum Logo">
+            <h1>Vellum</h1>
+        </div>
         <h2>Welcome Back</h2>
         <form class="auth-form" id="loginForm">
             <div class="form-group">
@@ -85,7 +110,7 @@
             <button type="submit" class="auth-btn">Login</button>
         </form>
         <div class="auth-footer">
-            Don't have an account? <a href="signup.html">Sign Up</a>
+            Don't have an account? <a href="/signup">Sign Up</a>
         </div>
     </div>
     <script>
@@ -93,12 +118,12 @@
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
             // Simulated login
-            localStorage.setItem('mj_user', JSON.stringify({ name: email.split('@')[0], email: email }));
-            window.location.href = '../index.html';
+            localStorage.setItem('vellum_user', JSON.stringify({ name: email.split('@')[0], email: email }));
+            window.location.href = '/';
         });
 
         // Load theme
-        const savedTheme = localStorage.getItem('focuspad_theme') || 'light';
+        const savedTheme = localStorage.getItem('vellum_theme') || localStorage.getItem('focuspad_theme') || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
 </body>
