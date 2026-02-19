@@ -78,12 +78,43 @@ const moveToFolderItem = document.getElementById('moveToFolderItem');
 const ctxDelete = document.getElementById('ctxDelete');
 
 // --- STORAGE KEYS ---
-const THEME_KEY = 'focuspad_theme';
-const NOTES_KEY = 'focuspad_notes';
-const FOLDERS_KEY = 'focuspad_folders';
-const ACTIVE_NOTE_KEY = 'focuspad_activeNote';
-const ACTIVE_FOLDER_KEY = 'focuspad_activeFolder';
-const LAST_NOTE_PER_FOLDER_KEY = 'focuspad_lastNotePerFolder';
+const THEME_KEY = 'vellum_theme';
+const NOTES_KEY = 'vellum_notes';
+const FOLDERS_KEY = 'vellum_folders';
+const ACTIVE_NOTE_KEY = 'vellum_activeNote';
+const ACTIVE_FOLDER_KEY = 'vellum_activeFolder';
+const LAST_NOTE_PER_FOLDER_KEY = 'vellum_lastNotePerFolder';
+
+/**
+ * Migration Utility: FocusPad/MindJournal -> Vellum
+ */
+function migrateData() {
+    const prefixes = ['focuspad_', 'mindjournal_', 'mj_'];
+    const vellumPrefix = 'vellum_';
+
+    prefixes.forEach(oldPrefix => {
+        // Iterate over keys to find ones matching old prefixes
+        const keysToMigrate = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(oldPrefix)) {
+                keysToMigrate.push(key);
+            }
+        }
+
+        keysToMigrate.forEach(oldKey => {
+            const newKey = oldKey.replace(oldPrefix, vellumPrefix);
+            if (!localStorage.getItem(newKey)) {
+                localStorage.setItem(newKey, localStorage.getItem(oldKey));
+            }
+        });
+    });
+
+    // Special case for the user object
+    if (localStorage.getItem('mj_user') && !localStorage.getItem('vellum_user')) {
+        localStorage.setItem('vellum_user', localStorage.getItem('mj_user'));
+    }
+}
 
 // --- DATA STRUCTURES ---
 let notes = [];
@@ -907,7 +938,7 @@ function updateShareUI(isPublic) {
         shareLinkSection.classList.add('visible');
         sharePrivateMsg.classList.remove('visible');
         const noteId = activeNoteId || 'default';
-        document.getElementById('shareLinkInput').value = `https://apandey-mindjournal.vercel.app/share.html?id=${noteId}`;
+        document.getElementById('shareLinkInput').value = `${window.location.origin}/share/${noteId}`;
     } else {
         shareToggle.classList.add('private');
         shareToggle.classList.remove('public');
@@ -988,11 +1019,11 @@ async function exportAsPDF(fileName) {
     const content = writingCanvas.innerHTML;
 
     // 2. Save to localStorage for print.html to pick up
-    localStorage.setItem('mindjournal_print_content', content);
-    localStorage.setItem('mindjournal_print_title', fileName); // SYNC TITLE
+    localStorage.setItem('vellum_print_content', content);
+    localStorage.setItem('vellum_print_title', fileName); // SYNC TITLE
 
-    // 3. Open print.html in new tab
-    const printWindow = window.open('print.html', '_blank');
+    // 3. Open print page in new tab
+    const printWindow = window.open('/print', '_blank');
 
     // 4. Focus check (optional)
     if (printWindow) {
@@ -1276,7 +1307,7 @@ document.addEventListener('click', (e) => {
 
 // --- USER PROFILE & AUTH ---
 function updateProfileUI() {
-    const userData = localStorage.getItem('mj_user');
+    const userData = localStorage.getItem('vellum_user');
     if (userData) {
         const user = JSON.parse(userData);
         document.getElementById('profileName').textContent = user.name;
@@ -1297,15 +1328,16 @@ closeProfileModalBtn.addEventListener('click', () => {
 });
 
 logoutBtn.addEventListener('click', () => {
-    localStorage.removeItem('mj_user');
-    window.location.href = 'auth/login.html';
+    localStorage.removeItem('vellum_user');
+    window.location.href = '/login';
 });
 
 // --- INITIALIZATION ---
 function init() {
+    migrateData();
     // Check Auth
-    if (!localStorage.getItem('mj_user')) {
-        window.location.href = 'auth/login.html';
+    if (!localStorage.getItem('vellum_user')) {
+        window.location.href = '/login';
         return;
     }
 
