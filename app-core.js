@@ -1,0 +1,371 @@
+// ========================================
+// mindJournal - CORE LOGIC (Rebuilt for New Schema)
+// ========================================
+
+// --- SUPABASE CONFIG ---
+const supabase = window.supabaseClient;
+
+if (!supabase) {
+    console.error('Supabase client not initialized! Check config.js.');
+    throw new Error('Supabase client missing');
+}
+
+// --- GLOBAL STATE ---
+let notes = [];
+let folders = [];
+let activeNoteId = null;
+let activeFolderId = null;
+let currentUser = null;
+let userSettings = { theme: 'light', editor_font: 'Fredoka', editor_font_size: 16 };
+
+// --- DOM ELEMENTS ---
+const elements = {
+    writingCanvas: document.getElementById('writingCanvas'),
+    noteChips: document.getElementById('noteChips'),
+    folderList: document.getElementById('folderList'),
+    formattingIndicator: document.getElementById('formattingIndicator'),
+    // Modals
+    newNoteModal: document.getElementById('newNoteModal'),
+    manageFoldersModal: document.getElementById('manageFoldersModal'),
+    // Profile
+    profileBtn: document.getElementById('profileBtn'),
+    userAvatar: document.getElementById('userAvatar'),
+    profileModal: document.getElementById('profileModal'),
+    // Inputs
+    newNoteName: document.getElementById('newNoteName'),
+    newFolderName: document.getElementById('newFolderName'),
+    // Buttons
+    addNoteBtn: document.getElementById('addNoteBtn'),
+    manageFoldersBtn: document.getElementById('manageFoldersBtn'),
+    deleteBtn: document.getElementById('deleteBtn'),
+    pinBtn: document.getElementById('pinBtn'),
+    logoutBtn: document.getElementById('modalLogoutBtn'),
+};
+
+// --- INIT ---
+// Exposed to router.js
+window.initDashboard = async function() {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session) {
+        currentUser = data.session.user;
+        await loadInitialData();
+        setupEventListeners();
+        updateProfileUI();
+        applySettings();
+    }
+};
+
+// --- DATA LOADING ---
+async function loadInitialData() {
+    try {
+        // 1. Load Settings
+        const { data: settings } = await supabase.from('user_settings').select('*').eq('user_id', currentUser.id).single();
+        if (settings) userSettings = settings;
+
+        // 2. Load Folders
+        const { data: foldersData } = await supabase.from('folders').select('*').order('created_at', { ascending: true });
+        folders = foldersData || [];
+
+        // Ensure default folder exists in UI state if DB empty (trigger usually handles it)
+        if (folders.length === 0) {
+            // Fallback
+            activeFolderId = null;
+        } else {
+            activeFolderId = folders[0].id;
+        }
+
+        // 3. Load Notes
+        const { data: notesData } = await supabase.from('notes').select('*').order('updated_at', { ascending: false });
+        notes = notesData || [];
+
+        renderFolders();
+        renderNotes();
+
+        if (notes.length > 0) {
+            // Select first note of active folder
+            const folderNotes = getNotesInFolder(activeFolderId);
+            if (folderNotes.length > 0) {
+                setActiveNote(folderNotes[0].id);
+            } else {
+                setActiveNote(null);
+            }
+        } else {
+            setActiveNote(null);
+        }
+
+    } catch (err) {
+        console.error('Data load error:', err);
+        showToast('Error loading data', 'error');
+    }
+}
+
+// --- CORE OPERATIONS ---
+
+// 1. Folders
+async function createFolder(name) {
+    if (!name.trim()) return;
+    const { data, error } = await supabase.from('folders').insert([{ user_id: currentUser.id, name: name }]).select().single();
+    if (error) { showToast('Error creating folder', 'error'); return; }
+
+    folders.push(data);
+    renderFolders();
+    showToast('Folder created');
+    elements.newFolderName.value = '';
+
+    // Switch to it?
+    setActiveFolder(data.id);
+}
+
+async function deleteFolder(folderId) {
+    const { error } = await supabase.from('folders').delete().eq('id', folderId);
+    if (error) { showToast('Error deleting folder', 'error'); return; }
+
+    folders = folders.filter(f => f.id !== folderId);
+    if (activeFolderId === folderId) {
+        activeFolderId = folders[0]?.id || null;
+    }
+    renderFolders();
+    renderNotes(); // Refresh to hide orphans or show default
+    showToast('Folder deleted');
+}
+
+// 2. Notes
+async function createNote(title, folderId) {
+    if (!title.trim()) return;
+    const newNote = {
+        user_id: currentUser.id,
+        folder_id: folderId,
+        title: title,
+        content: { html: '' } // JSONB structure
+    };
+
+    const { data, error } = await supabase.from('notes').insert([newNote]).select().single();
+    if (error) { showToast('Error creating note', 'error'); return; }
+
+    notes.unshift(data);
+    renderNotes();
+    setActiveNote(data.id);
+    showToast('Note created');
+
+    // Close modal if open
+    elements.newNoteModal.classList.remove('show');
+}
+
+async function deleteNote(noteId) {
+    const { error } = await supabase.from('notes').delete().eq('id', noteId);
+    if (error) { showToast('Error deleting note', 'error'); return; }
+
+    notes = notes.filter(n => n.id !== noteId);
+    if (activeNoteId === noteId) {
+        const remaining = getNotesInFolder(activeFolderId);
+        setActiveNote(remaining.length > 0 ? remaining[0].id : null);
+    } else {
+        renderNotes();
+    }
+    showToast('Note deleted');
+}
+
+async function saveCurrentNote() {
+    if (!activeNoteId) return;
+    const note = notes.find(n => n.id === activeNoteId);
+    if (!note) return;
+
+    const contentHtml = elements.writingCanvas.innerHTML;
+    note.content = { html: contentHtml }; // Optimistic update
+
+    const { error } = await supabase.from('notes').update({
+        content: { html: contentHtml },
+        updated_at: new Date()
+    }).eq('id', activeNoteId);
+
+    if (error) console.error('Auto-save failed', error);
+}
+
+// 3. Profile & Settings
+function updateProfileUI() {
+    const initial = (currentUser.user_metadata?.full_name?.[0] || currentUser.email?.[0] || 'U').toUpperCase();
+    if (elements.userAvatar) elements.userAvatar.textContent = initial;
+
+    // Modal Data
+    const modalAvatar = document.getElementById('modalAvatar');
+    const profileName = document.getElementById('profileName');
+    const profileEmail = document.getElementById('profileEmail');
+    const profileDate = document.getElementById('profileDate');
+
+    if (modalAvatar) modalAvatar.textContent = initial;
+    if (profileName) profileName.textContent = currentUser.user_metadata?.full_name || 'User';
+    if (profileEmail) profileEmail.textContent = currentUser.email;
+    if (profileDate) profileDate.textContent = new Date(currentUser.created_at).toLocaleDateString();
+}
+
+function applySettings() {
+    document.documentElement.setAttribute('data-theme', userSettings.theme);
+    document.documentElement.style.setProperty('--editor-font', userSettings.editor_font);
+    document.documentElement.style.setProperty('--editor-font-size', `${userSettings.editor_font_size}px`);
+    // Update UI toggles if they exist
+}
+
+// --- HELPER FUNCTIONS ---
+function getNotesInFolder(folderId) {
+    if (!folderId) return [];
+    return notes.filter(n => n.folder_id === folderId);
+}
+
+function setActiveFolder(id) {
+    activeFolderId = id;
+    renderFolders();
+    renderNotes();
+
+    const folderNotes = getNotesInFolder(id);
+    setActiveNote(folderNotes.length > 0 ? folderNotes[0].id : null);
+}
+
+function setActiveNote(id) {
+    // Save previous
+    if (activeNoteId && activeNoteId !== id) saveCurrentNote();
+
+    activeNoteId = id;
+    const note = notes.find(n => n.id === id);
+
+    renderNotes(); // Update active state in UI
+
+    if (note) {
+        // Handle JSONB content
+        // If content is object with html, use it. If string (legacy), use it.
+        const html = typeof note.content === 'object' && note.content?.html ? note.content.html : (note.content || '');
+        elements.writingCanvas.innerHTML = html;
+        elements.writingCanvas.contentEditable = 'true';
+        elements.writingCanvas.classList.remove('empty-state');
+    } else {
+        elements.writingCanvas.innerHTML = '<div class="empty-state-msg">Select or create a note to start writing.</div>';
+        elements.writingCanvas.contentEditable = 'false';
+        elements.writingCanvas.classList.add('empty-state');
+    }
+}
+
+function showToast(msg, type = 'info') {
+    if (!elements.formattingIndicator) return;
+    elements.formattingIndicator.textContent = msg;
+    elements.formattingIndicator.className = `formatting-indicator show ${type}`;
+    setTimeout(() => {
+        elements.formattingIndicator.className = 'formatting-indicator';
+    }, 3000);
+}
+
+// --- RENDERERS ---
+function renderFolders() {
+    if (!elements.folderList) return;
+    elements.folderList.innerHTML = '';
+
+    folders.forEach(folder => {
+        const div = document.createElement('div');
+        div.className = `folder-item ${folder.id === activeFolderId ? 'active' : ''}`;
+        div.textContent = folder.name;
+        div.onclick = () => {
+            setActiveFolder(folder.id);
+            elements.manageFoldersModal.classList.remove('show');
+        };
+        elements.folderList.appendChild(div);
+    });
+
+    // Update folder dropdowns in modals
+    const select = document.getElementById('folderSelectOptions');
+    if (select) {
+        select.innerHTML = '';
+        folders.forEach(folder => {
+            const opt = document.createElement('div');
+            opt.className = 'select-option';
+            opt.textContent = folder.name;
+            opt.onclick = () => {
+                document.getElementById('selectedFolderName').textContent = folder.name;
+                document.getElementById('folderSelectWrapper').dataset.value = folder.id;
+                select.parentElement.classList.remove('active');
+            };
+            select.appendChild(opt);
+        });
+    }
+}
+
+function renderNotes() {
+    if (!elements.noteChips) return;
+    elements.noteChips.innerHTML = '';
+    const currentNotes = getNotesInFolder(activeFolderId);
+
+    currentNotes.forEach(note => {
+        const chip = document.createElement('div');
+        chip.className = `chip ${note.id === activeNoteId ? 'active' : ''}`;
+        chip.textContent = note.title;
+        chip.onclick = () => setActiveNote(note.id);
+
+        // Context Menu Trigger
+        chip.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            // Store target note ID globally for context menu actions
+            window.contextMenuNoteId = note.id;
+            const menu = document.getElementById('noteContextMenu');
+            menu.style.left = `${e.pageX}px`;
+            menu.style.top = `${e.pageY}px`;
+            menu.classList.add('show');
+        });
+
+        elements.noteChips.appendChild(chip);
+    });
+}
+
+// --- EVENT LISTENERS ---
+function setupEventListeners() {
+    // Typing Debounce
+    let timeout;
+    elements.writingCanvas.addEventListener('input', () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(saveCurrentNote, 1000);
+    });
+
+    // New Note
+    elements.addNoteBtn?.addEventListener('click', () => {
+        elements.newNoteModal.classList.add('show');
+    });
+
+    document.getElementById('createNewNote')?.addEventListener('click', () => {
+        const name = elements.newNoteName.value;
+        // Get selected folder ID or default to active
+        const selectedId = document.getElementById('folderSelectWrapper').dataset.value || activeFolderId;
+        createNote(name, selectedId);
+    });
+
+    // Profile Modal
+    elements.profileBtn?.addEventListener('click', () => {
+        elements.profileModal.classList.add('show');
+    });
+    document.getElementById('closeProfileModal')?.addEventListener('click', () => {
+        elements.profileModal.classList.remove('show');
+    });
+
+    elements.logoutBtn?.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        window.location.reload();
+    });
+
+    // Folders
+    elements.manageFoldersBtn?.addEventListener('click', () => {
+        elements.manageFoldersModal.classList.add('show');
+    });
+    document.getElementById('createFolderBtn')?.addEventListener('click', () => {
+        createFolder(elements.newFolderName.value);
+    });
+    document.getElementById('closeFoldersModal')?.addEventListener('click', () => {
+        elements.manageFoldersModal.classList.remove('show');
+    });
+
+    // Global Clicks (Close menus)
+    window.addEventListener('click', (e) => {
+        if (!e.target.closest('.context-menu')) {
+            document.querySelectorAll('.context-menu').forEach(m => m.classList.remove('show'));
+        }
+    });
+}
+
+// Expose internal functions for Editor shortcuts
+window.saveCurrentNote = saveCurrentNote;
+window.pushToUndo = () => { /* Placeholder or implement strict undo stack here if needed */ };
+window.showFormattingIndicator = showToast;
