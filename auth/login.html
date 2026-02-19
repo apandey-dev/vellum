@@ -114,6 +114,17 @@
         </div>
     </div>
     <script>
+        // --- URL GUARD ---
+        if (window.location.pathname.endsWith('.html')) {
+            const cleanPath = window.location.pathname.replace('.html', '').replace('/index', '/');
+            // Canonical mapping check
+            if (cleanPath === '/auth/login') {
+                window.location.replace('/login');
+            } else {
+                window.location.replace(cleanPath || '/');
+            }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
