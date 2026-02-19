@@ -16,7 +16,9 @@
     --bg-canvas: #f2f4f7;
     --bg-panel: #ffffff;
     --bg-glass: rgba(255, 255, 255, 0.95);
-    --text-primary: #000000;
+    --text-primary: #111111;
+    --editor-text-color: #111111;
+    --editor-bg-color: #ffffff;
     --text-secondary: #667085;
     --toggle-text: black;
     --border-color: #eaecf0;
@@ -36,8 +38,10 @@
 [data-theme="dark"] {
     --bg-canvas: #09090b;
     --bg-panel: #141415;
+    --editor-text-color: #FFFFFF;
+    --editor-bg-color: #111111;
     --bg-glass: rgba(20, 20, 21, 0.95);
-    --text-primary: #ffffff;
+    --text-primary: #FFFFFF;
     --text-secondary: #888888;
     --border-color: #2a2a2a;
     --accent-color: #3b82f6;
@@ -488,16 +492,16 @@ body {
     transition: all 0.3s ease;
     font-family: 'Fredoka', sans-serif;
     min-height: 400px;
-    background: var(--bg-panel);
+    background: var(--editor-bg-color);
     border: 1px solid var(--border-color);
     word-break: break-word;
     overflow-wrap: break-word;
     white-space: pre-wrap;
     max-width: 100%;
-    color: var(--text-primary) !important;
+    color: var(--editor-text-color);
 
     /* Caret Normalization */
-    caret-color: var(--text-primary);
+    caret-color: var(--editor-text-color);
 }
 
 /* Ensure all inline elements have consistent metrics to prevent cursor jumping */
@@ -550,10 +554,6 @@ body {
     list-style-type: disc;
 }
 
-.writing-canvas * {
-    color: var(--text-primary);
-}
-
 .writing-canvas ul {
     margin: 8px 0;
     padding-left: 24px;
@@ -568,14 +568,6 @@ body {
 .writing-canvas * {
     max-width: 100% !important;
     box-sizing: border-box !important;
-}
-
-[data-theme="light"] .writing-canvas {
-    color: var(--text-primary);
-}
-
-[data-theme="dark"] .writing-canvas {
-    color: var(--text-primary);
 }
 
 .writing-canvas * {
@@ -2003,4 +1995,150 @@ body.dark .icon-circle {
 .context-menu-submenu .context-menu-item {
     padding: 8px 12px;
     font-size: 13px;
+}
+
+/* --- MOBILE RESPONSIVENESS --- */
+.hamburger-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 20px;
+    cursor: pointer;
+    margin-right: 15px;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .hamburger-btn {
+        display: flex;
+    }
+
+    body {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: -100%;
+        top: 0;
+        bottom: 0;
+        margin: 0;
+        height: 100vh;
+        width: 280px;
+        border-radius: 0 24px 24px 0;
+        transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 2000;
+        padding-top: 40px;
+    }
+
+    .sidebar.mobile-active {
+        left: 0;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 1999;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .top-bar-wrapper {
+        left: 15px;
+        right: 15px;
+        top: 15px;
+    }
+
+    .glass-header {
+        padding: 0 12px;
+        height: 56px;
+    }
+
+    .chips {
+        gap: 4px;
+        flex-wrap: nowrap;
+        /* Scroll adjustments for smooth mobile experience */
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+
+    .chip {
+        padding: 6px 12px;
+        font-size: 12px;
+        scroll-snap-align: start;
+    }
+
+    .header-actions {
+        padding-left: 10px;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .font-selector-btn {
+        min-width: 100px;
+        height: 36px;
+        padding: 0 8px;
+        font-size: 12px;
+    }
+
+    .current-font-preview {
+        max-width: 60px;
+    }
+
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+
+    .workspace {
+        margin: 0;
+        padding: 85px 15px 15px 15px;
+    }
+
+    .writing-canvas {
+        padding: 20px;
+        font-size: 16px;
+    }
+
+    /* Hide tooltips on mobile to prevent clutter */
+    .tool-btn[data-tooltip]::after,
+    .tool-btn[data-tooltip]::before {
+        display: none !important;
+    }
+
+    /* Expand Sidebar on Mobile to show labels if needed,
+       but keeping original structure as requested */
+    .divider {
+        width: 80%;
+    }
+
+    .tool-btn {
+        width: 50px;
+        height: 50px;
+    }
+
+    /* Export Modal grid adjustments */
+    .export-options-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .search-results {
+        grid-template-columns: 1fr;
+    }
 }

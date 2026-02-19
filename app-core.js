@@ -4,6 +4,8 @@
 
 // --- ELEMENT REFERENCES (GLOBAL) ---
 const sidebar = document.getElementById('sidebar');
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
 const topBar = document.getElementById('topBar');
 const workspace = document.querySelector('.workspace');
 const focusBtn = document.getElementById('focusBtn');
@@ -294,7 +296,7 @@ function saveCurrentNote() {
     if (!activeNoteId) return;
     const note = notes.find(n => n.id === activeNoteId);
     if (note) {
-        note.content = writingCanvas.innerHTML;
+        note.content = cleanNoteContent(writingCanvas.innerHTML);
         note.updatedAt = Date.now();
         saveToStorage();
     }
@@ -362,7 +364,7 @@ function switchNote(noteId) {
 function loadActiveNote() {
     const note = notes.find(n => n.id === activeNoteId);
     if (note) {
-        writingCanvas.innerHTML = note.content || '';
+        writingCanvas.innerHTML = cleanNoteContent(note.content || '');
         writingCanvas.contentEditable = 'true';
         writingCanvas.classList.remove('empty-folder-message');
         updatePinButton();
@@ -1056,6 +1058,32 @@ themeToggle.addEventListener('click', () => {
 });
 
 // --- FOCUS MODE ---
+// --- MOBILE SIDEBAR TOGGLE ---
+function toggleMobileSidebar() {
+    sidebar.classList.toggle('mobile-active');
+    sidebarOverlay.classList.toggle('active');
+}
+
+if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMobileSidebar();
+    });
+}
+
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', toggleMobileSidebar);
+}
+
+// Close mobile sidebar on link/action click
+sidebar.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+            toggleMobileSidebar();
+        }
+    });
+});
+
 function toggleFocus() {
     const isHidden = sidebar.classList.contains('hidden');
     if (!isHidden) {
@@ -1173,6 +1201,7 @@ searchInput.addEventListener('input', () => {
     });
 });
 function escapeHtml(unsafe) {
+    if (typeof unsafe !== 'string') return unsafe;
     return unsafe.replace(/[&<>"]/g, function (m) {
         if (m === '&') return '&amp;';
         if (m === '<') return '&lt;';
@@ -1180,6 +1209,55 @@ function escapeHtml(unsafe) {
         if (m === '"') return '&quot;';
         return m;
     });
+}
+
+/**
+ * Cleans note content by removing inline styles that match default theme colors or fonts.
+ * This ensures that "default" text remains theme-aware.
+ */
+function cleanNoteContent(html) {
+    if (!html) return '';
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    const isDefaultColor = (color) => {
+        if (!color) return false;
+        const normalized = color.toLowerCase().replace(/\s/g, '');
+        return [
+            'rgb(0,0,0)',
+            'rgb(17,17,17)',
+            'rgb(255,255,255)',
+            '#000',
+            '#000000',
+            '#111',
+            '#111111',
+            '#fff',
+            '#ffffff',
+            'black',
+            'white'
+        ].includes(normalized);
+    };
+
+    const elements = temp.querySelectorAll('[style]');
+    elements.forEach(el => {
+        // Clean Color if it matches a default theme color
+        if (isDefaultColor(el.style.color)) {
+            el.style.color = '';
+        }
+
+        // Clean Font Family if it's the default 'Fredoka'
+        const font = el.style.fontFamily?.toLowerCase();
+        if (font && font.includes('fredoka')) {
+            el.style.fontFamily = '';
+        }
+
+        // Remove style attribute if it's now empty
+        if (!el.getAttribute('style')) {
+            el.removeAttribute('style');
+        }
+    });
+
+    return temp.innerHTML;
 }
 
 // Debounced content change for undo (push after typing stops)

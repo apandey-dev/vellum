@@ -195,12 +195,15 @@ function handleEnter(e) {
 
         const newP = document.createElement('div');
         newP.innerHTML = '<br>';
+
         // Reset styles for the new paragraph after a heading
         newP.style.color = '';
 
-        // Maintain the currently selected font even after heading reset
+        // Maintain the currently selected font even after heading reset (if not default)
         const currentFont = getCurrentFontName(writingCanvas);
-        newP.style.fontFamily = getFontFamilyValue(currentFont);
+        if (currentFont !== 'Fredoka') {
+            newP.style.fontFamily = getFontFamilyValue(currentFont);
+        }
 
         newP.style.fontWeight = 'normal';
         newP.style.textAlign = 'left';
@@ -214,8 +217,6 @@ function handleEnter(e) {
     // 2. Normal paragraph behavior: Reset alignment but keep color/font/bold
     if (currentBlock.tagName === 'DIV' || currentBlock.parentElement === writingCanvas || currentBlock.nodeType === 3) {
         // If it's a normal block, we want to continue formatting but reset alignment
-        // Actually, if we use default browser behavior, it might inherit alignment.
-        // So we intercept and handle it.
         e.preventDefault();
         window.pushToUndo();
 
@@ -225,9 +226,18 @@ function handleEnter(e) {
         // Inherit styles (color, font, weight, etc.) from the cursor position
         const styleSource = node.nodeType === 3 ? node.parentElement : node;
         const computed = window.getComputedStyle(styleSource);
+        const editorStyle = window.getComputedStyle(writingCanvas);
 
-        newP.style.color = computed.color;
-        newP.style.fontFamily = computed.fontFamily;
+        // Only copy color if it's different from the default editor color
+        if (computed.color !== editorStyle.color) {
+            newP.style.color = computed.color;
+        }
+
+        // Only copy font if it's different from default
+        if (computed.fontFamily !== editorStyle.fontFamily) {
+            newP.style.fontFamily = computed.fontFamily;
+        }
+
         newP.style.fontWeight = computed.fontWeight;
         newP.style.fontStyle = computed.fontStyle;
         newP.style.textDecoration = computed.textDecoration;
