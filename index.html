@@ -43,16 +43,16 @@
             </div>
 
             <div class="divider"></div>
-            <div class="bottom-actions">
-                <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
-                    <i class="fas fa-sun" id="themeIcon"></i>
-                </div>
-                <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode">
-                    <i class="fas fa-expand-alt"></i>
-                </div>
-                <div class="tool-btn" id="userProfileBtn" data-tooltip="User Profile">
-                    <i class="fas fa-user-circle"></i>
-                </div>
+        </div>
+        <div class="bottom-actions">
+            <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
+                <i class="fas fa-sun" id="themeIcon"></i>
+            </div>
+            <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode">
+                <i class="fas fa-expand-alt"></i>
+            </div>
+            <div class="tool-btn" id="userProfileBtn" data-tooltip="User Profile">
+                <i class="fas fa-user-circle"></i>
             </div>
         </div>
     </nav>
@@ -136,11 +136,14 @@
     <!-- Confirm Delete Modal -->
     <div class="confirm-modal" id="confirmModal">
         <div class="confirm-box">
+            <div class="confirm-icon danger">
+                <i class="fas fa-trash-alt"></i>
+            </div>
             <h3>Delete Note?</h3>
             <p>This will permanently delete the current note. This action cannot be undone.</p>
             <div class="confirm-actions">
-                <button class="confirm-btn cancel" id="cancelDeleteBtn">Cancel</button>
-                <button class="confirm-btn delete" id="confirmDeleteBtn">Delete</button>
+                <button class="confirm-btn cancel" id="cancelDeleteBtn"><i class="fas fa-times"></i> Cancel</button>
+                <button class="confirm-btn delete" id="confirmDeleteBtn"><i class="fas fa-trash-alt"></i> Delete Note</button>
             </div>
         </div>
     </div>
@@ -154,8 +157,8 @@
                 <input type="text" id="renameNoteInput" placeholder="Enter new note name...">
             </div>
             <div class="form-actions">
-                <button class="form-btn secondary" id="cancelRenameBtn">Cancel</button>
-                <button class="form-btn primary" id="confirmRenameBtn">Save</button>
+                <button class="form-btn secondary" id="cancelRenameBtn"><i class="fas fa-times"></i> Cancel</button>
+                <button class="form-btn primary" id="confirmRenameBtn"><i class="fas fa-check"></i> Save Changes</button>
             </div>
         </div>
     </div>
@@ -179,24 +182,39 @@
                 </div>
             </div>
             <div class="form-actions">
-                <button class="form-btn secondary" id="cancelNewNote">Cancel</button>
-                <button class="form-btn primary" id="createNewNote">Create</button>
+                <button class="form-btn secondary" id="cancelNewNote"><i class="fas fa-times"></i> Cancel</button>
+                <button class="form-btn primary" id="createNewNote"><i class="fas fa-plus"></i> Create Note</button>
             </div>
         </div>
     </div>
 
     <!-- Manage Folders Modal -->
     <div class="form-modal" id="manageFoldersModal">
-        <div class="form-box">
-            <h3>Manage Folders</h3>
-            <div class="form-group">
-                <label>Create New Folder</label>
-                <input type="text" id="newFolderName" placeholder="Folder name...">
+        <div class="form-box manage-folders-box">
+            <div class="confirm-icon primary">
+                <i class="fas fa-folder-plus"></i>
             </div>
-            <button class="form-btn primary" id="createFolderBtn">Create Folder</button>
-            <div class="folder-list" id="folderList"></div>
+            <h3>Manage Folders</h3>
+
+            <div class="folder-creation-section">
+                <div class="form-group">
+                    <label>Create New Folder</label>
+                    <div class="input-with-btn">
+                        <input type="text" id="newFolderName" placeholder="Enter folder name...">
+                        <button class="form-btn primary" id="createFolderBtn"><i class="fas fa-plus"></i> Create</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider-h" style="margin: 24px 0;"></div>
+
+            <div class="folder-management-section">
+                <label class="section-label">Existing Folders</label>
+                <div class="folder-list" id="folderList"></div>
+            </div>
+
             <div class="form-actions">
-                <button class="form-btn secondary" id="closeFoldersModal">Close</button>
+                <button class="form-btn secondary" id="closeFoldersModal"><i class="fas fa-check"></i> Done</button>
             </div>
         </div>
     </div>
@@ -204,14 +222,14 @@
     <!-- Confirm Folder Delete Modal -->
     <div class="confirm-modal" id="confirmFolderDeleteModal">
         <div class="confirm-box">
-            <div class="confirm-icon">
+            <div class="confirm-icon danger">
                 <i class="fas fa-folder-minus"></i>
             </div>
             <h3 id="folderDeleteTitle">Delete Folder?</h3>
             <p id="folderDeleteMessage">This folder will be deleted.</p>
             <div class="confirm-actions">
-                <button class="confirm-btn cancel" id="cancelFolderDelete">Cancel</button>
-                <button class="confirm-btn delete" id="confirmFolderDelete">Delete</button>
+                <button class="confirm-btn cancel" id="cancelFolderDelete"><i class="fas fa-times"></i> Cancel</button>
+                <button class="confirm-btn delete" id="confirmFolderDelete"><i class="fas fa-trash-alt"></i> Delete Folder</button>
             </div>
         </div>
     </div>
@@ -244,7 +262,7 @@
                 <p>This note is restricted to you only.</p>
             </div>
             <div class="form-actions">
-                <button class="form-btn secondary" id="closeShareModal">Close</button>
+                <button class="form-btn secondary" id="closeShareModal"><i class="fas fa-times"></i> Close</button>
             </div>
         </div>
     </div>
@@ -281,8 +299,8 @@
                 </div>
             </div>
             <div class="form-actions export-actions">
-                <button class="form-btn secondary" id="closeExportModal">Cancel</button>
-                <button class="form-btn primary" id="exportConfirmBtn" disabled>Export</button>
+                <button class="form-btn secondary" id="closeExportModal"><i class="fas fa-times"></i> Cancel</button>
+                <button class="form-btn primary" id="exportConfirmBtn" disabled><i class="fas fa-download"></i> Export Now</button>
             </div>
         </div>
     </div>
@@ -298,7 +316,7 @@
                 <div class="search-placeholder">Start typing to search...</div>
             </div>
             <div class="form-actions">
-                <button class="form-btn secondary" id="closeSearchModal">Close</button>
+                <button class="form-btn secondary" id="closeSearchModal"><i class="fas fa-times"></i> Close</button>
             </div>
         </div>
     </div>
@@ -318,40 +336,48 @@
             </div>
             <div class="form-actions profile-actions">
                 <button class="auth-btn logout-btn" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
+                    <i class="fas fa-sign-out-alt"></i> Logout Account
                 </button>
-                <button class="form-btn secondary" id="closeProfileModal">Close</button>
+                <button class="form-btn secondary" id="closeProfileModal"><i class="fas fa-times"></i> Close</button>
             </div>
         </div>
     </div>
 
     <!-- Move Note Modal -->
     <div class="form-modal" id="moveNoteModal">
-        <div class="form-box">
+        <div class="form-box move-note-box">
+            <div class="confirm-icon primary">
+                <i class="fas fa-exchange-alt"></i>
+            </div>
             <h3>Move Note</h3>
-            <p class="move-note-name" id="moveNoteName"></p>
-            <p class="current-folder" id="moveCurrentFolder"></p>
-            <div class="form-group">
-                <label>Select Folder</label>
-                <div class="custom-select" id="moveFolderSelectWrapper">
-                    <div class="select-trigger" id="moveFolderSelectTrigger">
-                        <span id="moveSelectedFolderName">Choose folder</span>
-                        <i class="fas fa-chevron-down"></i>
+            <p id="moveNoteName" class="move-note-title"></p>
+
+            <div class="move-content">
+                <div class="form-group">
+                    <label><i class="fas fa-folder-open"></i> Destination Folder</label>
+                    <div class="custom-select" id="moveFolderSelectWrapper">
+                        <div class="select-trigger" id="moveFolderSelectTrigger">
+                            <span id="moveSelectedFolderName">Choose folder</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="select-options" id="moveFolderSelectOptions"></div>
                     </div>
-                    <div class="select-options" id="moveFolderSelectOptions"></div>
+                </div>
+
+                <div class="divider-h" style="margin: 20px 0;"></div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-plus-circle"></i> Create & Move to New Folder</label>
+                    <div class="input-with-btn">
+                        <input type="text" id="moveNewFolderName" placeholder="New folder name...">
+                        <button class="form-btn primary" id="createAndMoveBtn"><i class="fas fa-plus-circle"></i> Create & Move</button>
+                    </div>
                 </div>
             </div>
-            <div class="form-group">
-                <label>Or create new folder</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="moveNewFolderName" placeholder="New folder name...">
-                    <button class="form-btn primary" id="createAndMoveBtn" style="white-space: nowrap;">Create &
-                        Move</button>
-                </div>
-            </div>
+
             <div class="form-actions">
-                <button class="form-btn secondary" id="cancelMoveBtn">Cancel</button>
-                <button class="form-btn primary" id="confirmMoveBtn" disabled>Move</button>
+                <button class="form-btn secondary" id="cancelMoveBtn"><i class="fas fa-times"></i> Cancel</button>
+                <button class="form-btn primary" id="confirmMoveBtn" disabled><i class="fas fa-exchange-alt"></i> Move Note</button>
             </div>
         </div>
     </div>

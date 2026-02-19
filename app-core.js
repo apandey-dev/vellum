@@ -821,8 +821,11 @@ deleteBtn.addEventListener('click', () => {
     if (!activeNoteId) { showFormattingIndicator('No note to delete'); return; }
     const folderNotes = getNotesInFolder(activeFolderId);
     if (folderNotes.length === 0) { showFormattingIndicator('No notes in this folder'); return; }
-    if (folderNotes.length === 1 && folderNotes[0].id === activeNoteId) confirmDeleteBtn.textContent = 'Delete Last Note';
-    else confirmDeleteBtn.textContent = 'Delete';
+    if (folderNotes.length === 1 && folderNotes[0].id === activeNoteId) {
+        confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Last Note';
+    } else {
+        confirmDeleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Note';
+    }
     confirmModal.classList.add('show');
     pushToModalStack(confirmModal);
 });
