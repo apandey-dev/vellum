@@ -3,34 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Vellum</title>
+    <title>Sign Up - MindJournal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="../styles.css">
-    <link rel="stylesheet" href="../mobile.css">
     <style>
-        .auth-brand {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .auth-brand img {
-            width: 60px;
-            height: 60px;
-            margin-bottom: 10px;
-        }
-        [data-theme="dark"] .auth-brand img {
-            filter: invert(1);
-        }
-        .auth-brand h1 {
-            font-size: 26px;
-            font-weight: 600;
-            color: var(--text-primary);
-            letter-spacing: -0.02em;
-        }
         body {
             display: flex;
             align-items: center;
@@ -93,10 +72,6 @@
 </head>
 <body>
     <div class="auth-container">
-        <div class="auth-brand">
-            <img src="../assets/logo.svg" alt="Vellum Logo">
-            <h1>Vellum</h1>
-        </div>
         <h2>Create Account</h2>
         <form class="auth-form" id="signupForm">
             <div class="form-group">
@@ -114,32 +89,21 @@
             <button type="submit" class="auth-btn">Sign Up</button>
         </form>
         <div class="auth-footer">
-            Already have an account? <a href="/login">Login</a>
+            Already have an account? <a href="login.html">Login</a>
         </div>
     </div>
     <script>
-        // --- URL GUARD ---
-        if (window.location.pathname.endsWith('.html')) {
-            const cleanPath = window.location.pathname.replace('.html', '').replace('/index', '/');
-            // Canonical mapping check
-            if (cleanPath === '/auth/signup') {
-                window.location.replace('/signup');
-            } else {
-                window.location.replace(cleanPath || '/');
-            }
-        }
-
         document.getElementById('signupForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const name = document.getElementById('signupName').value;
             const email = document.getElementById('signupEmail').value;
             // Simulated signup
-            localStorage.setItem('vellum_user', JSON.stringify({ name: name, email: email }));
-            window.location.href = '/';
+            localStorage.setItem('mj_user', JSON.stringify({ name: name, email: email }));
+            window.location.href = '../index.html';
         });
 
         // Load theme
-        const savedTheme = localStorage.getItem('vellum_theme') || localStorage.getItem('focuspad_theme') || 'light';
+        const savedTheme = localStorage.getItem('focuspad_theme') || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
 </body>

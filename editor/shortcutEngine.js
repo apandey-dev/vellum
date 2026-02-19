@@ -30,8 +30,7 @@ export function handleShortcuts(e, writingCanvas, options = {}) {
     if (!currentBlock) return;
 
     const currentFont = getCurrentFontName(writingCanvas);
-    // Only pass font family if it's not the default 'Fredoka'
-    const fontFamily = currentFont === 'Fredoka' ? '' : getFontFamilyValue(currentFont);
+    const fontFamily = getFontFamilyValue(currentFont);
 
     // Helper: check if at the start of the block (ignoring leading whitespace)
     const isAtStart = () => {
