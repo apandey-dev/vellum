@@ -909,7 +909,7 @@ function updateShareUI(isPublic) {
         shareLinkSection.classList.add('visible');
         sharePrivateMsg.classList.remove('visible');
         const noteId = activeNoteId || 'default';
-        document.getElementById('shareLinkInput').value = `https://apandey-mindjournal.vercel.app/share.html?id=${noteId}`;
+        document.getElementById('shareLinkInput').value = `https://apandey-vellum.vercel.app/share.html?id=${noteId}`;
     } else {
         shareToggle.classList.add('private');
         shareToggle.classList.remove('public');

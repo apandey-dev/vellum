@@ -1,0 +1,142 @@
+/* --- MOBILE RESPONSIVENESS --- */
+@media (max-width: 768px) {
+    .hamburger-btn {
+        display: flex;
+    }
+
+    body {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: -100%;
+        top: 0;
+        bottom: 0;
+        margin: 0;
+        height: 100vh;
+        width: 280px;
+        border-radius: 0 24px 24px 0;
+        transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 2000;
+        padding-top: 40px;
+    }
+
+    .sidebar.mobile-active {
+        left: 0;
+    }
+
+    .sidebar-brand {
+        justify-content: flex-start;
+        padding: 0 24px;
+        margin-bottom: 32px;
+    }
+
+    .brand-name {
+        opacity: 1;
+        width: auto;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 1999;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .top-bar-wrapper {
+        left: 15px;
+        right: 15px;
+        top: 15px;
+    }
+
+    .glass-header {
+        padding: 0 12px;
+        height: 56px;
+    }
+
+    .chips {
+        gap: 4px;
+        flex-wrap: nowrap;
+        /* Scroll adjustments for smooth mobile experience */
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+
+    .chip {
+        padding: 6px 12px;
+        font-size: 12px;
+        scroll-snap-align: start;
+    }
+
+    .header-actions {
+        padding-left: 10px;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .font-selector-btn {
+        min-width: 100px;
+        height: 36px;
+        padding: 0 8px;
+        font-size: 12px;
+    }
+
+    .current-font-preview {
+        max-width: 60px;
+    }
+
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+
+    .workspace {
+        margin: 0;
+        padding: 85px 15px 15px 15px;
+    }
+
+    .writing-canvas {
+        padding: 20px;
+        font-size: 16px;
+    }
+
+    /* Hide tooltips on mobile to prevent clutter */
+    .tool-btn[data-tooltip]::after,
+    .tool-btn[data-tooltip]::before {
+        display: none !important;
+    }
+
+    /* Expand Sidebar on Mobile to show labels if needed,
+       but keeping original structure as requested */
+    .divider {
+        width: 80%;
+    }
+
+    .tool-btn {
+        width: 50px;
+        height: 50px;
+    }
+
+    /* Export Modal grid adjustments */
+    .export-options-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .search-results {
+        grid-template-columns: 1fr;
+    }
+}
