@@ -531,10 +531,11 @@ body {
     overflow-y: auto;
     outline: none;
     font-size: 18px;
-    line-height: 1.5; /* Normalized line-height */
+    line-height: 1.5;
+    /* Normalized line-height */
     transition: all 0.3s ease;
     font-family: 'Fredoka', sans-serif;
-    min-height: 400px;
+    min-height: 555px;
     background: var(--editor-bg-color);
     border: 1px solid var(--border-color);
     word-break: break-word;
@@ -555,9 +556,12 @@ body {
 .writing-canvas code {
     line-height: inherit;
     vertical-align: baseline;
-    display: inline; /* Keep them inline to avoid block shifts */
-    color: inherit; /* Ensure they inherit color from parent unless explicitly set */
-    font-family: inherit; /* Ensure they inherit font from parent */
+    display: inline;
+    /* Keep them inline to avoid block shifts */
+    color: inherit;
+    /* Ensure they inherit color from parent unless explicitly set */
+    font-family: inherit;
+    /* Ensure they inherit font from parent */
 }
 
 /* Strict Heading Resets */
@@ -570,7 +574,8 @@ body {
     margin: 0;
     padding: 0;
     font-weight: bold;
-    line-height: 1.2; /* Tighter line-height for headings */
+    line-height: 1.2;
+    /* Tighter line-height for headings */
     display: block;
 }
 
@@ -641,7 +646,8 @@ body {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    margin: 2px 0; /* Minimized margin for tight list feel */
+    margin: 2px 0;
+    /* Minimized margin for tight list feel */
     padding: 0;
     line-height: 1.6;
     width: 100%;
@@ -652,7 +658,8 @@ body {
     position: relative;
     cursor: pointer;
     user-select: none;
-    margin-top: 5px; /* Precise visual alignment */
+    margin-top: 5px;
+    /* Precise visual alignment */
     flex-shrink: 0;
     margin-left: 2px;
 }
@@ -663,7 +670,8 @@ body {
     cursor: pointer;
     height: 0;
     width: 0;
-    appearance: none; /* Force hide native */
+    appearance: none;
+    /* Force hide native */
     -webkit-appearance: none;
 }
 
