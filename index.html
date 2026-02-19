@@ -50,6 +50,9 @@
                 <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode">
                     <i class="fas fa-expand-alt"></i>
                 </div>
+                <div class="tool-btn" id="userProfileBtn" data-tooltip="User Profile">
+                    <i class="fas fa-user-circle"></i>
+                </div>
             </div>
         </div>
     </nav>
@@ -296,6 +299,28 @@
             </div>
             <div class="form-actions">
                 <button class="form-btn secondary" id="closeSearchModal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Profile Modal -->
+    <div class="form-modal" id="userProfileModal">
+        <div class="form-box user-profile-box">
+            <h3><i class="fas fa-user-circle" style="margin-right: 8px;"></i> User Profile</h3>
+            <div class="profile-content">
+                <div class="profile-pfp">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="profile-info">
+                    <h4 id="profileName">Guest User</h4>
+                    <p id="profileEmail">guest@mindjournal.com</p>
+                </div>
+            </div>
+            <div class="form-actions profile-actions">
+                <button class="auth-btn logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+                <button class="form-btn secondary" id="closeProfileModal">Close</button>
             </div>
         </div>
     </div>
