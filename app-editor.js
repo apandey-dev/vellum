@@ -1,6 +1,6 @@
 /**
  * app-editor.js
- * Entry point for the MindJournal Editor.
+ * Entry point for the Vellum Editor.
  * Orchestrates modules and handles high-level events.
  */
 
