@@ -4,14 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vellum - Shared Note</title>
+    <title>MindJournal - Shared Note</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link rel="stylesheet" href="mobile.css">
 
     <style>
         /* Shared variables from styles.css for consistency */
@@ -359,21 +358,6 @@
 
             /* Infinite Page Logic injected by JS via @page */
         }
-
-        @media (max-width: 768px) {
-            .share-header {
-                padding: 0 20px;
-            }
-            .note-title {
-                font-size: 28px;
-            }
-            .note-content {
-                padding: 30px 20px;
-            }
-            .brand span {
-                display: none; /* Icon only on small mobile to save space */
-            }
-        }
     </style>
     <!-- Placeholder for dynamic print styles -->
     <style id="dynamic-print-style"></style>
@@ -383,10 +367,7 @@
 
     <header class="share-header">
         <div class="header-left">
-            <div class="brand">
-                <img src="/assets/logo.svg" alt="Vellum Logo" class="brand-img">
-                <span>Vellum</span>
-            </div>
+            <div class="brand">FocusPad</div>
         </div>
         <div class="header-actions">
             <button class="action-btn theme-btn" id="themeToggle" title="Toggle Theme">
@@ -408,22 +389,8 @@
     </template>
 
     <script>
-        // --- URL GUARD ---
-        if (window.location.pathname.endsWith('.html') && !window.location.pathname.includes('error.html')) {
-            const cleanPath = window.location.pathname.replace('.html', '').replace('/index', '/');
-            window.location.replace(cleanPath || '/');
-        }
-
         // --- LOGIC ---
-        const NOTES_KEY = 'vellum_notes';
-        const OLD_NOTES_KEY = 'focuspad_notes';
-
-        // Quick migration for share page if needed
-        const oldNotes = localStorage.getItem(OLD_NOTES_KEY);
-        if (oldNotes && !localStorage.getItem(NOTES_KEY)) {
-            localStorage.setItem(NOTES_KEY, oldNotes);
-        }
-
+        const NOTES_KEY = 'focuspad_notes';
         const template = document.getElementById('noteTemplate');
         const app = document.getElementById('app');
         const themeToggle = document.getElementById('themeToggle');
@@ -432,33 +399,19 @@
         const dynamicStyle = document.getElementById('dynamic-print-style');
 
         // 1. Theme Logic
-        const THEME_KEY = 'vellum_theme';
-        const OLD_THEME_KEY = 'focuspad_theme';
+        function toggleTheme() {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
 
-        function initTheme() {
-            const saved = localStorage.getItem(THEME_KEY) || localStorage.getItem(OLD_THEME_KEY) || 'light';
-            html.setAttribute('data-theme', saved);
-            updateThemeIcon(saved);
-        }
-
-        function updateThemeIcon(theme) {
             const icon = themeToggle.querySelector('i');
-            if (theme === 'dark') {
+            if (next === 'dark') {
                 icon.className = 'ph ph-moon';
             } else {
                 icon.className = 'ph ph-sun';
             }
         }
-
-        function toggleTheme() {
-            const current = html.getAttribute('data-theme');
-            const next = current === 'dark' ? 'light' : 'dark';
-            html.setAttribute('data-theme', next);
-            localStorage.setItem(THEME_KEY, next);
-            updateThemeIcon(next);
-        }
         themeToggle.addEventListener('click', toggleTheme);
-        initTheme();
 
         // 2. Load Note
         function loadNote() {

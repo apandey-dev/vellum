@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Print Preview - Vellum</title>
+    <title>Print Preview - MindJournal</title>
     <!-- Import Fonts to match Editor -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -486,14 +486,8 @@
 
     <!-- LOGIC -->
     <script>
-        // --- URL GUARD ---
-        if (window.location.pathname.endsWith('.html')) {
-            const cleanPath = window.location.pathname.replace('.html', '').replace('/index', '/');
-            window.location.replace(cleanPath || '/');
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
-            const content = localStorage.getItem('vellum_print_content') || localStorage.getItem('mindjournal_print_content');
+            const content = localStorage.getItem('mindjournal_print_content');
             const pageSheet = document.getElementById('page-sheet');
             const editorContainer = document.getElementById('editor-print-container');
 
@@ -512,7 +506,7 @@
             };
 
             // 1. Load Content
-            const title = localStorage.getItem('vellum_print_title') || localStorage.getItem('mindjournal_print_title') || 'Untitled Document';
+            const title = localStorage.getItem('mindjournal_print_title') || 'Untitled Document';
 
             if (content) {
                 // Inject title as H1 at the beginning

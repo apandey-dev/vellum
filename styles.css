@@ -16,9 +16,7 @@
     --bg-canvas: #f2f4f7;
     --bg-panel: #ffffff;
     --bg-glass: rgba(255, 255, 255, 0.95);
-    --text-primary: #111111;
-    --editor-text-color: #111111;
-    --editor-bg-color: #ffffff;
+    --text-primary: #000000;
     --text-secondary: #667085;
     --toggle-text: black;
     --border-color: #eaecf0;
@@ -38,10 +36,8 @@
 [data-theme="dark"] {
     --bg-canvas: #09090b;
     --bg-panel: #141415;
-    --editor-text-color: #FFFFFF;
-    --editor-bg-color: #111111;
     --bg-glass: rgba(20, 20, 21, 0.95);
-    --text-primary: #FFFFFF;
+    --text-primary: #ffffff;
     --text-secondary: #888888;
     --border-color: #2a2a2a;
     --accent-color: #3b82f6;
@@ -85,49 +81,6 @@ body {
 }
 
 /* --- Sidebar --- */
-.sidebar-brand {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    padding: 0 16px;
-    margin-bottom: 24px;
-    overflow: hidden;
-}
-
-.brand-logo {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.brand-logo img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    /* Ensure it works in dark mode too if we use currentColor in SVG but img tag won't follow.
-       Wait, I should use CSS mask or just accept monochrome for now. */
-}
-
-/* Apply theme color to logo if it's an SVG */
-[data-theme="dark"] .brand-logo img {
-    filter: invert(1);
-}
-
-.brand-name {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-left: 12px;
-    opacity: 0;
-    width: 0;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-}
-
 .sidebar {
     width: 72px;
     height: calc(100vh - 48px);
@@ -531,21 +484,20 @@ body {
     overflow-y: auto;
     outline: none;
     font-size: 18px;
-    line-height: 1.5;
-    /* Normalized line-height */
+    line-height: 1.5; /* Normalized line-height */
     transition: all 0.3s ease;
     font-family: 'Fredoka', sans-serif;
-    min-height: 555px;
-    background: var(--editor-bg-color);
+    min-height: 400px;
+    background: var(--bg-panel);
     border: 1px solid var(--border-color);
     word-break: break-word;
     overflow-wrap: break-word;
     white-space: pre-wrap;
     max-width: 100%;
-    color: var(--editor-text-color);
+    color: var(--text-primary) !important;
 
     /* Caret Normalization */
-    caret-color: var(--editor-text-color);
+    caret-color: var(--text-primary);
 }
 
 /* Ensure all inline elements have consistent metrics to prevent cursor jumping */
@@ -556,12 +508,9 @@ body {
 .writing-canvas code {
     line-height: inherit;
     vertical-align: baseline;
-    display: inline;
-    /* Keep them inline to avoid block shifts */
-    color: inherit;
-    /* Ensure they inherit color from parent unless explicitly set */
-    font-family: inherit;
-    /* Ensure they inherit font from parent */
+    display: inline; /* Keep them inline to avoid block shifts */
+    color: inherit; /* Ensure they inherit color from parent unless explicitly set */
+    font-family: inherit; /* Ensure they inherit font from parent */
 }
 
 /* Strict Heading Resets */
@@ -574,8 +523,7 @@ body {
     margin: 0;
     padding: 0;
     font-weight: bold;
-    line-height: 1.2;
-    /* Tighter line-height for headings */
+    line-height: 1.2; /* Tighter line-height for headings */
     display: block;
 }
 
@@ -602,6 +550,10 @@ body {
     list-style-type: disc;
 }
 
+.writing-canvas * {
+    color: var(--text-primary);
+}
+
 .writing-canvas ul {
     margin: 8px 0;
     padding-left: 24px;
@@ -616,6 +568,14 @@ body {
 .writing-canvas * {
     max-width: 100% !important;
     box-sizing: border-box !important;
+}
+
+[data-theme="light"] .writing-canvas {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .writing-canvas {
+    color: var(--text-primary);
 }
 
 .writing-canvas * {
@@ -646,8 +606,7 @@ body {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    margin: 2px 0;
-    /* Minimized margin for tight list feel */
+    margin: 2px 0; /* Minimized margin for tight list feel */
     padding: 0;
     line-height: 1.6;
     width: 100%;
@@ -658,8 +617,7 @@ body {
     position: relative;
     cursor: pointer;
     user-select: none;
-    margin-top: 5px;
-    /* Precise visual alignment */
+    margin-top: 5px; /* Precise visual alignment */
     flex-shrink: 0;
     margin-left: 2px;
 }
@@ -670,8 +628,7 @@ body {
     cursor: pointer;
     height: 0;
     width: 0;
-    appearance: none;
-    /* Force hide native */
+    appearance: none; /* Force hide native */
     -webkit-appearance: none;
 }
 
@@ -2046,19 +2003,4 @@ body.dark .icon-circle {
 .context-menu-submenu .context-menu-item {
     padding: 8px 12px;
     font-size: 13px;
-}
-
-/* --- MOBILE RESPONSIVENESS --- */
-.hamburger-btn {
-    display: none;
-    background: transparent;
-    border: none;
-    color: var(--text-primary);
-    font-size: 20px;
-    cursor: pointer;
-    margin-right: 15px;
-    width: 40px;
-    height: 40px;
-    align-items: center;
-    justify-content: center;
 }
