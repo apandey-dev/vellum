@@ -16,7 +16,7 @@
     --bg-canvas: #f2f4f7;
     --bg-panel: #ffffff;
     --bg-glass: rgba(255, 255, 255, 0.95);
-    --text-primary: #101828;
+    --text-primary: #000000;
     --text-secondary: #667085;
     --toggle-text: black;
     --border-color: #eaecf0;
@@ -507,6 +507,8 @@ body {
     line-height: inherit;
     vertical-align: baseline;
     display: inline; /* Keep them inline to avoid block shifts */
+    color: inherit; /* Ensure they inherit color from parent unless explicitly set */
+    font-family: inherit; /* Ensure they inherit font from parent */
 }
 
 /* Strict Heading Resets */

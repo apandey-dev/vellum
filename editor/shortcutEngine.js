@@ -6,7 +6,7 @@
 import { getCurrentBlock, convertBlockTo, splitList } from './blockManager.js';
 import { parseComboShortcut, getHeadingTag } from './parser.js';
 import { setCursorAtEnd } from './cursorManager.js';
-import { applyColor } from './formattingEngine.js';
+import { applyColor, getCurrentFontName, getFontFamilyValue } from './formattingEngine.js';
 
 /**
  * Handles all inline shortcuts on input.
@@ -28,6 +28,9 @@ export function handleShortcuts(e, writingCanvas, options = {}) {
 
     const currentBlock = getCurrentBlock(node, writingCanvas);
     if (!currentBlock) return;
+
+    const currentFont = getCurrentFontName(writingCanvas);
+    const fontFamily = getFontFamilyValue(currentFont);
 
     // Helper: check if at the start of the block (ignoring leading whitespace)
     const isAtStart = () => {
@@ -63,6 +66,7 @@ export function handleShortcuts(e, writingCanvas, options = {}) {
                     if (currentBlock.tagName !== 'LI') {
                         const ul = document.createElement('ul');
                         const li = document.createElement('li');
+                        if (fontFamily) li.style.fontFamily = fontFamily;
                         while (currentBlock.firstChild) li.appendChild(currentBlock.firstChild);
                         if (!li.textContent.trim()) li.innerHTML = '&#8203;';
                         ul.appendChild(li);
@@ -70,12 +74,12 @@ export function handleShortcuts(e, writingCanvas, options = {}) {
                         newBlock = li;
                     }
                 } else if (trigger.tag === 'task') {
-                    newBlock = transformToTask(currentBlock, writingCanvas);
+                    newBlock = transformToTask(currentBlock, writingCanvas, { fontFamily });
                 } else {
                     if (currentBlock.tagName === 'LI') {
-                        newBlock = splitList(currentBlock, trigger.tag);
+                        newBlock = splitList(currentBlock, trigger.tag, '', { fontFamily });
                     } else {
-                        newBlock = convertBlockTo(currentBlock, trigger.tag);
+                        newBlock = convertBlockTo(currentBlock, trigger.tag, '', { fontFamily });
                     }
                 }
 
@@ -104,9 +108,9 @@ export function handleShortcuts(e, writingCanvas, options = {}) {
         let targetBlock;
 
         if (currentBlock.tagName === 'LI') {
-            targetBlock = splitList(currentBlock, newTag);
+            targetBlock = splitList(currentBlock, newTag, '', { fontFamily });
         } else {
-            targetBlock = convertBlockTo(currentBlock, newTag);
+            targetBlock = convertBlockTo(currentBlock, newTag, '', { fontFamily });
         }
 
         if (parsed.color) targetBlock.style.color = parsed.color;
@@ -242,9 +246,10 @@ export function handleShortcuts(e, writingCanvas, options = {}) {
     return false;
 }
 
-function transformToTask(currentBlock, writingCanvas) {
+function transformToTask(currentBlock, writingCanvas, options = {}) {
     const taskDiv = document.createElement('div');
     taskDiv.className = 'task-item';
+    if (options.fontFamily) taskDiv.style.fontFamily = options.fontFamily;
     taskDiv.innerHTML = `
         <label class="custom-checkbox-wrapper" contenteditable="false">
             <input type="checkbox">

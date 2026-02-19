@@ -18,6 +18,13 @@ const formattingConfig = {
 /**
  * Applies a font to the current selection or at the cursor.
  */
+/**
+ * Gets the CSS font-family value for a font name.
+ */
+export function getFontFamilyValue(fontName) {
+    return formattingConfig.fonts[fontName] || fontName;
+}
+
 export function applyFont(fontName) {
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
