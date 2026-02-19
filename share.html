@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindJournal - Shared Note</title>
+    <title>Vellum - Shared Note</title>
+    <script src="/js/route-guard.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -367,7 +368,7 @@
 
     <header class="share-header">
         <div class="header-left">
-            <div class="brand">FocusPad</div>
+            <div class="brand">Vellum</div>
         </div>
         <div class="header-actions">
             <button class="action-btn theme-btn" id="themeToggle" title="Toggle Theme">
@@ -390,7 +391,32 @@
 
     <script>
         // --- LOGIC ---
-        const NOTES_KEY = 'focuspad_notes';
+        const NOTES_KEY = 'vellum_notes';
+
+        /**
+         * Migration Utility: FocusPad/MindJournal -> Vellum
+         */
+        function migrateData() {
+            const prefixes = ['focuspad_', 'mindjournal_'];
+            const vellumPrefix = 'vellum_';
+
+            prefixes.forEach(oldPrefix => {
+                const keysToMigrate = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith(oldPrefix)) {
+                        keysToMigrate.push(key);
+                    }
+                }
+
+                keysToMigrate.forEach(oldKey => {
+                    const newKey = oldKey.replace(oldPrefix, vellumPrefix);
+                    if (!localStorage.getItem(newKey)) {
+                        localStorage.setItem(newKey, localStorage.getItem(oldKey));
+                    }
+                });
+            });
+        }
         const template = document.getElementById('noteTemplate');
         const app = document.getElementById('app');
         const themeToggle = document.getElementById('themeToggle');
@@ -416,7 +442,15 @@
         // 2. Load Note
         function loadNote() {
             const params = new URLSearchParams(window.location.search);
-            const noteId = params.get('id');
+            let noteId = params.get('id');
+
+            if (!noteId) {
+                const pathParts = window.location.pathname.split('/');
+                // Expected path /share/ID
+                if (pathParts[1] === 'share' && pathParts[2]) {
+                    noteId = pathParts[2];
+                }
+            }
 
             if (!noteId) {
                 app.innerHTML = '<div class="state-msg">No note ID specified.</div>';
@@ -473,6 +507,7 @@
         });
 
         // Initialize
+        migrateData();
         loadNote();
 
     </script>
