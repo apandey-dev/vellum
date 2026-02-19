@@ -4,6 +4,8 @@
 
 // --- ELEMENT REFERENCES (GLOBAL) ---
 const sidebar = document.getElementById('sidebar');
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
 const topBar = document.getElementById('topBar');
 const workspace = document.querySelector('.workspace');
 const focusBtn = document.getElementById('focusBtn');
@@ -1056,6 +1058,32 @@ themeToggle.addEventListener('click', () => {
 });
 
 // --- FOCUS MODE ---
+// --- MOBILE SIDEBAR TOGGLE ---
+function toggleMobileSidebar() {
+    sidebar.classList.toggle('mobile-active');
+    sidebarOverlay.classList.toggle('active');
+}
+
+if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMobileSidebar();
+    });
+}
+
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', toggleMobileSidebar);
+}
+
+// Close mobile sidebar on link/action click
+sidebar.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+            toggleMobileSidebar();
+        }
+    });
+});
+
 function toggleFocus() {
     const isHidden = sidebar.classList.contains('hidden');
     if (!isHidden) {
