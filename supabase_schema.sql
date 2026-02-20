@@ -1,57 +1,96 @@
--- Vellum Supabase Schema (Simplified "Clean" Version)
+-- ========================================================
+-- 1️⃣ FULL CLEAN RESET
+-- ========================================================
+-- Drop only app tables (not auth schema)
+DROP TABLE IF EXISTS public.notes CASCADE;
+DROP TABLE IF EXISTS public.folders CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
 
--- 1. Profiles Table (Part of Auth Flow)
+-- Clean any leftover policies
+DROP POLICY IF EXISTS "Users can manage their folders" ON public.folders;
+DROP POLICY IF EXISTS "Users can manage their notes" ON public.notes;
+DROP POLICY IF EXISTS "Users can manage their profiles" ON public.profiles;
+
+-- ========================================================
+-- 2️⃣ RECREATE TABLES (Corrected Version)
+-- ========================================================
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- Profiles table (Requirement 1 & 2)
 CREATE TABLE public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- 2. Folders Table
+-- Folders table
 CREATE TABLE public.folders (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
+  name TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- 3. Notes Table
+-- Notes table (Requirement 3 & 4)
 CREATE TABLE public.notes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    folder_id UUID REFERENCES public.folders(id) ON DELETE SET NULL,
-    title TEXT DEFAULT 'Untitled',
-    content TEXT DEFAULT '',
-    is_pinned BOOLEAN DEFAULT false,
-    is_public BOOLEAN DEFAULT false,
-    public_id TEXT UNIQUE,
-    public_expires_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
+  folder_id UUID REFERENCES public.folders(id) ON DELETE SET NULL,
+  title TEXT DEFAULT 'Untitled',
+  content TEXT DEFAULT '',
+  is_public BOOLEAN DEFAULT false,
+  public_id TEXT UNIQUE,
+  public_expires_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- 4. Enable RLS
+-- ========================================================
+-- 3️⃣ FIX PERMISSIONS (Eliminates permission denied)
+-- ========================================================
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO anon;
+GRANT ALL ON SCHEMA public TO authenticated;
+GRANT ALL ON SCHEMA public TO service_role;
+
+GRANT ALL ON TABLE public.profiles TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.folders TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.notes TO anon, authenticated, service_role;
+
+-- ========================================================
+-- 4️⃣ ENABLE RLS
+-- ========================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.folders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
--- 5. RLS Policies
+-- ========================================================
+-- 5️⃣ CREATE PROPER POLICIES
+-- ========================================================
+
+-- Profiles Policy
 CREATE POLICY "Users can manage their profiles"
-ON public.profiles FOR ALL TO authenticated
+ON public.profiles FOR ALL
 USING (auth.uid() = id)
 WITH CHECK (auth.uid() = id);
 
+-- Folders Policy
 CREATE POLICY "Users can manage their folders"
-ON public.folders FOR ALL TO authenticated
+ON public.folders FOR ALL
 USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
+-- Notes Policy
 CREATE POLICY "Users can manage their notes"
-ON public.notes FOR ALL TO authenticated
+ON public.notes FOR ALL
 USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
--- 6. Trigger: Create Profile on Signup
+-- ========================================================
+-- 6️⃣ AUTOMATION (Triggers & Functions)
+-- ========================================================
+
+-- Trigger: Create Profile on Signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
@@ -67,13 +106,14 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 7. Trigger: Handle Public ID and Expiry
+-- Trigger: Handle Public ID and Expiry
 CREATE OR REPLACE FUNCTION public.handle_note_sharing()
 RETURNS trigger AS $$
 BEGIN
     -- If is_public becomes true
     IF NEW.is_public = true AND (OLD.is_public = false OR OLD.is_public IS NULL) THEN
         IF NEW.public_id IS NULL THEN
+            -- Generate a unique short hex ID
             NEW.public_id := encode(gen_random_bytes(6), 'hex');
         END IF;
         NEW.public_expires_at := now() + interval '24 hours';
@@ -93,7 +133,8 @@ CREATE TRIGGER on_note_share_toggle
   BEFORE UPDATE ON public.notes
   FOR EACH ROW EXECUTE FUNCTION public.handle_note_sharing();
 
--- 8. RPC: Fetch Public Note (handles expiry atomically)
+-- RPC: Fetch Public Note (Requirement 5 & 6)
+-- Handles expiry atomically and returns content if valid
 CREATE OR REPLACE FUNCTION public.get_public_note(p_public_id TEXT)
 RETURNS TABLE (
     title TEXT,
