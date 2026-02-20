@@ -22,17 +22,22 @@ export async function restoreSession() {
         const session = JSON.parse(sessionStr);
         if (!session.access_token || !session.refresh_token) return false;
 
+        // Attempt to set the session
         const { data, error } = await supabase.auth.setSession({
             access_token: session.access_token,
             refresh_token: session.refresh_token
         });
 
         if (error) {
-            console.error("Session restore error:", error.message);
+            console.error("Supabase session restore failed:", error.message);
             return false;
         }
 
-        // Update sessionStorage with fresh session (it might have refreshed)
+        // Verify we actually have a user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return false;
+
+        // Update sessionStorage with fresh tokens (rotated)
         if (data.session) {
             sessionStorage.setItem('vellum_session', JSON.stringify(data.session));
         }
@@ -44,5 +49,5 @@ export async function restoreSession() {
     }
 }
 
-// Expose to window for legacy scripts if needed
+// Expose to window for legacy scripts
 window.supabaseClient = supabase;

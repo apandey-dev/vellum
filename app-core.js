@@ -169,51 +169,52 @@ document.addEventListener('keydown', (e) => {
 // ==================== SUPABASE DATA OPERATIONS ====================
 
 async function fetchInitialData() {
-    const { data: folderData, error: folderError } = await supabase
-        .from('folders')
-        .select('*')
-        .order('created_at', { ascending: true });
+    try {
+        const { data: folderData, error: folderError } = await supabase
+            .from('folders')
+            .select('*')
+            .order('created_at', { ascending: true });
 
-    if (folderError) {
-        showToast('Error loading folders', 'error');
-        console.error(folderError);
-        return;
-    }
-    folders = folderData;
+        if (folderError) throw folderError;
+        folders = folderData;
 
-    const { data: noteData, error: noteError } = await supabase
-        .from('notes')
-        .select('*')
-        .order('updated_at', { ascending: false });
+        const { data: noteData, error: noteError } = await supabase
+            .from('notes')
+            .select('*')
+            .order('updated_at', { ascending: false });
 
-    if (noteError) {
-        showToast('Error loading notes', 'error');
-        console.error(noteError);
-        return;
-    }
-    notes = noteData;
+        if (noteError) throw noteError;
+        notes = noteData;
 
-    // Set initial active folder and note
-    if (folders.length > 0) {
-        activeFolderId = folders[0].id;
-        const folderNotes = getNotesInFolder(activeFolderId);
-        if (folderNotes.length > 0) {
-            activeNoteId = folderNotes[0].id;
+        // Set initial active folder and note
+        if (folders.length > 0) {
+            activeFolderId = folders[0].id;
+            const folderNotes = getNotesInFolder(activeFolderId);
+            if (folderNotes.length > 0) {
+                activeNoteId = folderNotes[0].id;
+            }
         }
-    }
 
-    renderFolderList();
-    renderNoteChips();
-    loadActiveNote();
-    pushToUndo();
+        renderFolderList();
+        renderNoteChips();
+        loadActiveNote();
+        updateFolderDropdown();
+        pushToUndo();
+
+    } catch (error) {
+        showToast('Error loading data', 'error');
+        console.error("Supabase load error:", error.message);
+    }
 }
 
 export async function saveCurrentNote() {
     if (!activeNoteId) return;
     const note = notes.find(n => n.id === activeNoteId);
+    if (!note) return;
+
     const content = writingCanvas.innerHTML;
 
-    if (note && note.content !== content) {
+    if (note.content !== content) {
         note.content = content;
         note.updated_at = new Date().toISOString();
 
@@ -222,13 +223,17 @@ export async function saveCurrentNote() {
             .update({ content: note.content, updated_at: note.updated_at })
             .eq('id', activeNoteId);
 
-        if (error) console.error('Error saving note:', error);
+        if (error) console.error('Error saving note:', error.message);
     }
 }
 window.saveCurrentNote = saveCurrentNote;
 
 async function createNote(title, folderId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const newNote = {
+        user_id: user.id, // Explicit for RLS safety
         folder_id: folderId,
         title: title,
         content: '',
@@ -242,7 +247,7 @@ async function createNote(title, folderId) {
 
     if (error) {
         showToast('Error creating note', 'error');
-        console.error(error);
+        console.error(error.message);
         return;
     }
 
@@ -251,7 +256,7 @@ async function createNote(title, folderId) {
     activeFolderId = folderId;
 
     renderNoteChips();
-    renderFolderList(); // update active state
+    renderFolderList();
     loadActiveNote();
     showToast('Note created!', 'success');
     pushToUndo();
@@ -301,14 +306,17 @@ async function renameNote(noteId, newTitle) {
 }
 
 async function createFolder(name) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const { data, error } = await supabase
         .from('folders')
-        .insert([{ name }])
+        .insert([{ name, user_id: user.id }]) // Explicit for RLS safety
         .select();
 
     if (error) {
         showToast('Error creating folder', 'error');
-        console.error(error);
+        console.error(error.message);
         return;
     }
 
@@ -1004,11 +1012,12 @@ async function init() {
     loadTheme();
 
     // Ensure session is restored before fetching data
-    await restoreSession();
-
+    const isRestored = await restoreSession();
     const { data: { session } } = await supabase.auth.getSession();
+
     if (!session) {
-        window.location.href = '/login';
+        console.warn("No valid session found, redirecting to login...");
+        window.location.replace('/login');
         return;
     }
 
@@ -1017,8 +1026,10 @@ async function init() {
     const userData = localStorage.getItem('vellum_user');
     if (userData) {
         const user = JSON.parse(userData);
-        document.getElementById('profileName').textContent = user.name;
-        document.getElementById('profileEmail').textContent = user.email;
+        const nameEl = document.getElementById('profileName');
+        const emailEl = document.getElementById('profileEmail');
+        if (nameEl) nameEl.textContent = user.name || user.email.split('@')[0];
+        if (emailEl) emailEl.textContent = user.email;
     }
 }
 

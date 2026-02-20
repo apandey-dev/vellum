@@ -1,4 +1,4 @@
--- Vellum Supabase Schema
+-- Vellum Supabase Schema (Production Audit Fix)
 
 -- 1. Profiles Table
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -35,50 +35,63 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.folders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
--- 5. RLS Policies
+-- 5. RLS Policies (Comprehensive)
+
 -- Profiles
-DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
-CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Profiles SELECT" ON public.profiles;
+CREATE POLICY "Profiles SELECT" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Profiles UPDATE" ON public.profiles;
+CREATE POLICY "Profiles UPDATE" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
 
 -- Folders
 DROP POLICY IF EXISTS "Folders SELECT" ON public.folders;
-CREATE POLICY "Folders SELECT" ON public.folders FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Folders SELECT" ON public.folders FOR SELECT TO authenticated USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Folders INSERT" ON public.folders;
-CREATE POLICY "Folders INSERT" ON public.folders FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Folders INSERT" ON public.folders FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Folders UPDATE" ON public.folders;
-CREATE POLICY "Folders UPDATE" ON public.folders FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Folders UPDATE" ON public.folders FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Folders DELETE" ON public.folders;
-CREATE POLICY "Folders DELETE" ON public.folders FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Folders DELETE" ON public.folders FOR DELETE TO authenticated USING (auth.uid() = user_id);
 
 -- Notes
 DROP POLICY IF EXISTS "Notes SELECT" ON public.notes;
-CREATE POLICY "Notes SELECT" ON public.notes FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Notes SELECT" ON public.notes FOR SELECT TO authenticated USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Notes INSERT" ON public.notes;
-CREATE POLICY "Notes INSERT" ON public.notes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Notes INSERT" ON public.notes FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Notes UPDATE" ON public.notes;
-CREATE POLICY "Notes UPDATE" ON public.notes FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Notes UPDATE" ON public.notes FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Notes DELETE" ON public.notes;
-CREATE POLICY "Notes DELETE" ON public.notes FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Notes DELETE" ON public.notes FOR DELETE TO authenticated USING (auth.uid() = user_id);
 
--- 6. Trigger: Handle New User Signup
+-- 6. Trigger: Handle New User Signup (Idempotent)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 DECLARE
     new_folder_id UUID;
 BEGIN
+    -- Idempotent profile creation
     INSERT INTO public.profiles (id, email)
-    VALUES (new.id, new.email);
+    VALUES (new.id, new.email)
+    ON CONFLICT (id) DO NOTHING;
 
-    -- Create 'General' folder for the user
-    INSERT INTO public.folders (user_id, name)
-    VALUES (new.id, 'General')
-    RETURNING id INTO new_folder_id;
+    -- Idempotent 'General' folder creation
+    -- We check if it exists first to avoid duplicate General folders
+    SELECT id INTO new_folder_id FROM public.folders
+    WHERE user_id = new.id AND name = 'General' LIMIT 1;
 
-    -- Create initial note
-    INSERT INTO public.notes (user_id, folder_id, title, content)
-    VALUES (new.id, new_folder_id, 'NewNote', '');
+    IF new_folder_id IS NULL THEN
+        INSERT INTO public.folders (user_id, name)
+        VALUES (new.id, 'General')
+        RETURNING id INTO new_folder_id;
+    END IF;
+
+    -- Create initial note if the General folder is empty
+    IF new_folder_id IS NOT NULL THEN
+        IF NOT EXISTS (SELECT 1 FROM public.notes WHERE folder_id = new_folder_id) THEN
+            INSERT INTO public.notes (user_id, folder_id, title, content)
+            VALUES (new.id, new_folder_id, 'NewNote', '');
+        END IF;
+    END IF;
 
     RETURN new;
 END;
