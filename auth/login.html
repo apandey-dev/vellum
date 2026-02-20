@@ -59,6 +59,11 @@
             opacity: 0.9;
             transform: translateY(-2px);
         }
+        .auth-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
         .auth-footer {
             margin-top: 24px;
             font-size: 14px;
@@ -83,19 +88,53 @@
                 <label>Password</label>
                 <input type="password" id="loginPassword" placeholder="Enter your password" required>
             </div>
-            <button type="submit" class="auth-btn">Login</button>
+            <button type="submit" class="auth-btn" id="loginBtn">Login</button>
         </form>
         <div class="auth-footer">
             Don't have an account? <a href="/signup">Sign Up</a>
         </div>
     </div>
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
+    <script type="module">
+        import { supabase } from '/js/supabase-client.js';
+        import { showToast } from '/js/utils.js';
+
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
-            // Simulated login
-            localStorage.setItem('vellum_user', JSON.stringify({ name: email.split('@')[0], email: email }));
-            window.location.href = '/dashboard';
+            const password = document.getElementById('loginPassword').value;
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) {
+                showToast(error.message, 'error');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            } else {
+                // Store session info in sessionStorage as requested
+                sessionStorage.setItem('vellum_session', JSON.stringify(data.session));
+                sessionStorage.setItem('vellum_login_time', Date.now());
+
+                // Store user info in localStorage for display (name/email)
+                localStorage.setItem('vellum_user', JSON.stringify({
+                    name: data.user.email.split('@')[0],
+                    email: data.user.email,
+                    id: data.user.id
+                }));
+
+                showToast('Login successful!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1000);
+            }
         });
 
         // Load theme

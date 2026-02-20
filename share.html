@@ -389,34 +389,9 @@
         </div>
     </template>
 
-    <script>
-        // --- LOGIC ---
-        const NOTES_KEY = 'vellum_notes';
+    <script type="module">
+        import { supabase } from '/js/supabase-client.js';
 
-        /**
-         * Migration Utility: FocusPad/MindJournal -> Vellum
-         */
-        function migrateData() {
-            const prefixes = ['focuspad_', 'mindjournal_'];
-            const vellumPrefix = 'vellum_';
-
-            prefixes.forEach(oldPrefix => {
-                const keysToMigrate = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && key.startsWith(oldPrefix)) {
-                        keysToMigrate.push(key);
-                    }
-                }
-
-                keysToMigrate.forEach(oldKey => {
-                    const newKey = oldKey.replace(oldPrefix, vellumPrefix);
-                    if (!localStorage.getItem(newKey)) {
-                        localStorage.setItem(newKey, localStorage.getItem(oldKey));
-                    }
-                });
-            });
-        }
         const template = document.getElementById('noteTemplate');
         const app = document.getElementById('app');
         const themeToggle = document.getElementById('themeToggle');
@@ -440,44 +415,32 @@
         themeToggle.addEventListener('click', toggleTheme);
 
         // 2. Load Note
-        function loadNote() {
-            const params = new URLSearchParams(window.location.search);
-            let noteId = params.get('id');
+        async function loadNote() {
+            const pathParts = window.location.pathname.split('/');
+            // Expected path /share/ID
+            const publicId = pathParts[pathParts.length - 1];
 
-            if (!noteId) {
-                const pathParts = window.location.pathname.split('/');
-                // Expected path /share/ID
-                if (pathParts[1] === 'share' && pathParts[2]) {
-                    noteId = pathParts[2];
-                }
-            }
-
-            if (!noteId) {
+            if (!publicId || publicId === 'share') {
                 app.innerHTML = '<div class="state-msg">No note ID specified.</div>';
                 return;
             }
 
             try {
-                const savedNotes = localStorage.getItem(NOTES_KEY);
-                const notes = savedNotes ? JSON.parse(savedNotes) : [];
-                const note = notes.find(n => n.id === noteId);
+                // Call the RPC function
+                const { data, error } = await supabase.rpc('get_public_note', { p_public_id: publicId });
 
-                if (!note) {
-                    app.innerHTML = '<div class="state-msg">Note not found or deleted.</div>';
+                if (error || !data || data.length === 0) {
+                    app.innerHTML = '<div class="state-msg">This link has expired or is no longer available.</div>';
                     return;
                 }
 
-                // Check Privacy (Simulated)
-                if (note.isPublic === false) {
-                    app.innerHTML = '<div class="state-msg"><i class="ph ph-lock-key"></i><br>This note is private.</div>';
-                    return;
-                }
+                const note = data[0];
 
                 // Render
                 app.innerHTML = '';
                 const clone = template.content.cloneNode(true);
 
-                clone.getElementById('displayTitle').textContent = note.name;
+                clone.getElementById('displayTitle').textContent = note.title;
                 clone.getElementById('displayContent').innerHTML = note.content;
 
                 app.appendChild(clone);
@@ -490,25 +453,24 @@
 
         // 3. Smart "Infinity" Print
         printBtn.addEventListener('click', () => {
-            // Calculate total height of the content
             const bodyHeight = document.body.scrollHeight;
-
-            // Convert px to mm (approx 1px = 0.264583mm)
-            // Add some padding (e.g. 20mm)
             const heightMm = Math.ceil(bodyHeight * 0.264583) + 20;
-
-            // Default width A4 is 210mm. We can use auto width or fixed A4 width.
-            // Using a specific height forces the browser to create a single page of that size.
-
-            // Set dynamic @page rule
             dynamicStyle.textContent = `@page { size: 210mm ${heightMm}mm; margin: 0; }`;
-
             window.print();
         });
 
         // Initialize
-        migrateData();
         loadNote();
+
+        // Theme init
+        const savedTheme = localStorage.getItem('vellum_theme') || 'light';
+        html.setAttribute('data-theme', savedTheme);
+        const icon = themeToggle.querySelector('i');
+        if (savedTheme === 'dark') {
+            icon.className = 'ph ph-moon';
+        } else {
+            icon.className = 'ph ph-sun';
+        }
 
     </script>
 </body>

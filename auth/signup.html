@@ -59,6 +59,11 @@
             opacity: 0.9;
             transform: translateY(-2px);
         }
+        .auth-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
         .auth-footer {
             margin-top: 24px;
             font-size: 14px;
@@ -87,20 +92,62 @@
                 <label>Password</label>
                 <input type="password" id="signupPassword" placeholder="Enter your password" required>
             </div>
-            <button type="submit" class="auth-btn">Sign Up</button>
+            <button type="submit" class="auth-btn" id="signupBtn">Sign Up</button>
         </form>
         <div class="auth-footer">
             Already have an account? <a href="/login">Login</a>
         </div>
     </div>
-    <script>
-        document.getElementById('signupForm').addEventListener('submit', (e) => {
+    <script type="module">
+        import { supabase } from '/js/supabase-client.js';
+        import { showToast } from '/js/utils.js';
+
+        const signupForm = document.getElementById('signupForm');
+        const signupBtn = document.getElementById('signupBtn');
+
+        signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('signupName').value;
             const email = document.getElementById('signupEmail').value;
-            // Simulated signup
-            localStorage.setItem('vellum_user', JSON.stringify({ name: name, email: email }));
-            window.location.href = '/dashboard';
+            const password = document.getElementById('signupPassword').value;
+
+            signupBtn.disabled = true;
+            signupBtn.textContent = 'Creating account...';
+
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: name
+                    }
+                }
+            });
+
+            if (error) {
+                showToast(error.message, 'error');
+                signupBtn.disabled = false;
+                signupBtn.textContent = 'Sign Up';
+            } else {
+                // Supabase might require email confirmation depending on settings.
+                // But the user said "Account active immediately".
+
+                if (data.session) {
+                    sessionStorage.setItem('vellum_session', JSON.stringify(data.session));
+                    sessionStorage.setItem('vellum_login_time', Date.now());
+                }
+
+                localStorage.setItem('vellum_user', JSON.stringify({
+                    name: name,
+                    email: email,
+                    id: data.user?.id
+                }));
+
+                showToast('Account created! Logging in...', 'success');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1500);
+            }
         });
 
         // Load theme
