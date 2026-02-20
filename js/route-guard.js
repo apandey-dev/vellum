@@ -1,8 +1,15 @@
 (function() {
-    const pathname = window.location.pathname;
+    let pathname = window.location.pathname;
     const search = window.location.search;
 
-    // 1. Redirect .html and internal folders to clean URLs
+    // 1. Normalize trailing slashes (except root)
+    if (pathname.length > 1 && pathname.endsWith('/')) {
+        pathname = pathname.slice(0, -1);
+        window.location.replace(pathname + search);
+        return;
+    }
+
+    // 2. Redirect .html and internal folders to clean URLs
     if (pathname.endsWith('.html') || pathname.includes('/auth/')) {
         let cleanPath = pathname.replace(/\.html$/, '');
 
@@ -20,7 +27,7 @@
         return;
     }
 
-    // 2. Handle /share.html?id=... or /share?id=... -> /share/...
+    // 3. Handle /share.html?id=... or /share?id=... -> /share/...
     if (pathname === '/share.html' || pathname === '/share') {
         const params = new URLSearchParams(search);
         const id = params.get('id');
@@ -30,7 +37,7 @@
         }
     }
 
-    // 3. Allowed routes validation (Clean URLs only)
+    // 4. Allowed routes validation (Clean URLs only)
     const allowedRoutes = [
         '/',
         '/dashboard',

@@ -8,6 +8,6 @@
     { "source": "/dashboard", "destination": "/index.html" },
     { "source": "/error", "destination": "/error.html" },
     { "source": "/", "destination": "/index.html" },
-    { "source": "/((?!js/|editor/|styles\\.css|favicon\\.ico|assets/|index\\.html|auth/|share\\.html|print\\.html|error\\.html).*)", "destination": "/error.html" }
+    { "source": "/((?!login|signup|share|print|dashboard|error|js/|editor/|assets/|styles\\.css|favicon\\.ico|index\\.html|auth/|share\\.html|print\\.html|error\\.html).*)", "destination": "/error.html" }
   ]
 }
