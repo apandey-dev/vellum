@@ -27,9 +27,7 @@ import {
 } from './editor/blockManager.js';
 
 import { handleShortcuts } from './editor/shortcutEngine.js';
-
-// --- Global References (from app-core.js) ---
-// writingCanvas, pushToUndo, saveCurrentNote, showFormattingIndicator
+import { writingCanvas, pushToUndo, saveCurrentNote } from './app-core.js';
 
 let isProcessing = false;
 
@@ -71,12 +69,12 @@ function attachEventListeners() {
         isProcessing = true;
 
         const triggered = handleShortcuts(e, writingCanvas, {
-            pushToUndo: window.pushToUndo,
-            saveCurrentNote: window.saveCurrentNote
+            pushToUndo: pushToUndo,
+            saveCurrentNote: saveCurrentNote
         });
 
         if (!triggered) {
-            window.saveCurrentNote();
+            saveCurrentNote();
         }
 
         isProcessing = false;
@@ -99,7 +97,7 @@ function attachEventListeners() {
             const taskItem = e.target.closest('.task-item');
             if (taskItem) {
                 taskItem.classList.toggle('completed', e.target.checked);
-                window.saveCurrentNote();
+                saveCurrentNote();
             }
         }
     });
@@ -169,12 +167,12 @@ function handleBackspace(e) {
 
     if (isAtStart && currentBlock.tagName !== 'DIV' && currentBlock.parentElement === writingCanvas) {
         e.preventDefault();
-        window.pushToUndo();
+        pushToUndo();
         const newDiv = unwrapBlock(currentBlock);
         newDiv.style.color = '';
         newDiv.style.textAlign = '';
         setCursorAtEnd(newDiv, writingCanvas);
-        window.saveCurrentNote();
+        saveCurrentNote();
     }
 }
 
@@ -191,7 +189,7 @@ function handleEnter(e) {
     // 1. Heading Behavior Fix: Reset to normal paragraph
     if (['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(currentBlock.tagName)) {
         e.preventDefault();
-        window.pushToUndo();
+        pushToUndo();
 
         const newP = document.createElement('div');
         newP.innerHTML = '<br>';
@@ -207,7 +205,7 @@ function handleEnter(e) {
 
         currentBlock.after(newP);
         setCursorAtEnd(newP, writingCanvas);
-        window.saveCurrentNote();
+        saveCurrentNote();
         return;
     }
 
@@ -217,7 +215,7 @@ function handleEnter(e) {
         // Actually, if we use default browser behavior, it might inherit alignment.
         // So we intercept and handle it.
         e.preventDefault();
-        window.pushToUndo();
+        pushToUndo();
 
         const newP = document.createElement('div');
         newP.innerHTML = '<br>';
@@ -237,7 +235,7 @@ function handleEnter(e) {
 
         currentBlock.after(newP);
         setCursorAtEnd(newP, writingCanvas);
-        window.saveCurrentNote();
+        saveCurrentNote();
         return;
     }
 
@@ -247,7 +245,7 @@ function handleEnter(e) {
         if (!text) {
             // Escape list/task
             e.preventDefault();
-            window.pushToUndo();
+            pushToUndo();
             const newP = document.createElement('div');
             newP.innerHTML = '<br>';
 
@@ -263,14 +261,14 @@ function handleEnter(e) {
                 currentBlock.replaceWith(newP);
             }
             setCursorAtEnd(newP, writingCanvas);
-            window.saveCurrentNote();
+            saveCurrentNote();
             return;
         }
 
         // Continue list/task (handled by default behavior mostly, but we want consistency)
         if (currentBlock.classList.contains('task-item')) {
             e.preventDefault();
-            window.pushToUndo();
+            pushToUndo();
             const newTask = currentBlock.cloneNode(true);
             newTask.classList.remove('completed');
             const cb = newTask.querySelector('input');
@@ -278,14 +276,14 @@ function handleEnter(e) {
                 cb.checked = false;
                 cb.addEventListener('click', function() {
                     this.closest('.task-item').classList.toggle('completed');
-                    window.saveCurrentNote();
+                    saveCurrentNote();
                 });
             }
             const contentSpan = newTask.querySelector('span:last-child');
             contentSpan.innerHTML = '&#8203;';
             currentBlock.after(newTask);
             setCursorAtEnd(contentSpan, writingCanvas);
-            window.saveCurrentNote();
+            saveCurrentNote();
             return;
         }
     }
@@ -305,7 +303,7 @@ function handleTab(e) {
     if (!currentBlock || currentBlock.tagName !== 'LI') return;
 
     e.preventDefault();
-    window.pushToUndo();
+    pushToUndo();
 
     if (e.shiftKey) {
         // Unindent
@@ -328,7 +326,7 @@ function handleTab(e) {
         }
     }
     setCursorAtEnd(currentBlock, writingCanvas);
-    window.saveCurrentNote();
+    saveCurrentNote();
 }
 
 /**
@@ -344,7 +342,7 @@ function handleStandardShortcuts(e) {
         if (cmd) {
             e.preventDefault();
             execCommand(cmd);
-            window.saveCurrentNote();
+            saveCurrentNote();
             updateFontDisplay();
         }
     }
@@ -359,7 +357,7 @@ writingCanvas.addEventListener('paste', (e) => {
             return `<div>${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
         }).join('');
         execCommand('insertHTML', html);
-        window.saveCurrentNote();
+        saveCurrentNote();
     }
 });
 
