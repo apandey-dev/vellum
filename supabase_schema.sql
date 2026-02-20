@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- 2. Folders Table
 CREATE TABLE IF NOT EXISTS public.folders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE DEFAULT auth.uid(),
     name TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
@@ -18,10 +18,10 @@ CREATE TABLE IF NOT EXISTS public.folders (
 -- 3. Notes Table
 CREATE TABLE IF NOT EXISTS public.notes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE DEFAULT auth.uid(),
     folder_id UUID REFERENCES public.folders ON DELETE CASCADE,
     title TEXT NOT NULL,
-    content TEXT NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
     is_pinned BOOLEAN DEFAULT false,
     is_public BOOLEAN DEFAULT false,
     public_id TEXT UNIQUE,
@@ -37,14 +37,30 @@ ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
 -- 5. RLS Policies
 -- Profiles
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
 -- Folders
-CREATE POLICY "Users can manage own folders" ON public.folders FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Folders SELECT" ON public.folders;
+CREATE POLICY "Folders SELECT" ON public.folders FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Folders INSERT" ON public.folders;
+CREATE POLICY "Folders INSERT" ON public.folders FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Folders UPDATE" ON public.folders;
+CREATE POLICY "Folders UPDATE" ON public.folders FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Folders DELETE" ON public.folders;
+CREATE POLICY "Folders DELETE" ON public.folders FOR DELETE USING (auth.uid() = user_id);
 
 -- Notes
-CREATE POLICY "Users can manage own notes" ON public.notes FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Notes SELECT" ON public.notes;
+CREATE POLICY "Notes SELECT" ON public.notes FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Notes INSERT" ON public.notes;
+CREATE POLICY "Notes INSERT" ON public.notes FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Notes UPDATE" ON public.notes;
+CREATE POLICY "Notes UPDATE" ON public.notes FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Notes DELETE" ON public.notes;
+CREATE POLICY "Notes DELETE" ON public.notes FOR DELETE USING (auth.uid() = user_id);
 
 -- 6. Trigger: Handle New User Signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -55,10 +71,12 @@ BEGIN
     INSERT INTO public.profiles (id, email)
     VALUES (new.id, new.email);
 
+    -- Create 'General' folder for the user
     INSERT INTO public.folders (user_id, name)
     VALUES (new.id, 'General')
     RETURNING id INTO new_folder_id;
 
+    -- Create initial note
     INSERT INTO public.notes (user_id, folder_id, title, content)
     VALUES (new.id, new_folder_id, 'NewNote', '');
 
