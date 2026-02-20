@@ -86,7 +86,7 @@ const THEME_KEY = 'vellum_theme';
 let notes = [];
 let folders = [];
 let activeNoteId = null;
-let activeFolderId = null;
+let activeFolderId = null; // null means 'All' or no folder filter
 
 // Export state
 let selectedExportFormat = null;
@@ -186,13 +186,13 @@ async function fetchInitialData() {
         if (noteError) throw noteError;
         notes = noteData;
 
-        // Set initial active folder and note
-        if (folders.length > 0) {
-            activeFolderId = folders[0].id;
-            const folderNotes = getNotesInFolder(activeFolderId);
-            if (folderNotes.length > 0) {
-                activeNoteId = folderNotes[0].id;
-            }
+        // Reset state
+        activeNoteId = null;
+        activeFolderId = null;
+
+        if (notes.length > 0) {
+            activeNoteId = notes[0].id;
+            activeFolderId = notes[0].folder_id;
         }
 
         renderFolderList();
@@ -228,14 +228,14 @@ export async function saveCurrentNote() {
 }
 window.saveCurrentNote = saveCurrentNote;
 
-async function createNote(title, folderId) {
+async function createNote(title, folderId = null) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const newNote = {
-        user_id: user.id, // Explicit for RLS safety
+        user_id: user.id,
         folder_id: folderId,
-        title: title,
+        title: title || 'Untitled',
         content: '',
         is_public: false
     };
@@ -277,7 +277,7 @@ async function deleteNote(noteId) {
 
     if (activeNoteId === noteId) {
         const folderNotes = getNotesInFolder(activeFolderId);
-        activeNoteId = folderNotes.length > 0 ? folderNotes[0].id : null;
+        activeNoteId = folderNotes.length > 0 ? folderNotes[0].id : (notes.length > 0 ? notes[0].id : null);
     }
 
     renderNoteChips();
@@ -311,7 +311,7 @@ async function createFolder(name) {
 
     const { data, error } = await supabase
         .from('folders')
-        .insert([{ name, user_id: user.id }]) // Explicit for RLS safety
+        .insert([{ name, user_id: user.id }])
         .select();
 
     if (error) {
@@ -328,12 +328,6 @@ async function createFolder(name) {
 }
 
 async function deleteFolder(folderId) {
-    const folderToDelete = folders.find(f => f.id === folderId);
-    if (folderToDelete && folderToDelete.name === 'General') {
-        showToast('Cannot delete General folder', 'error');
-        return;
-    }
-
     const { error } = await supabase
         .from('folders')
         .delete()
@@ -345,17 +339,18 @@ async function deleteFolder(folderId) {
     }
 
     folders = folders.filter(f => f.id !== folderId);
-    notes = notes.filter(n => n.folder_id !== folderId);
+    // Notes associated with this folder are handled by SET NULL in DB
+    notes.forEach(n => {
+        if (n.folder_id === folderId) n.folder_id = null;
+    });
 
     if (activeFolderId === folderId) {
-        activeFolderId = folders[0]?.id || null;
-        const folderNotes = getNotesInFolder(activeFolderId);
-        activeNoteId = folderNotes.length > 0 ? folderNotes[0].id : null;
+        activeFolderId = null;
     }
 
     renderFolderList();
     renderNoteChips();
-    loadActiveNote();
+    updateFolderDropdown();
     showToast('Folder deleted!', 'success');
     pushToUndo();
 }
@@ -375,13 +370,10 @@ async function moveNoteToFolder(noteId, targetFolderId) {
     if (note) note.folder_id = targetFolderId;
 
     if (activeNoteId === noteId) {
-        const remainingNotes = getNotesInFolder(activeFolderId);
-        if (remainingNotes.length > 0) {
-            if (!remainingNotes.find(n => n.id === activeNoteId)) {
-                activeNoteId = remainingNotes[0].id;
-            }
-        } else {
-            activeNoteId = null;
+        // If we were looking at a specific folder and the note moved out of it
+        if (activeFolderId !== null && activeFolderId !== targetFolderId) {
+            const remainingNotes = getNotesInFolder(activeFolderId);
+            activeNoteId = remainingNotes.length > 0 ? remainingNotes[0].id : null;
         }
     }
 
@@ -418,12 +410,14 @@ async function togglePinNote(noteId) {
 // ==================== UI RENDERING ====================
 
 function getNotesInFolder(folderId) {
+    if (folderId === null) return notes; // null means 'All'
     return notes.filter(n => n.folder_id === folderId);
 }
 
 function renderNoteChips() {
     noteChips.innerHTML = '';
     const folderNotes = getNotesInFolder(activeFolderId);
+
     if (folderNotes.length === 0) {
         const emptyChip = document.createElement('div');
         emptyChip.className = 'chip empty-chip';
@@ -486,6 +480,18 @@ function renderFolderList() {
     const folderList = document.getElementById('folderList');
     if (!folderList) return;
     folderList.innerHTML = '';
+
+    // Add "All Notes" option
+    const allItem = document.createElement('div');
+    allItem.className = 'folder-item';
+    if (activeFolderId === null) allItem.classList.add('active');
+    allItem.innerHTML = `<div class="folder-name">All Notes</div>`;
+    allItem.onclick = () => {
+        setActiveFolder(null);
+        manageFoldersModal.classList.remove('show');
+    };
+    folderList.appendChild(allItem);
+
     folders.forEach(folder => {
         const item = document.createElement('div');
         item.className = 'folder-item';
@@ -501,16 +507,14 @@ function renderFolderList() {
         };
         const actions = document.createElement('div');
         actions.className = 'folder-actions';
-        if (folder.name !== 'General') {
-            const delBtn = document.createElement('button');
-            delBtn.className = 'folder-action-btn';
-            delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-            delBtn.onclick = (e) => {
-                e.stopPropagation();
-                deleteFolder(folder.id);
-            };
-            actions.appendChild(delBtn);
-        }
+        const delBtn = document.createElement('button');
+        delBtn.className = 'folder-action-btn';
+        delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteFolder(folder.id);
+        };
+        actions.appendChild(delBtn);
         item.appendChild(nameDiv);
         item.appendChild(actions);
         folderList.appendChild(item);
@@ -528,38 +532,29 @@ function loadActiveNote() {
         shareBtn.classList.remove('disabled');
         exportBtn.classList.remove('disabled');
     } else {
-        const folderNotes = getNotesInFolder(activeFolderId);
-        if (folderNotes.length === 0) {
-            writingCanvas.innerHTML = `
-                <div class="empty-folder-message">
-                    <div class="empty-folder-icon"><i class="fas fa-note-sticky"></i></div>
-                    <h3>No Notes in This Folder</h3>
-                    <p>This folder is empty. Create a new note to get started!</p>
-                    <button class="create-note-btn abc" id="createNoteFromEmpty">Create New Note</button>
-                </div>
-            `;
-            writingCanvas.contentEditable = 'false';
-            writingCanvas.classList.add('empty-folder-message');
-            deleteBtn.classList.add('disabled');
-            shareBtn.classList.add('disabled');
-            exportBtn.classList.add('disabled');
-            updatePinButton();
-            setTimeout(() => {
-                const createBtn = document.getElementById('createNoteFromEmpty');
-                if (createBtn) {
-                    createBtn.onclick = () => {
-                        updateFolderDropdown();
-                        document.getElementById('newNoteName').value = '';
-                        newNoteModal.classList.add('show');
-                        pushToModalStack(newNoteModal);
-                        setTimeout(() => document.getElementById('newNoteName').focus(), 100);
-                    };
-                }
-            }, 100);
-        } else {
-            activeNoteId = folderNotes[0].id;
-            loadActiveNote();
-        }
+        // Empty State Screen
+        writingCanvas.innerHTML = `
+            <div class="empty-folder-message">
+                <div class="empty-folder-icon"><i class="fas fa-note-sticky"></i></div>
+                <h3>📄 No notes yet</h3>
+                <p>Create your first note to get started.</p>
+                <button class="create-note-btn abc" id="createNoteFromEmpty">+ Create New Note</button>
+            </div>
+        `;
+        writingCanvas.contentEditable = 'false';
+        writingCanvas.classList.add('empty-folder-message');
+        deleteBtn.classList.add('disabled');
+        shareBtn.classList.add('disabled');
+        exportBtn.classList.add('disabled');
+        updatePinButton();
+        setTimeout(() => {
+            const createBtn = document.getElementById('createNoteFromEmpty');
+            if (createBtn) {
+                createBtn.onclick = () => {
+                    createNote('Untitled', activeFolderId);
+                };
+            }
+        }, 100);
     }
 }
 
@@ -631,6 +626,24 @@ function updateFolderDropdown() {
     if (!optionsContainer) return;
 
     optionsContainer.innerHTML = '';
+
+    // Add "Uncategorized" or "None"
+    const noneOpt = document.createElement('div');
+    noneOpt.className = 'select-option';
+    noneOpt.textContent = 'No Folder';
+    noneOpt.dataset.folderId = '';
+    if (activeFolderId === null) {
+        noneOpt.classList.add('selected');
+        selectedNameSpan.textContent = 'No Folder';
+    }
+    noneOpt.onclick = () => {
+        optionsContainer.querySelectorAll('.select-option').forEach(opt => opt.classList.remove('selected'));
+        noneOpt.classList.add('selected');
+        selectedNameSpan.textContent = 'No Folder';
+        wrapper.classList.remove('active');
+    };
+    optionsContainer.appendChild(noneOpt);
+
     folders.forEach(folder => {
         const option = document.createElement('div');
         option.className = 'select-option';
@@ -652,17 +665,30 @@ function updateFolderDropdown() {
 
 function getSelectedFolderId() {
     const selectedOption = document.querySelector('#folderSelectOptions .select-option.selected');
-    return selectedOption ? selectedOption.dataset.folderId : activeFolderId;
+    return (selectedOption && selectedOption.dataset.folderId) ? selectedOption.dataset.folderId : null;
 }
 
 // ==================== MOVE NOTE LOGIC ====================
 
 function updateMoveFolderDropdown(excludeFolderId) {
     moveFolderSelectOptions.innerHTML = '';
-    let hasOptions = false;
+
+    // Option to move to "No Folder"
+    const noneOpt = document.createElement('div');
+    noneOpt.className = 'select-option';
+    noneOpt.textContent = 'No Folder';
+    noneOpt.dataset.folderId = '';
+    noneOpt.onclick = () => {
+        moveSelectedFolderName.textContent = 'No Folder';
+        moveFolderSelectOptions.querySelectorAll('.select-option').forEach(opt => opt.classList.remove('selected'));
+        noneOpt.classList.add('selected');
+        moveFolderSelectWrapper.classList.remove('active');
+        confirmMoveBtn.disabled = false;
+    };
+    moveFolderSelectOptions.appendChild(noneOpt);
+
     folders.forEach(folder => {
         if (folder.id === excludeFolderId) return;
-        hasOptions = true;
         const option = document.createElement('div');
         option.className = 'select-option';
         option.textContent = folder.name;
@@ -695,7 +721,8 @@ moveToFolderItem.onclick = () => {
 confirmMoveBtn.onclick = () => {
     const selected = moveFolderSelectOptions.querySelector('.select-option.selected');
     if (selected && window.contextMenuNoteId) {
-        moveNoteToFolder(window.contextMenuNoteId, selected.dataset.folderId);
+        const fId = selected.dataset.folderId || null;
+        moveNoteToFolder(window.contextMenuNoteId, fId);
         moveNoteModal.classList.remove('show');
     }
 };
@@ -724,10 +751,8 @@ addNoteBtn.onclick = () => {
 document.getElementById('createNewNote').onclick = () => {
     const title = document.getElementById('newNoteName').value.trim();
     const fId = getSelectedFolderId();
-    if (title) {
-        createNote(title, fId);
-        newNoteModal.classList.remove('show');
-    }
+    createNote(title || 'Untitled', fId);
+    newNoteModal.classList.remove('show');
 };
 
 document.getElementById('cancelNewNote').onclick = () => newNoteModal.classList.remove('show');
