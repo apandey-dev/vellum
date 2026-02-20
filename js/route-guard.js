@@ -37,23 +37,23 @@
         }
     }
 
-    // 4. Allowed routes validation (Clean URLs only)
+    // 4. Allowed routes validation
     const allowedRoutes = [
         '/',
         '/dashboard',
         '/login',
         '/signup',
         '/print',
-        '/error'
+        '/error',
+        '/404'
     ];
 
     const isShareRoute = pathname.startsWith('/share/');
     const isAllowed = allowedRoutes.includes(pathname) || isShareRoute;
 
-    if (!isAllowed) {
-        // Prevent infinite loop on error page
-        if (pathname !== '/error') {
-            window.location.replace('/error');
-        }
+    // Note: If on Vercel, unmatched routes show 404.html automatically.
+    // This guard handles it on the client side if needed.
+    if (!isAllowed && pathname !== '/404.html') {
+        window.location.replace('/error');
     }
 })();
