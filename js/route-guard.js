@@ -1,59 +1,13 @@
-(function() {
-    let pathname = window.location.pathname;
-    const search = window.location.search;
+if (window.location.pathname.endsWith('.html')) {
+    let clean = window.location.pathname.replace('.html', '');
 
-    // 1. Normalize trailing slashes (except root)
-    if (pathname.length > 1 && pathname.endsWith('/')) {
-        pathname = pathname.slice(0, -1);
-        window.location.replace(pathname + search);
-        return;
+    // Normalize clean routes
+    if (clean.includes('/auth/')) {
+        clean = clean.replace('/auth/', '/');
+    }
+    if (clean === '/index') {
+        clean = '/';
     }
 
-    // 2. Redirect .html and internal folders to clean URLs
-    if (pathname.endsWith('.html') || pathname.includes('/auth/')) {
-        let cleanPath = pathname.replace(/\.html$/, '');
-
-        // Remove /auth/ prefix if present
-        if (cleanPath.startsWith('/auth/')) {
-            cleanPath = cleanPath.replace('/auth/', '/');
-        }
-
-        // Handle index specifically
-        if (cleanPath === '/index') {
-            cleanPath = '/';
-        }
-
-        window.location.replace((cleanPath || '/') + search);
-        return;
-    }
-
-    // 3. Handle /share.html?id=... or /share?id=... -> /share/...
-    if (pathname === '/share.html' || pathname === '/share') {
-        const params = new URLSearchParams(search);
-        const id = params.get('id');
-        if (id) {
-            window.location.replace('/share/' + id);
-            return;
-        }
-    }
-
-    // 4. Allowed routes validation (Clean URLs only)
-    const allowedRoutes = [
-        '/',
-        '/dashboard',
-        '/login',
-        '/signup',
-        '/print',
-        '/error'
-    ];
-
-    const isShareRoute = pathname.startsWith('/share/');
-    const isAllowed = allowedRoutes.includes(pathname) || isShareRoute;
-
-    if (!isAllowed) {
-        // Prevent infinite loop on error page
-        if (pathname !== '/error') {
-            window.location.replace('/error');
-        }
-    }
-})();
+    window.location.replace(clean || '/');
+}
