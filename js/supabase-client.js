@@ -10,5 +10,39 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     }
 });
 
+/**
+ * Restores session from sessionStorage
+ * returns true if session exists and was set, false otherwise
+ */
+export async function restoreSession() {
+    const sessionStr = sessionStorage.getItem('vellum_session');
+    if (!sessionStr) return false;
+
+    try {
+        const session = JSON.parse(sessionStr);
+        if (!session.access_token || !session.refresh_token) return false;
+
+        const { data, error } = await supabase.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token
+        });
+
+        if (error) {
+            console.error("Session restore error:", error.message);
+            return false;
+        }
+
+        // Update sessionStorage with fresh session (it might have refreshed)
+        if (data.session) {
+            sessionStorage.setItem('vellum_session', JSON.stringify(data.session));
+        }
+
+        return true;
+    } catch (e) {
+        console.error("Failed to parse session string:", e);
+        return false;
+    }
+}
+
 // Expose to window for legacy scripts if needed
 window.supabaseClient = supabase;

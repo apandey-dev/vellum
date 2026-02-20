@@ -2,7 +2,7 @@
 // Vellum - CORE LOGIC
 // ========================================
 
-import { supabase } from '/js/supabase-client.js';
+import { supabase, restoreSession } from '/js/supabase-client.js';
 import { showToast, escapeHtml } from '/js/utils.js';
 
 // --- ELEMENT REFERENCES (GLOBAL) ---
@@ -176,6 +176,7 @@ async function fetchInitialData() {
 
     if (folderError) {
         showToast('Error loading folders', 'error');
+        console.error(folderError);
         return;
     }
     folders = folderData;
@@ -187,6 +188,7 @@ async function fetchInitialData() {
 
     if (noteError) {
         showToast('Error loading notes', 'error');
+        console.error(noteError);
         return;
     }
     notes = noteData;
@@ -211,7 +213,6 @@ export async function saveCurrentNote() {
     const note = notes.find(n => n.id === activeNoteId);
     const content = writingCanvas.innerHTML;
 
-    // Only save if content changed
     if (note && note.content !== content) {
         note.content = content;
         note.updated_at = new Date().toISOString();
@@ -227,11 +228,7 @@ export async function saveCurrentNote() {
 window.saveCurrentNote = saveCurrentNote;
 
 async function createNote(title, folderId) {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
-
     const newNote = {
-        user_id: userData.user.id,
         folder_id: folderId,
         title: title,
         content: '',
@@ -245,6 +242,7 @@ async function createNote(title, folderId) {
 
     if (error) {
         showToast('Error creating note', 'error');
+        console.error(error);
         return;
     }
 
@@ -253,6 +251,7 @@ async function createNote(title, folderId) {
     activeFolderId = folderId;
 
     renderNoteChips();
+    renderFolderList(); // update active state
     loadActiveNote();
     showToast('Note created!', 'success');
     pushToUndo();
@@ -302,16 +301,14 @@ async function renameNote(noteId, newTitle) {
 }
 
 async function createFolder(name) {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
-
     const { data, error } = await supabase
         .from('folders')
-        .insert([{ name, user_id: userData.user.id }])
+        .insert([{ name }])
         .select();
 
     if (error) {
         showToast('Error creating folder', 'error');
+        console.error(error);
         return;
     }
 
@@ -323,13 +320,8 @@ async function createFolder(name) {
 }
 
 async function deleteFolder(folderId) {
-    // Check if it's the only folder or if we should move notes
-    // In our schema, we have a trigger that might handle some things,
-    // but here we'll move notes to the first available folder or let them be deleted (cascade).
-    // Requirement says: "Move notes to General folder".
-
-    const generalFolder = folders.find(f => f.name === 'General');
-    if (generalFolder && generalFolder.id === folderId) {
+    const folderToDelete = folders.find(f => f.id === folderId);
+    if (folderToDelete && folderToDelete.name === 'General') {
         showToast('Cannot delete General folder', 'error');
         return;
     }
@@ -345,8 +337,6 @@ async function deleteFolder(folderId) {
     }
 
     folders = folders.filter(f => f.id !== folderId);
-
-    // Notes are deleted on cascade in DB, so we update local state
     notes = notes.filter(n => n.folder_id !== folderId);
 
     if (activeFolderId === folderId) {
@@ -377,12 +367,8 @@ async function moveNoteToFolder(noteId, targetFolderId) {
     if (note) note.folder_id = targetFolderId;
 
     if (activeNoteId === noteId) {
-        // Switch to the folder if we moved the active note?
-        // Or just stay in current folder and the note disappears from view?
-        // Let's stay in current folder for consistency with previous behavior.
         const remainingNotes = getNotesInFolder(activeFolderId);
         if (remainingNotes.length > 0) {
-            // keep current activeNoteId if it's still in the folder, otherwise switch
             if (!remainingNotes.find(n => n.id === activeNoteId)) {
                 activeNoteId = remainingNotes[0].id;
             }
@@ -401,15 +387,24 @@ async function togglePinNote(noteId) {
     const note = notes.find(n => n.id === noteId);
     if (!note) return;
 
-    const newPinnedStatus = !note.is_pinned; // Wait, schema doesn't have is_pinned.
-    // I should add is_pinned to schema or use a different way.
-    // The user's schema didn't have is_pinned. I'll add it.
-
-    // For now, I'll simulate it or assume I'll add it to DB.
-    // Actually, I'll update the schema later.
-
+    const newPinnedStatus = !note.is_pinned;
     note.is_pinned = newPinnedStatus;
-    // ...
+    updatePinButton();
+    renderNoteChips();
+
+    const { error } = await supabase
+        .from('notes')
+        .update({ is_pinned: newPinnedStatus })
+        .eq('id', noteId);
+
+    if (error) {
+        note.is_pinned = !newPinnedStatus; // revert
+        updatePinButton();
+        renderNoteChips();
+        showToast('Error pinning note', 'error');
+    } else {
+        showToast(newPinnedStatus ? 'Note pinned' : 'Note unpinned', 'success');
+    }
 }
 
 // ==================== UI RENDERING ====================
@@ -429,7 +424,6 @@ function renderNoteChips() {
         return;
     }
 
-    // Sort pinned notes first (simulated for now)
     folderNotes.sort((a, b) => (b.is_pinned === true) - (a.is_pinned === true));
 
     folderNotes.forEach(note => {
@@ -523,6 +517,8 @@ function loadActiveNote() {
         writingCanvas.classList.remove('empty-folder-message');
         updatePinButton();
         deleteBtn.classList.remove('disabled');
+        shareBtn.classList.remove('disabled');
+        exportBtn.classList.remove('disabled');
     } else {
         const folderNotes = getNotesInFolder(activeFolderId);
         if (folderNotes.length === 0) {
@@ -537,6 +533,8 @@ function loadActiveNote() {
             writingCanvas.contentEditable = 'false';
             writingCanvas.classList.add('empty-folder-message');
             deleteBtn.classList.add('disabled');
+            shareBtn.classList.add('disabled');
+            exportBtn.classList.add('disabled');
             updatePinButton();
             setTimeout(() => {
                 const createBtn = document.getElementById('createNoteFromEmpty');
@@ -581,6 +579,7 @@ function pushToModalStack(modal) {
 }
 
 function setupModalClose(modalElement) {
+    if (!modalElement) return;
     modalElement.addEventListener('click', (e) => {
         if (e.target === modalElement) {
             modalElement.classList.remove('show');
@@ -592,7 +591,7 @@ function setupModalClose(modalElement) {
     });
 }
 [confirmModal, newNoteModal, manageFoldersModal, exportModal, confirmFolderDeleteModal, renameNoteModal, shareModal, searchModal, moveNoteModal, userProfileModal].forEach(modal => {
-    if (modal) setupModalClose(modal);
+    setupModalClose(modal);
 });
 
 // ==================== PIN LOGIC ====================
@@ -611,31 +610,9 @@ function updatePinButton() {
     }
 }
 
-pinBtn.addEventListener('click', async () => {
-    if (!activeNoteId) return;
-    const note = notes.find(n => n.id === activeNoteId);
-    if (note) {
-        const newStatus = !note.is_pinned;
-        // Optimization: UI first
-        note.is_pinned = newStatus;
-        updatePinButton();
-        renderNoteChips();
-
-        const { error } = await supabase
-            .from('notes')
-            .update({ is_pinned: newStatus })
-            .eq('id', activeNoteId);
-
-        if (error) {
-            note.is_pinned = !newStatus; // revert
-            updatePinButton();
-            renderNoteChips();
-            showToast('Error pinning note', 'error');
-        } else {
-            showToast(newStatus ? 'Note pinned' : 'Note unpinned', 'success');
-        }
-    }
-});
+pinBtn.onclick = () => {
+    if (activeNoteId) togglePinNote(activeNoteId);
+};
 
 // ==================== FOLDER DROPDOWN ====================
 
@@ -1003,7 +980,9 @@ ctxDelete.onclick = () => {
 
 document.onclick = (e) => {
     if (!noteContextMenu.contains(e.target)) noteContextMenu.classList.remove('show');
-    if (!moveFolderSelectWrapper.contains(e.target)) moveFolderSelectWrapper.classList.remove('active');
+    if (moveFolderSelectWrapper && !moveFolderSelectWrapper.contains(e.target)) moveFolderSelectWrapper.classList.remove('active');
+    const folderSelectWrapper = document.getElementById('folderSelectWrapper');
+    if (folderSelectWrapper && !folderSelectWrapper.contains(e.target)) folderSelectWrapper.classList.remove('active');
 };
 
 moveFolderSelectTrigger.onclick = (e) => {
@@ -1011,10 +990,28 @@ moveFolderSelectTrigger.onclick = (e) => {
     moveFolderSelectWrapper.classList.toggle('active');
 };
 
+const folderSelectTrigger = document.getElementById('folderSelectTrigger');
+if (folderSelectTrigger) {
+    folderSelectTrigger.onclick = (e) => {
+        e.stopPropagation();
+        document.getElementById('folderSelectWrapper').classList.toggle('active');
+    };
+}
+
 // ==================== INITIALIZATION ====================
 
 async function init() {
     loadTheme();
+
+    // Ensure session is restored before fetching data
+    await restoreSession();
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        window.location.href = '/login';
+        return;
+    }
+
     await fetchInitialData();
 
     const userData = localStorage.getItem('vellum_user');
