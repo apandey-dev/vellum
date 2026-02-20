@@ -25,7 +25,7 @@ The project is ready for Vercel. Ensure `vercel.json` is present in the root.
 
 ### Database Security (RLS)
 - **Row Level Security (RLS)** is enabled on all tables (`profiles`, `folders`, `notes`).
-- Users can **only** access rows where `user_id` matches their authenticated UID.
+- Users can **only** access rows where `user_id` (or `id` for profiles) matches their authenticated UID.
 - Private notes are never exposed.
 
 ### Public Sharing
@@ -35,6 +35,7 @@ The project is ready for Vercel. Ensure `vercel.json` is present in the root.
 - The RPC function handles expiry **atomically**: it checks the timestamp, and if expired, it immediately reverts the note to private in the database and returns no data.
 
 ### Data Integrity
-- Database triggers ensure that every new user automatically gets a "General" folder and an initial "NewNote".
-- Cascade deletes ensure that when a folder is deleted, its notes are handled correctly (or deleted if not moved).
+- A database trigger ensures that every new user automatically gets a entry in the `profiles` table.
+- **Zero-Initial-State**: No default folders or notes are created automatically. The application shows an "Empty State" UI when no notes are found, allowing for a cleaner user experience and a leaner database.
+- Cascade deletes ensure that when a user is deleted, all their data is removed.
 - `updated_at` timestamps are automatically managed by triggers.

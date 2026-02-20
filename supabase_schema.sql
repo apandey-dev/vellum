@@ -1,27 +1,27 @@
--- Vellum Supabase Schema (Production Audit Fix)
+-- Vellum Supabase Schema (Simplified "Clean" Version)
 
--- 1. Profiles Table
-CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
+-- 1. Profiles Table (Part of Auth Flow)
+CREATE TABLE public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 -- 2. Folders Table
-CREATE TABLE IF NOT EXISTS public.folders (
+CREATE TABLE public.folders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE DEFAULT auth.uid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 -- 3. Notes Table
-CREATE TABLE IF NOT EXISTS public.notes (
+CREATE TABLE public.notes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE DEFAULT auth.uid(),
-    folder_id UUID REFERENCES public.folders ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    content TEXT NOT NULL DEFAULT '',
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    folder_id UUID REFERENCES public.folders(id) ON DELETE SET NULL,
+    title TEXT DEFAULT 'Untitled',
+    content TEXT DEFAULT '',
     is_pinned BOOLEAN DEFAULT false,
     is_public BOOLEAN DEFAULT false,
     public_id TEXT UNIQUE,
@@ -35,69 +35,33 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.folders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
--- 5. RLS Policies (Comprehensive)
+-- 5. RLS Policies
+CREATE POLICY "Users can manage their profiles"
+ON public.profiles FOR ALL TO authenticated
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
 
--- Profiles
-DROP POLICY IF EXISTS "Profiles SELECT" ON public.profiles;
-CREATE POLICY "Profiles SELECT" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
-DROP POLICY IF EXISTS "Profiles UPDATE" ON public.profiles;
-CREATE POLICY "Profiles UPDATE" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
+CREATE POLICY "Users can manage their folders"
+ON public.folders FOR ALL TO authenticated
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
--- Folders
-DROP POLICY IF EXISTS "Folders SELECT" ON public.folders;
-CREATE POLICY "Folders SELECT" ON public.folders FOR SELECT TO authenticated USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Folders INSERT" ON public.folders;
-CREATE POLICY "Folders INSERT" ON public.folders FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Folders UPDATE" ON public.folders;
-CREATE POLICY "Folders UPDATE" ON public.folders FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Folders DELETE" ON public.folders;
-CREATE POLICY "Folders DELETE" ON public.folders FOR DELETE TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their notes"
+ON public.notes FOR ALL TO authenticated
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
--- Notes
-DROP POLICY IF EXISTS "Notes SELECT" ON public.notes;
-CREATE POLICY "Notes SELECT" ON public.notes FOR SELECT TO authenticated USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Notes INSERT" ON public.notes;
-CREATE POLICY "Notes INSERT" ON public.notes FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Notes UPDATE" ON public.notes;
-CREATE POLICY "Notes UPDATE" ON public.notes FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Notes DELETE" ON public.notes;
-CREATE POLICY "Notes DELETE" ON public.notes FOR DELETE TO authenticated USING (auth.uid() = user_id);
-
--- 6. Trigger: Handle New User Signup (Idempotent)
+-- 6. Trigger: Create Profile on Signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
-DECLARE
-    new_folder_id UUID;
 BEGIN
-    -- Idempotent profile creation
     INSERT INTO public.profiles (id, email)
     VALUES (new.id, new.email)
     ON CONFLICT (id) DO NOTHING;
-
-    -- Idempotent 'General' folder creation
-    -- We check if it exists first to avoid duplicate General folders
-    SELECT id INTO new_folder_id FROM public.folders
-    WHERE user_id = new.id AND name = 'General' LIMIT 1;
-
-    IF new_folder_id IS NULL THEN
-        INSERT INTO public.folders (user_id, name)
-        VALUES (new.id, 'General')
-        RETURNING id INTO new_folder_id;
-    END IF;
-
-    -- Create initial note if the General folder is empty
-    IF new_folder_id IS NOT NULL THEN
-        IF NOT EXISTS (SELECT 1 FROM public.notes WHERE folder_id = new_folder_id) THEN
-            INSERT INTO public.notes (user_id, folder_id, title, content)
-            VALUES (new.id, new_folder_id, 'NewNote', '');
-        END IF;
-    END IF;
-
     RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Re-create trigger
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
@@ -124,7 +88,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Re-create trigger
 DROP TRIGGER IF EXISTS on_note_share_toggle ON public.notes;
 CREATE TRIGGER on_note_share_toggle
   BEFORE UPDATE ON public.notes
