@@ -1022,7 +1022,7 @@ async function exportAsPDF(fileName) {
     localStorage.setItem('vellum_print_content', content);
     localStorage.setItem('vellum_print_title', fileName); // SYNC TITLE
 
-    // 3. Open print page in new tab
+    // 3. Open print.html in new tab
     const printWindow = window.open('/print', '_blank');
 
     // 4. Focus check (optional)
