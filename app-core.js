@@ -1,5 +1,5 @@
 // ========================================
-// mindJournal - CORE LOGIC (Part 1/2)
+// Vellum - CORE LOGIC
 // ========================================
 
 // --- ELEMENT REFERENCES (GLOBAL) ---
