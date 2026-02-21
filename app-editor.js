@@ -269,7 +269,9 @@ function handleEnter(e) {
         const styleSource = node.nodeType === 3 ? node.parentElement : node;
         const computed = window.getComputedStyle(styleSource);
 
-        newP.style.color = computed.color;
+        // Only inherit color if it's explicitly set on the source and not the default theme color
+        // Actually, to satisfy "Bold text must inherit color from parent", we should avoid hardcoding it.
+        // If we don't set it, it will inherit from the canvas/theme.
         newP.style.fontFamily = computed.fontFamily;
         newP.style.fontWeight = computed.fontWeight;
         newP.style.fontStyle = computed.fontStyle;

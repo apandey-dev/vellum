@@ -502,15 +502,23 @@ body {
 
 /* Ensure all inline elements have consistent metrics to prevent cursor jumping */
 .writing-canvas span,
-.writing-canvas b,
 .writing-canvas i,
 .writing-canvas u,
 .writing-canvas code {
     line-height: inherit;
     vertical-align: baseline;
-    display: inline; /* Keep them inline to avoid block shifts */
-    color: inherit; /* Ensure they inherit color from parent unless explicitly set */
-    font-family: inherit; /* Ensure they inherit font from parent */
+    display: inline;
+    color: inherit;
+    font-family: inherit;
+}
+
+.writing-canvas b,
+.writing-canvas strong {
+    line-height: inherit;
+    vertical-align: baseline;
+    display: inline;
+    color: inherit !important; /* Bold/Strong must always inherit color to adapt to theme */
+    font-weight: 600;
 }
 
 /* Strict Heading Resets */
@@ -1196,8 +1204,8 @@ pre code {
 .export-card {
     background: var(--bg-panel);
     border: 2px solid var(--border-color);
-    border-radius: 16px;
-    padding: 20px 12px;
+    border-radius: 10px;
+    padding: 16px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1205,6 +1213,31 @@ pre code {
     flex-direction: column;
     align-items: center;
     gap: 8px;
+    max-height: 150px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    box-sizing: border-box;
+}
+
+[data-theme="light"] .export-card {
+    background: #f8f8f8;
+    color: #111111;
+}
+
+[data-theme="dark"] .export-card {
+    background: #1e1e1e;
+    color: #f5f5f5;
+}
+
+.export-card::-webkit-scrollbar {
+    display: block;
+    width: 4px;
+}
+
+.export-card::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border-radius: 10px;
 }
 
 .export-card:hover {
