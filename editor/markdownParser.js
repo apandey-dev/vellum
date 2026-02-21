@@ -182,28 +182,34 @@ export function isMarkdown(text) {
  * Detects if a string likely contains source code.
  */
 export function isCodeLike(text) {
-    if (!text) return false;
+    if (!text || text.length < 5) return false;
 
-    // Check for common code patterns
-    const codePatterns = [
-        /[{};]/,                  // Curly braces or semicolons
-        /=>/,                     // Arrow functions
-        /\b(const|let|var|function|class|return|import|export|if|else|for|while|async|await)\b/, // JS/TS keywords
-        /\b(public|private|protected|void|int|string|bool|list|map)\b/i, // Java/C#/Dart keywords
-        /<\/?[a-z][\s\S]*>/i,     // HTML/XML tags
-        /^[ \t]{2,}/m,            // Significant leading indentation
-        /\n[ \t]{2,}/             // Indentation after a newline
-    ];
+    // Explicit fenced code blocks
+    if (text.trim().startsWith('```') && text.trim().endsWith('```')) return true;
 
-    // If it's multi-line and has code keywords or structure
-    const lines = text.split('\n');
-    if (lines.length > 1) {
-        let matches = 0;
-        codePatterns.forEach(pattern => {
-            if (pattern.test(text)) matches++;
-        });
-        return matches >= 2;
-    }
+    const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+    if (lines.length < 2) return false;
 
-    return false;
+    let codeScore = 0;
+
+    // 1. Check for common programming keywords
+    const keywords = /\b(const|let|var|function|class|return|import|export|if|else|for|while|async|await|public|private|protected|void|int|string|bool|bool|dynamic|print|final|static|try|catch|new|this|super|extends|implements)\b/g;
+    const keywordMatches = (text.match(keywords) || []).length;
+    if (keywordMatches >= 2) codeScore += 2;
+    if (keywordMatches >= 5) codeScore += 3;
+
+    // 2. Check for structural symbols
+    if (/[{};]/.test(text)) codeScore += 2;
+    if ((text.match(/=>/g) || []).length >= 1) codeScore += 1;
+    if ((text.match(/\(\)/g) || []).length >= 1) codeScore += 1;
+
+    // 3. Check for indentation consistency (multiple lines starting with spaces/tabs)
+    const indentedLines = lines.filter(line => /^[ \t]{2,}/.test(line)).length;
+    if (indentedLines >= 2) codeScore += 2;
+
+    // 4. Check for common HTML/XML patterns
+    if (/<\/?[a-z][\s\S]*>/i.test(text)) codeScore += 2;
+
+    // Threshold for being "code-like"
+    return codeScore >= 4;
 }
