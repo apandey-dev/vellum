@@ -133,32 +133,12 @@ export function parseMarkdown(md) {
     html = html.replace(/`(.*?)`/g, '<code>$1</code>');
 
     // 8. Paragraphs and Line Breaks
-    // Handle double newlines as paragraph breaks and single newlines as soft breaks (<br>)
-    const sections = html.split('\n\n');
-    html = sections.map(section => {
-        if (!section.trim()) return '';
-
-        // If the section contains block-level HTML tags we've already generated,
-        // we need to be careful not to wrap them in another div.
-        // But we must wrap any remaining bare text.
-        const blockTags = ['h1', 'h2', 'h3', 'hr', 'ul', 'ol', 'table', 'pre'];
-        const hasBlockTag = blockTags.some(tag => section.includes(`<${tag}`));
-
-        if (hasBlockTag || section.includes('PARSERCODEBLOCK') || section.includes('PARSERTABLE')) {
-            // Split by newline and wrap only non-tag lines?
-            // Actually, if it has a block tag, it's usually a block-level section.
-            // Let's just ensure bare lines are wrapped.
-            return section.split('\n').map(line => {
-                if (!line.trim()) return '';
-                if (line.trim().startsWith('<') || line.includes('PARSERCODEBLOCK') || line.includes('PARSERTABLE')) return line;
-                return `<div>${line}</div>`;
-            }).join('');
-        }
-
-        // No block tags: Convert single newlines to <br> and wrap in div
-        const content = section.split('\n').join('<br>');
-        return `<div>${content}</div>`;
-    }).join('');
+    const lines = html.split('\n');
+    html = lines.map(line => {
+        if (line.startsWith('<') || line.includes('PARSERCODEBLOCK') || line.includes('PARSERTABLE')) return line;
+        if (!line.trim()) return '<br>';
+        return `<div>${line}</div>`;
+    }).join('\n');
 
     // 9. Re-insert Code Blocks and Tables
     codeBlocks.forEach(block => {
@@ -187,69 +167,4 @@ export function isMarkdown(text) {
     ];
 
     return mdPatterns.some(pattern => pattern.test(text));
-}
-
-/**
- * Detects if a string likely contains source code or HTML.
- */
-export function isCodeLike(text) {
-    const codePatterns = [
-        /[{};]/,                       // Braces or semicolons
-        /\b(function|class|const|let|var|import|export|if|else|for|while|return|async|await)\b/, // JS Keywords
-        /<[a-z][\s\S]*>/i,             // HTML tags
-        /\b(public|private|protected|void|static|int|String|bool|final)\b/, // Other lang keywords
-        /^[ \t]+/m,                    // Indentation at start of lines
-        /\(\) =>/,                     // Arrow function
-        /=> {/                         // Arrow function with block
-    ];
-
-    // Minimum criteria: at least 2 code-like features or very specific ones
-    let score = 0;
-    if (/[{};]/.test(text)) score += 1;
-    if (/\b(function|class|const|let|var|return)\b/.test(text)) score += 1;
-    if (/<[a-z][\s\S]*>/i.test(text)) score += 1;
-    if (/^[ \t]+/m.test(text)) score += 1;
-    if (/\(\) =>/.test(text)) score += 1;
-
-    // High certainty patterns
-    if (/function\s+\w+\s*\(/.test(text)) return true;
-    if (/class\s+\w+\s*\{/.test(text)) return true;
-    if (/<\/?[a-z][\s\S]*>/i.test(text)) return true;
-
-    return score >= 2;
-}
-
-/**
- * Intelligent paste handler that chooses between Markdown parsing or raw code wrapping.
- */
-export function smartParse(text) {
-    if (!text) return '';
-
-    // If it's explicitly Markdown (has headings, fenced code blocks, etc.), parse it as Markdown
-    if (isMarkdown(text)) {
-        return parseMarkdown(text);
-    }
-
-    // If it's not Markdown but looks like code, wrap it in a code block
-    if (isCodeLike(text)) {
-        const escaped = text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-
-        // Use the standardized highlightCode if possible, or just text
-        const highlighted = highlightCode(escaped, 'text');
-        return `<pre class="code-block" data-lang="text" contenteditable="false"><code>${highlighted}</code></pre>`;
-    }
-
-    // Default: treat as plain text with smart line breaks
-    const sections = text.split('\n\n');
-    return sections.map(section => {
-        const content = section
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .split('\n').join('<br>');
-        return `<div>${content}</div>`;
-    }).join('');
 }
