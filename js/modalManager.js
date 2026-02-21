@@ -39,9 +39,11 @@ class ModalManager {
         modalEl.className = 'modal-backdrop';
         modalEl.id = `modal-${id}`;
 
+        const boxClass = options.boxClass ? `modal-box ${options.boxClass}` : 'modal-box';
+
         // Use a standard box structure for all modals
         modalEl.innerHTML = `
-            <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title-${id}">
+            <div class="${boxClass}" role="dialog" aria-modal="true" aria-labelledby="modal-title-${id}">
                 <button class="modal-close-x" aria-label="Close modal">&times;</button>
                 ${options.title ? `<h3 id="modal-title-${id}">${options.title}</h3>` : ''}
                 <div class="modal-body">${options.content}</div>
