@@ -4,6 +4,8 @@
 
 import { supabase, restoreSession } from '/js/supabase-client.js';
 import { showToast, escapeHtml } from '/js/utils.js';
+import { modalManager } from '/js/modalManager.js';
+import { modalTemplates } from '/js/modalTemplates.js';
 
 // --- ELEMENT REFERENCES (GLOBAL) ---
 const sidebar = document.getElementById('sidebar');
@@ -16,40 +18,6 @@ const themeIcon = document.getElementById('themeIcon');
 const html = document.documentElement;
 export const writingCanvas = document.getElementById('writingCanvas');
 
-// Modal elements
-const confirmModal = document.getElementById('confirmModal');
-const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-const newNoteModal = document.getElementById('newNoteModal');
-const manageFoldersModal = document.getElementById('manageFoldersModal');
-const exportModal = document.getElementById('exportModal');
-const closeExportModalBtn = document.getElementById('closeExportModal');
-const exportConfirmBtn = document.getElementById('exportConfirmBtn');
-const exportFileNameInput = document.getElementById('exportFileName');
-const exportCards = document.querySelectorAll('.export-card');
-const confirmFolderDeleteModal = document.getElementById('confirmFolderDeleteModal');
-const cancelFolderDeleteBtn = document.getElementById('cancelFolderDelete');
-const confirmFolderDeleteBtn = document.getElementById('confirmFolderDelete');
-const renameNoteModal = document.getElementById('renameNoteModal');
-const renameNoteInput = document.getElementById('renameNoteInput');
-const confirmRenameBtn = document.getElementById('confirmRenameBtn');
-const cancelRenameBtn = document.getElementById('cancelRenameBtn');
-
-// Move note modal elements
-const moveNoteModal = document.getElementById('moveNoteModal');
-const moveNoteNameSpan = document.getElementById('moveNoteName');
-const moveFolderSelectWrapper = document.getElementById('moveFolderSelectWrapper');
-const moveFolderSelectTrigger = document.getElementById('moveFolderSelectTrigger');
-const moveSelectedFolderName = document.getElementById('moveSelectedFolderName');
-const moveFolderSelectOptions = document.getElementById('moveFolderSelectOptions');
-const moveNewFolderInput = document.getElementById('moveNewFolderName');
-const createAndMoveBtn = document.getElementById('createAndMoveBtn');
-const cancelMoveBtn = document.getElementById('cancelMoveBtn');
-const confirmMoveBtn = document.getElementById('confirmMoveBtn');
-
-// Share Modal
-const shareModal = document.getElementById('shareModal');
-
 // Button elements
 const searchBtn = document.getElementById('searchBtn');
 const exportBtn = document.getElementById('exportBtn');
@@ -59,18 +27,9 @@ const pinBtn = document.getElementById('pinBtn');
 const manageFoldersBtn = document.getElementById('manageFoldersBtn');
 const shareBtn = document.getElementById('shareBtn');
 const userProfileBtn = document.getElementById('userProfileBtn');
-const userProfileModal = document.getElementById('userProfileModal');
-const closeProfileModalBtn = document.getElementById('closeProfileModal');
-const logoutBtn = document.getElementById('logoutBtn');
 
 // Note chips container
 const noteChips = document.getElementById('noteChips');
-
-// Search Modal elements
-const searchModal = document.getElementById('searchModal');
-const searchInput = document.getElementById('searchInput');
-const searchResults = document.getElementById('searchResults');
-const closeSearchModalBtn = document.getElementById('closeSearchModal');
 
 // Context menu elements
 const noteContextMenu = document.getElementById('noteContextMenu');
@@ -90,9 +49,6 @@ let activeFolderId = null; // null means 'All' or no folder filter
 
 // Export state
 let selectedExportFormat = null;
-
-// ESC Key Hierarchy Management
-let modalStack = [];
 
 // ==================== UNDO / REDO ====================
 let undoStack = [];               // array of snapshots
@@ -130,7 +86,6 @@ function restoreState(index) {
     activeFolderId = state.activeFolderId;
 
     renderNoteChips();
-    renderFolderList();
     loadActiveNote();
     undoIndex = index;
 }
@@ -195,10 +150,8 @@ async function fetchInitialData() {
             activeFolderId = notes[0].folder_id;
         }
 
-        renderFolderList();
         renderNoteChips();
         loadActiveNote();
-        updateFolderDropdown();
         pushToUndo();
 
     } catch (error) {
@@ -256,7 +209,6 @@ async function createNote(title, folderId = null) {
     activeFolderId = folderId;
 
     renderNoteChips();
-    renderFolderList();
     loadActiveNote();
     showToast('Note created!', 'success');
     pushToUndo();
@@ -348,9 +300,7 @@ async function deleteFolder(folderId) {
         activeFolderId = null;
     }
 
-    renderFolderList();
     renderNoteChips();
-    updateFolderDropdown();
     showToast('Folder deleted!', 'success');
     pushToUndo();
 }
@@ -476,50 +426,6 @@ function renderNoteChips() {
     });
 }
 
-function renderFolderList() {
-    const folderList = document.getElementById('folderList');
-    if (!folderList) return;
-    folderList.innerHTML = '';
-
-    // Add "All Notes" option
-    const allItem = document.createElement('div');
-    allItem.className = 'folder-item';
-    if (activeFolderId === null) allItem.classList.add('active');
-    allItem.innerHTML = `<div class="folder-name">All Notes</div>`;
-    allItem.onclick = () => {
-        setActiveFolder(null);
-        manageFoldersModal.classList.remove('show');
-    };
-    folderList.appendChild(allItem);
-
-    folders.forEach(folder => {
-        const item = document.createElement('div');
-        item.className = 'folder-item';
-        if (folder.id === activeFolderId) item.classList.add('active');
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'folder-name';
-        nameDiv.textContent = folder.name;
-        nameDiv.onclick = () => {
-            setActiveFolder(folder.id);
-            manageFoldersModal.classList.remove('show');
-            const index = modalStack.indexOf(manageFoldersModal);
-            if (index > -1) modalStack.splice(index, 1);
-        };
-        const actions = document.createElement('div');
-        actions.className = 'folder-actions';
-        const delBtn = document.createElement('button');
-        delBtn.className = 'folder-action-btn';
-        delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-        delBtn.onclick = (e) => {
-            e.stopPropagation();
-            deleteFolder(folder.id);
-        };
-        actions.appendChild(delBtn);
-        item.appendChild(nameDiv);
-        item.appendChild(actions);
-        folderList.appendChild(item);
-    });
-}
 
 function loadActiveNote() {
     const note = notes.find(n => n.id === activeNoteId);
@@ -571,31 +477,9 @@ function setActiveFolder(folderId) {
     const folderNotes = getNotesInFolder(folderId);
     activeNoteId = folderNotes.length > 0 ? folderNotes[0].id : null;
     renderNoteChips();
-    renderFolderList();
     loadActiveNote();
 }
 
-// ==================== MODAL HELPERS ====================
-
-function pushToModalStack(modal) {
-    modalStack.push(modal);
-}
-
-function setupModalClose(modalElement) {
-    if (!modalElement) return;
-    modalElement.addEventListener('click', (e) => {
-        if (e.target === modalElement) {
-            modalElement.classList.remove('show');
-            const index = modalStack.indexOf(modalElement);
-            if (index > -1) modalStack.splice(index, 1);
-            if (modalElement.id === 'confirmFolderDeleteModal') delete modalElement.dataset.pendingFolderId;
-            if (modalElement.id === 'moveNoteModal') window.contextMenuNoteId = null;
-        }
-    });
-}
-[confirmModal, newNoteModal, manageFoldersModal, exportModal, confirmFolderDeleteModal, renameNoteModal, shareModal, searchModal, moveNoteModal, userProfileModal].forEach(modal => {
-    setupModalClose(modal);
-});
 
 // ==================== PIN LOGIC ====================
 
@@ -619,13 +503,21 @@ pinBtn.onclick = () => {
 
 // ==================== FOLDER DROPDOWN ====================
 
-function updateFolderDropdown() {
-    const optionsContainer = document.getElementById('folderSelectOptions');
-    const selectedNameSpan = document.getElementById('selectedFolderName');
-    const wrapper = document.getElementById('folderSelectWrapper');
+function setupFolderDropdown(container) {
+    const optionsContainer = container.querySelector('#folderSelectOptions');
+    const selectedNameSpan = container.querySelector('#selectedFolderName');
+    const wrapper = container.querySelector('#folderSelectWrapper');
+    const trigger = container.querySelector('#folderSelectTrigger');
     if (!optionsContainer) return;
 
     optionsContainer.innerHTML = '';
+
+    if (trigger) {
+        trigger.onclick = (e) => {
+            e.stopPropagation();
+            wrapper.classList.toggle('active');
+        };
+    }
 
     // Add "Uncategorized" or "None"
     const noneOpt = document.createElement('div');
@@ -661,6 +553,17 @@ function updateFolderDropdown() {
         };
         optionsContainer.appendChild(option);
     });
+
+    // Close dropdown on outside click
+    const outsideClick = (e) => {
+        if (wrapper && !wrapper.contains(e.target)) {
+            wrapper.classList.remove('active');
+        }
+    };
+    document.addEventListener('click', outsideClick);
+
+    // We should return a cleanup function if possible, but ModalManager
+    // removes the element which is usually enough for simple listeners.
 }
 
 function getSelectedFolderId() {
@@ -670,8 +573,14 @@ function getSelectedFolderId() {
 
 // ==================== MOVE NOTE LOGIC ====================
 
-function updateMoveFolderDropdown(excludeFolderId) {
-    moveFolderSelectOptions.innerHTML = '';
+function updateMoveFolderDropdownInModal(container, excludeFolderId) {
+    const optionsContainer = container.querySelector('#moveFolderSelectOptions');
+    const selectedNameSpan = container.querySelector('#moveSelectedFolderName');
+    const wrapper = container.querySelector('#moveFolderSelectWrapper');
+    const confirmBtn = container.querySelector('.modal-btn.primary');
+
+    if (!optionsContainer) return;
+    optionsContainer.innerHTML = '';
 
     // Option to move to "No Folder"
     const noneOpt = document.createElement('div');
@@ -679,13 +588,13 @@ function updateMoveFolderDropdown(excludeFolderId) {
     noneOpt.textContent = 'No Folder';
     noneOpt.dataset.folderId = '';
     noneOpt.onclick = () => {
-        moveSelectedFolderName.textContent = 'No Folder';
-        moveFolderSelectOptions.querySelectorAll('.select-option').forEach(opt => opt.classList.remove('selected'));
+        selectedNameSpan.textContent = 'No Folder';
+        optionsContainer.querySelectorAll('.select-option').forEach(opt => opt.classList.remove('selected'));
         noneOpt.classList.add('selected');
-        moveFolderSelectWrapper.classList.remove('active');
-        confirmMoveBtn.disabled = false;
+        wrapper.classList.remove('active');
+        confirmBtn.disabled = false;
     };
-    moveFolderSelectOptions.appendChild(noneOpt);
+    optionsContainer.appendChild(noneOpt);
 
     folders.forEach(folder => {
         if (folder.id === excludeFolderId) return;
@@ -694,13 +603,13 @@ function updateMoveFolderDropdown(excludeFolderId) {
         option.textContent = folder.name;
         option.dataset.folderId = folder.id;
         option.onclick = () => {
-            moveSelectedFolderName.textContent = folder.name;
-            moveFolderSelectOptions.querySelectorAll('.select-option').forEach(opt => opt.classList.remove('selected'));
+            selectedNameSpan.textContent = folder.name;
+            optionsContainer.querySelectorAll('.select-option').forEach(opt => opt.classList.remove('selected'));
             option.classList.add('selected');
-            moveFolderSelectWrapper.classList.remove('active');
-            confirmMoveBtn.disabled = false;
+            wrapper.classList.remove('active');
+            confirmBtn.disabled = false;
         };
-        moveFolderSelectOptions.appendChild(option);
+        optionsContainer.appendChild(option);
     });
 }
 
@@ -708,102 +617,239 @@ moveToFolderItem.onclick = () => {
     if (!window.contextMenuNoteId) return;
     const note = notes.find(n => n.id === window.contextMenuNoteId);
     if (!note) return;
-    moveNoteNameSpan.textContent = `Moving: "${note.title}"`;
-    updateMoveFolderDropdown(note.folder_id);
-    moveSelectedFolderName.textContent = 'Choose folder';
-    moveNewFolderInput.value = '';
-    confirmMoveBtn.disabled = true;
-    moveNoteModal.classList.add('show');
-    pushToModalStack(moveNoteModal);
     noteContextMenu.classList.remove('show');
-};
 
-confirmMoveBtn.onclick = () => {
-    const selected = moveFolderSelectOptions.querySelector('.select-option.selected');
-    if (selected && window.contextMenuNoteId) {
-        const fId = selected.dataset.folderId || null;
-        moveNoteToFolder(window.contextMenuNoteId, fId);
-        moveNoteModal.classList.remove('show');
-    }
-};
+    modalManager.openModal('move-note', {
+        title: 'Move Note',
+        content: modalTemplates.moveNote(note.title),
+        actions: [
+            { text: '<i class="fas fa-times"></i> Cancel', class: 'secondary' },
+            {
+                text: '<i class="fas fa-exchange-alt"></i> Move Note',
+                class: 'primary',
+                onClick: () => {
+                    const selected = document.querySelector('#moveFolderSelectOptions .select-option.selected');
+                    if (selected) {
+                        const fId = selected.dataset.folderId || null;
+                        moveNoteToFolder(note.id, fId);
+                    }
+                }
+            }
+        ],
+        onMount: (container) => {
+            const wrapper = container.querySelector('#moveFolderSelectWrapper');
+            const trigger = container.querySelector('#moveFolderSelectTrigger');
+            const confirmBtn = container.querySelector('.modal-btn.primary');
+            const createAndMoveBtn = container.querySelector('#createAndMoveBtn');
+            const newFolderInput = container.querySelector('#moveNewFolderName');
 
-createAndMoveBtn.onclick = async () => {
-    const name = moveNewFolderInput.value.trim();
-    if (!name) return;
-    await createFolder(name);
-    const newFolder = folders[folders.length - 1];
-    if (window.contextMenuNoteId) {
-        await moveNoteToFolder(window.contextMenuNoteId, newFolder.id);
-    }
-    moveNoteModal.classList.remove('show');
+            confirmBtn.disabled = true;
+
+            if (trigger) {
+                trigger.onclick = (e) => {
+                    e.stopPropagation();
+                    wrapper.classList.toggle('active');
+                };
+            }
+
+            updateMoveFolderDropdownInModal(container, note.folder_id);
+
+            createAndMoveBtn.onclick = async () => {
+                const name = newFolderInput.value.trim();
+                if (!name) return;
+                await createFolder(name);
+                const newFolder = folders[folders.length - 1];
+                await moveNoteToFolder(note.id, newFolder.id);
+                modalManager.closeModal();
+            };
+
+            // Close dropdown on outside click
+            const outsideClick = (e) => {
+                if (wrapper && !wrapper.contains(e.target)) {
+                    wrapper.classList.remove('active');
+                }
+            };
+            document.addEventListener('click', outsideClick);
+        }
+    });
 };
 
 // ==================== OTHER EVENT LISTENERS ====================
 
 addNoteBtn.onclick = () => {
-    updateFolderDropdown();
-    document.getElementById('newNoteName').value = '';
-    newNoteModal.classList.add('show');
-    pushToModalStack(newNoteModal);
-    setTimeout(() => document.getElementById('newNoteName').focus(), 100);
+    modalManager.openModal('new-note', {
+        title: 'Create New Note',
+        content: modalTemplates.newNote(),
+        actions: [
+            { text: '<i class="fas fa-times"></i> Cancel', class: 'secondary' },
+            {
+                text: '<i class="fas fa-plus"></i> Create Note',
+                class: 'primary',
+                onClick: () => {
+                    const title = document.getElementById('newNoteName').value.trim();
+                    const fId = getSelectedFolderId();
+                    createNote(title || 'Untitled', fId);
+                }
+            }
+        ],
+        onMount: (container) => {
+            setupFolderDropdown(container);
+            const input = container.querySelector('#newNoteName');
+            if (input) setTimeout(() => input.focus(), 100);
+        }
+    });
 };
 
-document.getElementById('createNewNote').onclick = () => {
-    const title = document.getElementById('newNoteName').value.trim();
-    const fId = getSelectedFolderId();
-    createNote(title || 'Untitled', fId);
-    newNoteModal.classList.remove('show');
-};
+ctxRename.onclick = () => {
+    const note = notes.find(n => n.id === window.contextMenuNoteId);
+    if (!note) return;
+    noteContextMenu.classList.remove('show');
 
-document.getElementById('cancelNewNote').onclick = () => newNoteModal.classList.remove('show');
-
-confirmRenameBtn.onclick = () => {
-    const title = renameNoteInput.value.trim();
-    if (title && window.contextMenuNoteId) {
-        renameNote(window.contextMenuNoteId, title);
-        renameNoteModal.classList.remove('show');
-    }
+    modalManager.openModal('rename-note', {
+        title: 'Rename Note',
+        content: modalTemplates.renameNote(note.title),
+        actions: [
+            { text: '<i class="fas fa-times"></i> Cancel', class: 'secondary' },
+            {
+                text: '<i class="fas fa-check"></i> Save Changes',
+                class: 'primary',
+                onClick: () => {
+                    const title = document.getElementById('renameNoteInput').value.trim();
+                    if (title) renameNote(note.id, title);
+                }
+            }
+        ],
+        onMount: (container) => {
+            const input = container.querySelector('#renameNoteInput');
+            if (input) setTimeout(() => {
+                input.focus();
+                input.select();
+            }, 100);
+        }
+    });
 };
 
 deleteBtn.onclick = () => {
     if (!activeNoteId) return;
-    confirmModal.classList.add('show');
-    pushToModalStack(confirmModal);
-};
+    const note = notes.find(n => n.id === activeNoteId);
+    if (!note) return;
 
-confirmDeleteBtn.onclick = () => {
-    const id = window.contextMenuNoteId || activeNoteId;
-    if (id) deleteNote(id);
-    confirmModal.classList.remove('show');
+    modalManager.openModal('delete-note', {
+        title: 'Delete Note?',
+        content: modalTemplates.deleteNote(),
+        actions: [
+            { text: '<i class="fas fa-times"></i> Cancel', class: 'secondary' },
+            {
+                text: '<i class="fas fa-trash-alt"></i> Delete Note',
+                class: 'delete',
+                onClick: () => deleteNote(note.id)
+            }
+        ]
+    });
 };
 
 manageFoldersBtn.onclick = () => {
-    renderFolderList();
-    manageFoldersModal.classList.add('show');
-    pushToModalStack(manageFoldersModal);
+    modalManager.openModal('manage-folders', {
+        title: 'Manage Folders',
+        content: modalTemplates.manageFolders(),
+        actions: [
+            { text: '<i class="fas fa-check"></i> Done', class: 'secondary' }
+        ],
+        onMount: (container) => {
+            const createBtn = container.querySelector('#createFolderBtn');
+            const newFolderInput = container.querySelector('#newFolderName');
+
+            const handleCreate = () => {
+                const name = newFolderInput.value.trim();
+                if (name) {
+                    createFolder(name).then(() => {
+                        newFolderInput.value = '';
+                        renderFolderListInModal(container);
+                    });
+                }
+            };
+
+            createBtn.onclick = handleCreate;
+            newFolderInput.onkeydown = (e) => { if (e.key === 'Enter') handleCreate(); };
+
+            renderFolderListInModal(container);
+        }
+    });
 };
 
-document.getElementById('createFolderBtn').onclick = () => {
-    const name = document.getElementById('newFolderName').value.trim();
-    if (name) {
-        createFolder(name);
-        document.getElementById('newFolderName').value = '';
-    }
-};
+function renderFolderListInModal(container) {
+    const folderList = container.querySelector('#folderList');
+    if (!folderList) return;
+    folderList.innerHTML = '';
 
-document.getElementById('closeFoldersModal').onclick = () => manageFoldersModal.classList.remove('show');
+    // Add "All Notes" option
+    const allItem = document.createElement('div');
+    allItem.className = 'folder-item';
+    if (activeFolderId === null) allItem.classList.add('active');
+    allItem.innerHTML = `<div class="folder-name">All Notes</div>`;
+    allItem.onclick = () => {
+        setActiveFolder(null);
+        modalManager.closeModal();
+    };
+    folderList.appendChild(allItem);
+
+    folders.forEach(folder => {
+        const item = document.createElement('div');
+        item.className = 'folder-item';
+        if (folder.id === activeFolderId) item.classList.add('active');
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'folder-name';
+        nameDiv.textContent = folder.name;
+        nameDiv.onclick = () => {
+            setActiveFolder(folder.id);
+            modalManager.closeModal();
+        };
+
+        const actions = document.createElement('div');
+        actions.className = 'folder-actions';
+        const delBtn = document.createElement('button');
+        delBtn.className = 'folder-action-btn';
+        delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            modalManager.openModal('delete-folder', {
+                title: 'Delete Folder?',
+                content: modalTemplates.deleteFolder(folder.name),
+                actions: [
+                    { text: '<i class="fas fa-times"></i> Cancel', class: 'secondary' },
+                    {
+                        text: '<i class="fas fa-trash-alt"></i> Delete Folder',
+                        class: 'delete',
+                        onClick: () => {
+                            deleteFolder(folder.id).then(() => {
+                                renderFolderListInModal(container);
+                            });
+                        }
+                    }
+                ]
+            });
+        };
+
+        actions.appendChild(delBtn);
+        item.appendChild(nameDiv);
+        item.appendChild(actions);
+        folderList.appendChild(item);
+    });
+}
 
 // ==================== SHARE LOGIC ====================
 
-async function updateShareUI(noteId) {
+async function updateShareUI(noteId, container) {
     const note = notes.find(n => n.id === noteId);
     if (!note) return;
 
     const isPublic = note.is_public;
-    const shareToggle = document.getElementById('shareToggle');
-    const shareLinkSection = document.getElementById('shareLinkSection');
-    const sharePrivateMsg = document.getElementById('sharePrivateMsg');
+    const shareToggle = container.querySelector('#shareToggle');
+    const shareLinkSection = container.querySelector('#shareLinkSection');
+    const sharePrivateMsg = container.querySelector('#sharePrivateMsg');
     const options = shareToggle.querySelectorAll('.toggle-option');
+    const linkInput = container.querySelector('#shareLinkInput');
 
     if (isPublic) {
         shareToggle.classList.add('public');
@@ -811,7 +857,7 @@ async function updateShareUI(noteId) {
         options[0].classList.remove('active');
         shareLinkSection.classList.add('visible');
         sharePrivateMsg.classList.remove('visible');
-        document.getElementById('shareLinkInput').value = `${window.location.origin}/share/${note.public_id || ''}`;
+        linkInput.value = `${window.location.origin}/share/${note.public_id || ''}`;
     } else {
         shareToggle.classList.remove('public');
         options[0].classList.add('active');
@@ -823,63 +869,86 @@ async function updateShareUI(noteId) {
 
 shareBtn.onclick = () => {
     if (!activeNoteId) return;
-    updateShareUI(activeNoteId);
-    shareModal.classList.add('show');
-    pushToModalStack(shareModal);
-};
-
-document.getElementById('shareToggle').onclick = async () => {
-    if (!activeNoteId) return;
     const note = notes.find(n => n.id === activeNoteId);
     if (!note) return;
 
-    const newPublicStatus = !note.is_public;
+    modalManager.openModal('share-note', {
+        title: 'Share Note',
+        content: modalTemplates.shareNote(),
+        actions: [
+            { text: '<i class="fas fa-times"></i> Close', class: 'secondary' }
+        ],
+        onMount: (container) => {
+            updateShareUI(note.id, container);
 
-    const { data, error } = await supabase
-        .from('notes')
-        .update({ is_public: newPublicStatus })
-        .eq('id', activeNoteId)
-        .select();
+            const shareToggle = container.querySelector('#shareToggle');
+            const copyBtn = container.querySelector('#copyLinkBtn');
 
-    if (!error) {
-        note.is_public = data[0].is_public;
-        note.public_id = data[0].public_id;
-        note.public_expires_at = data[0].public_expires_at;
-        updateShareUI(activeNoteId);
-    }
+            shareToggle.onclick = async () => {
+                const newPublicStatus = !note.is_public;
+                const { data, error } = await supabase
+                    .from('notes')
+                    .update({ is_public: newPublicStatus })
+                    .eq('id', note.id)
+                    .select();
+
+                if (!error) {
+                    note.is_public = data[0].is_public;
+                    note.public_id = data[0].public_id;
+                    note.public_expires_at = data[0].public_expires_at;
+                    updateShareUI(note.id, container);
+                }
+            };
+
+            copyBtn.onclick = () => {
+                const input = container.querySelector('#shareLinkInput');
+                input.select();
+                document.execCommand('copy');
+                showToast('Link copied!', 'success');
+            };
+        }
+    });
 };
-
-document.getElementById('copyLinkBtn').onclick = () => {
-    const input = document.getElementById('shareLinkInput');
-    input.select();
-    document.execCommand('copy');
-    showToast('Link copied!', 'success');
-};
-
-document.getElementById('closeShareModal').onclick = () => shareModal.classList.remove('show');
 
 // ==================== EXPORT LOGIC ====================
 
 exportBtn.onclick = () => {
     if (!activeNoteId) return;
     const note = notes.find(n => n.id === activeNoteId);
-    if (note) exportFileNameInput.value = note.title.replace(/[^\w\s]/gi, '');
-    exportModal.classList.add('show');
-    pushToModalStack(exportModal);
+    if (!note) return;
+
+    modalManager.openModal('export-note', {
+        title: '<i class="fas fa-download"></i> Export Note',
+        content: modalTemplates.exportNote(note.title.replace(/[^\w\s]/gi, '')),
+        actions: [
+            { text: '<i class="fas fa-times"></i> Cancel', class: 'secondary' },
+            {
+                text: '<i class="fas fa-download"></i> Export Now',
+                class: 'primary',
+                id: 'exportConfirmBtn',
+                onClick: () => handleExport(note)
+            }
+        ],
+        onMount: (container) => {
+            const cards = container.querySelectorAll('.export-card');
+            const confirmBtn = container.querySelector('.modal-btn.primary');
+            confirmBtn.disabled = true;
+            selectedExportFormat = null;
+
+            cards.forEach(card => {
+                card.onclick = () => {
+                    cards.forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    selectedExportFormat = card.dataset.format;
+                    confirmBtn.disabled = false;
+                };
+            });
+        }
+    });
 };
 
-exportCards.forEach(card => {
-    card.onclick = () => {
-        exportCards.forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        selectedExportFormat = card.dataset.format;
-        exportConfirmBtn.disabled = false;
-    };
-});
-
-exportConfirmBtn.onclick = async () => {
-    const fileName = exportFileNameInput.value.trim() || 'note';
-    exportModal.classList.remove('show');
+function handleExport(note) {
+    const fileName = document.getElementById('exportFileName').value.trim() || 'note';
     showToast(`Exporting as ${selectedExportFormat.toUpperCase()}...`);
 
     const content = writingCanvas.innerHTML;
@@ -903,47 +972,56 @@ exportConfirmBtn.onclick = async () => {
         a.download = `${fileName}.txt`;
         a.click();
     }
-};
+}
 
 // ==================== SEARCH LOGIC ====================
 
 searchBtn.onclick = () => {
-    searchInput.value = '';
-    searchResults.innerHTML = '<div class="search-placeholder">Start typing to search...</div>';
-    searchModal.classList.add('show');
-    pushToModalStack(searchModal);
-    setTimeout(() => searchInput.focus(), 100);
-};
+    modalManager.openModal('search', {
+        title: '<i class="fas fa-search"></i> Search Notes',
+        content: modalTemplates.searchNotes(),
+        actions: [
+            { text: '<i class="fas fa-times"></i> Close', class: 'secondary' }
+        ],
+        onMount: (container) => {
+            const input = container.querySelector('#searchInput');
+            const resultsDiv = container.querySelector('#searchResults');
 
-searchInput.oninput = () => {
-    const query = searchInput.value.trim().toLowerCase();
-    if (!query) {
-        searchResults.innerHTML = '<div class="search-placeholder">Start typing to search...</div>';
-        return;
-    }
-    const results = notes.filter(n => n.title.toLowerCase().includes(query) || n.content.toLowerCase().includes(query));
-    if (results.length === 0) {
-        searchResults.innerHTML = '<div class="search-placeholder">No notes found</div>';
-        return;
-    }
-    searchResults.innerHTML = '';
-    results.forEach(note => {
-        const folder = folders.find(f => f.id === note.folder_id) || { name: 'Unknown' };
-        const card = document.createElement('div');
-        card.className = 'search-result-card';
-        card.innerHTML = `
-            <div class="search-result-name">${escapeHtml(note.title)}</div>
-            <div class="search-result-folder"><i class="fas fa-folder"></i> ${escapeHtml(folder.name)}</div>
-        `;
-        card.onclick = () => {
-            activeFolderId = note.folder_id;
-            activeNoteId = note.id;
-            renderNoteChips();
-            renderFolderList();
-            loadActiveNote();
-            searchModal.classList.remove('show');
-        };
-        searchResults.appendChild(card);
+            if (input) {
+                setTimeout(() => input.focus(), 100);
+                input.oninput = () => {
+                    const query = input.value.trim().toLowerCase();
+                    if (!query) {
+                        resultsDiv.innerHTML = '<div class="search-placeholder">Start typing to search...</div>';
+                        return;
+                    }
+                    const results = notes.filter(n => n.title.toLowerCase().includes(query) || n.content.toLowerCase().includes(query));
+                    if (results.length === 0) {
+                        resultsDiv.innerHTML = '<div class="search-placeholder">No notes found</div>';
+                        return;
+                    }
+                    resultsDiv.innerHTML = '';
+                    results.forEach(note => {
+                        const folder = folders.find(f => f.id === note.folder_id) || { name: 'Unknown' };
+                        const card = document.createElement('div');
+                        card.className = 'search-result-card';
+                        card.innerHTML = `
+                            <div class="search-result-name">${escapeHtml(note.title)}</div>
+                            <div class="search-result-folder"><i class="fas fa-folder"></i> ${escapeHtml(folder.name)}</div>
+                        `;
+                        card.onclick = () => {
+                            activeFolderId = note.folder_id;
+                            activeNoteId = note.id;
+                            renderNoteChips();
+                            renderFolderList();
+                            loadActiveNote();
+                            modalManager.closeModal();
+                        };
+                        resultsDiv.appendChild(card);
+                    });
+                };
+            }
+        }
     });
 };
 
@@ -991,15 +1069,6 @@ noteChips.oncontextmenu = (e) => {
     noteContextMenu.classList.add('show');
 };
 
-ctxRename.onclick = () => {
-    const note = notes.find(n => n.id === window.contextMenuNoteId);
-    if (note) {
-        renameNoteInput.value = note.title;
-        renameNoteModal.classList.add('show');
-        pushToModalStack(renameNoteModal);
-    }
-    noteContextMenu.classList.remove('show');
-};
 
 ctxPin.onclick = () => {
     if (window.contextMenuNoteId) togglePinNote(window.contextMenuNoteId);
@@ -1012,24 +1081,20 @@ ctxDelete.onclick = () => {
 };
 
 document.onclick = (e) => {
-    if (!noteContextMenu.contains(e.target)) noteContextMenu.classList.remove('show');
-    if (moveFolderSelectWrapper && !moveFolderSelectWrapper.contains(e.target)) moveFolderSelectWrapper.classList.remove('active');
-    const folderSelectWrapper = document.getElementById('folderSelectWrapper');
-    if (folderSelectWrapper && !folderSelectWrapper.contains(e.target)) folderSelectWrapper.classList.remove('active');
-};
+    if (noteContextMenu && !noteContextMenu.contains(e.target)) {
+        noteContextMenu.classList.remove('show');
+    }
 
-moveFolderSelectTrigger.onclick = (e) => {
-    e.stopPropagation();
-    moveFolderSelectWrapper.classList.toggle('active');
-};
+    const moveWrapper = document.getElementById('moveFolderSelectWrapper');
+    if (moveWrapper && !moveWrapper.contains(e.target)) {
+        moveWrapper.classList.remove('active');
+    }
 
-const folderSelectTrigger = document.getElementById('folderSelectTrigger');
-if (folderSelectTrigger) {
-    folderSelectTrigger.onclick = (e) => {
-        e.stopPropagation();
-        document.getElementById('folderSelectWrapper').classList.toggle('active');
-    };
-}
+    const folderWrapper = document.getElementById('folderSelectWrapper');
+    if (folderWrapper && !folderWrapper.contains(e.target)) {
+        folderWrapper.classList.remove('active');
+    }
+};
 
 // ==================== INITIALIZATION ====================
 
@@ -1060,13 +1125,6 @@ async function init() {
 
 init();
 
-// Keyboard Shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modalStack.length > 0) {
-        const m = modalStack.pop();
-        if (m) m.classList.remove('show');
-    }
-});
 
 // Auto-save debounced
 let autoSaveTimer;
@@ -1079,15 +1137,32 @@ writingCanvas.oninput = () => {
 };
 
 userProfileBtn.onclick = () => {
-    userProfileModal.classList.add('show');
-    pushToModalStack(userProfileModal);
-};
+    const userData = localStorage.getItem('vellum_user');
+    let name = 'Guest User';
+    let email = 'guest@vellum.com';
 
-document.getElementById('closeProfileModal').onclick = () => userProfileModal.classList.remove('show');
+    if (userData) {
+        const user = JSON.parse(userData);
+        name = user.name || user.email.split('@')[0];
+        email = user.email;
+    }
 
-logoutBtn.onclick = async () => {
-    await supabase.auth.signOut();
-    sessionStorage.clear();
-    localStorage.removeItem('vellum_user');
-    window.location.href = '/login';
+    modalManager.openModal('profile', {
+        title: '<i class="fas fa-user-circle"></i> User Profile',
+        content: modalTemplates.userProfile(name, email),
+        actions: [
+            { text: '<i class="fas fa-times"></i> Close', class: 'secondary' }
+        ],
+        onMount: (container) => {
+            const logoutBtn = container.querySelector('#logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.onclick = async () => {
+                    await supabase.auth.signOut();
+                    sessionStorage.clear();
+                    localStorage.removeItem('vellum_user');
+                    window.location.href = '/login';
+                };
+            }
+        }
+    });
 };

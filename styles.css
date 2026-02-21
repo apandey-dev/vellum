@@ -1413,9 +1413,8 @@ pre code {
     box-shadow: 0 12px 50px rgba(0, 0, 0, 0.4);
 }
 
-/* --- Confirmation / Form Modals --- */
-.confirm-modal,
-.form-modal {
+/* --- Unified Modal Architecture --- */
+.modal-backdrop {
     position: fixed;
     top: 0;
     left: 0;
@@ -1433,14 +1432,12 @@ pre code {
     transition: all 0.3s ease;
 }
 
-.confirm-modal.show,
-.form-modal.show {
+.modal-backdrop.show {
     opacity: 1;
     visibility: visible;
 }
 
-.confirm-box,
-.form-box {
+.modal-box {
     background: var(--bg-glass);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
@@ -1457,15 +1454,97 @@ pre code {
     display: flex;
     flex-direction: column;
     text-align: center;
+    position: relative;
+    overflow-y: auto;
 }
 
-.confirm-modal.show .confirm-box,
-.form-modal.show .form-box {
+.modal-backdrop.show .modal-box {
     transform: scale(1) translateY(0);
 }
 
-.confirm-box h3,
-.form-box h3 {
+.modal-close-x {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.modal-close-x:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.modal-actions {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 12px;
+    margin-top: 32px;
+    width: 100%;
+}
+
+.modal-btn {
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Fredoka', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.modal-btn.secondary {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.modal-btn.secondary:hover {
+    background: var(--border-color);
+}
+
+.modal-btn.primary {
+    background: var(--accent-color);
+    color: white;
+}
+
+.modal-btn.primary:hover {
+    background: #2563eb;
+    transform: scale(1.05);
+}
+
+.modal-btn.delete {
+    background: #ef4444;
+    color: white;
+}
+
+.modal-btn.delete:hover {
+    background: #dc2626;
+    transform: scale(1.05);
+}
+
+.modal-box h3 {
     font-size: 24px;
     font-weight: 600;
     margin-bottom: 12px;
@@ -1474,7 +1553,7 @@ pre code {
     letter-spacing: -0.02em;
 }
 
-.confirm-box p {
+.modal-box p {
     color: var(--text-secondary);
     line-height: 1.5;
     margin-bottom: 24px;
@@ -1492,7 +1571,7 @@ pre code {
     transition: transform 0.3s ease;
 }
 
-.confirm-box:hover .confirm-icon {
+.modal-box:hover .confirm-icon {
     transform: scale(1.1) rotate(5deg);
 }
 
@@ -1545,70 +1624,6 @@ pre code {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.form-actions {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 1fr;
-    gap: 12px;
-    margin-top: 32px;
-    flex-shrink: 0;
-    width: 100%;
-}
-
-.form-actions .form-btn {
-    width: 100%;
-}
-
-/* --- Button styles for confirm modals --- */
-.confirm-actions {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 1fr;
-    gap: 12px;
-    margin-top: 32px;
-    width: 100%;
-}
-
-.confirm-actions .confirm-btn {
-    width: 100%;
-}
-
-.confirm-btn {
-    padding: 12px 24px;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: 'Fredoka', sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.confirm-btn.cancel {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-}
-
-.confirm-btn.cancel:hover {
-    background: var(--border-color);
-}
-
-.confirm-btn.delete {
-    background: #ef4444;
-    color: white;
-}
-
-.confirm-btn.delete:hover {
-    background: #dc2626;
-    transform: scale(1.05);
-}
-
-/* Keep original form-btn styles for other modals */
 .form-btn {
     padding: 12px 24px;
     border-radius: 12px;
@@ -1620,16 +1635,6 @@ pre code {
     font-family: 'Fredoka', sans-serif;
 }
 
-.form-btn.secondary {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-}
-
-.form-btn.secondary:hover {
-    background: var(--border-color);
-}
-
 .form-btn.primary {
     background: var(--accent-color);
     color: white;
@@ -1638,12 +1643,6 @@ pre code {
 .form-btn.primary:hover {
     background: #2563eb;
     transform: scale(1.05);
-}
-
-.form-btn.primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
 }
 
 .folder-list {
@@ -2069,16 +2068,20 @@ body.dark .icon-circle {
 .writing-canvas h1 {
     font-size: 2.25em;
     font-weight: 700;
-    margin: 1.5em 0 0.5em;
+    margin: 32px 0 8px; /* Compact 8px grid */
     color: var(--text-primary);
     line-height: 1.2;
     letter-spacing: -0.02em;
 }
 
+.writing-canvas h1:first-child {
+    margin-top: 0;
+}
+
 .writing-canvas h2 {
     font-size: 1.75em;
     font-weight: 600;
-    margin: 1.25em 0 0.5em;
+    margin: 24px 0 8px;
     color: var(--text-primary);
     line-height: 1.3;
 }
@@ -2086,18 +2089,24 @@ body.dark .icon-circle {
 .writing-canvas h3 {
     font-size: 1.35em;
     font-weight: 600;
-    margin: 1em 0 0.5em;
+    margin: 16px 0 8px;
     color: var(--text-primary);
     line-height: 1.4;
+}
+
+/* Paragraph Spacing (assuming divs/p used for text blocks) */
+.writing-canvas div, .writing-canvas p {
+    margin-bottom: 8px;
+    line-height: 1.6;
 }
 
 /* Code Blocks */
 .code-block {
     background: #1a1b1e;
     color: #e4e7eb;
-    padding: 1.25em;
+    padding: 16px; /* 8px grid */
     border-radius: 12px;
-    margin: 1.5em 0;
+    margin: 16px 0;
     font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
     font-size: 0.9em;
     line-height: 1.6;
@@ -2116,6 +2125,7 @@ body.dark .icon-circle {
     padding: 0;
     font-family: inherit;
     color: inherit;
+    border: none; /* Override inline code border */
 }
 
 /* Syntax Highlighting Tokens */
@@ -2140,7 +2150,7 @@ body.dark .icon-circle {
 .writing-canvas table {
     width: 100%;
     border-collapse: collapse;
-    margin: 1.5em 0;
+    margin: 16px 0;
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--border-color);
@@ -2165,23 +2175,25 @@ body.dark .icon-circle {
     border-bottom: none;
 }
 
-/* Horizontal Rule */
+/* Horizontal Rule (Custom Divider) */
 .writing-canvas hr {
     border: none;
     height: 2px;
-    background: var(--border-color);
-    margin: 2.5em 0;
-    border-radius: 2px;
+    background: var(--text-secondary);
+    opacity: 0.3;
+    margin: 24px auto; /* Centered */
+    width: 40%; /* Controlled width */
+    border-radius: 10px;
 }
 
 /* List Spacing */
 .writing-canvas ul, .writing-canvas ol {
-    margin: 1em 0;
-    padding-left: 2em;
+    margin: 8px 0;
+    padding-left: 24px;
 }
 
 .writing-canvas li {
-    margin: 0.5em 0;
+    margin: 4px 0;
 }
 
 /* Mobile Adjustments */
