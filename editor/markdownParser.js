@@ -4,11 +4,22 @@
  */
 
 /**
- * Simple syntax highlighter for code blocks
+ * Advanced syntax highlighter using Prism.js if available,
+ * otherwise falls back to a basic highlighter.
  */
-function highlightCode(code, lang) {
-    if (!lang || lang === 'text') return code;
+export function highlightCode(code, lang = 'javascript') {
+    if (!code) return '';
 
+    // Normalize language name for Prism
+    let prismLang = lang.toLowerCase();
+    if (prismLang === 'js') prismLang = 'javascript';
+    if (prismLang === 'html') prismLang = 'markup';
+
+    if (window.Prism && window.Prism.languages[prismLang]) {
+        return window.Prism.highlight(code, window.Prism.languages[prismLang], prismLang);
+    }
+
+    // Fallback to basic highlighter if Prism is missing or doesn't support the language
     const rules = [
         { type: 'comment', regex: /(\/\/.*|\/\*[\s\S]*?\*\/)/g },
         { type: 'string', regex: /(['"`])(.*?)\1/g },
@@ -31,16 +42,14 @@ function highlightCode(code, lang) {
         }
     });
 
-    // Sort matches by start position, then by length (descending)
     matches.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
 
     let result = '';
     let lastIndex = 0;
     for (const match of matches) {
-        if (match.start < lastIndex) continue; // Skip overlapping matches
-
+        if (match.start < lastIndex) continue;
         result += code.substring(lastIndex, match.start);
-        result += `<span class="code-${match.type}">${match.text}</span>`;
+        result += `<span class="token ${match.type}">${match.text}</span>`;
         lastIndex = match.end;
     }
     result += code.substring(lastIndex);
@@ -167,4 +176,34 @@ export function isMarkdown(text) {
     ];
 
     return mdPatterns.some(pattern => pattern.test(text));
+}
+
+/**
+ * Detects if a string likely contains source code.
+ */
+export function isCodeLike(text) {
+    if (!text) return false;
+
+    // Check for common code patterns
+    const codePatterns = [
+        /[{};]/,                  // Curly braces or semicolons
+        /=>/,                     // Arrow functions
+        /\b(const|let|var|function|class|return|import|export|if|else|for|while|async|await)\b/, // JS/TS keywords
+        /\b(public|private|protected|void|int|string|bool|list|map)\b/i, // Java/C#/Dart keywords
+        /<\/?[a-z][\s\S]*>/i,     // HTML/XML tags
+        /^[ \t]{2,}/m,            // Significant leading indentation
+        /\n[ \t]{2,}/             // Indentation after a newline
+    ];
+
+    // If it's multi-line and has code keywords or structure
+    const lines = text.split('\n');
+    if (lines.length > 1) {
+        let matches = 0;
+        codePatterns.forEach(pattern => {
+            if (pattern.test(text)) matches++;
+        });
+        return matches >= 2;
+    }
+
+    return false;
 }

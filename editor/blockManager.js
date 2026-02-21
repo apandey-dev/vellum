@@ -19,8 +19,20 @@ export function getCurrentBlock(node, writingCanvas) {
     while (current && current !== writingCanvas) {
         if (current.tagName === 'LI') return current;
         if (current.classList.contains('task-item')) return current;
-        if (['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE'].includes(current.tagName)) return current;
+        if (['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE'].includes(current.tagName)) return current;
         if (current.parentElement === writingCanvas) return current;
+        current = current.parentElement;
+    }
+    return null;
+}
+
+/**
+ * Checks if the current node is inside a code block.
+ */
+export function isInCodeBlock(node, writingCanvas) {
+    let current = node;
+    while (current && current !== writingCanvas) {
+        if (current.tagName === 'PRE' && current.classList.contains('code-block')) return current;
         current = current.parentElement;
     }
     return null;
