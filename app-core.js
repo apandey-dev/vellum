@@ -50,44 +50,56 @@ let activeFolderId = null; // null means 'All' or no folder filter
 // Export state
 let selectedExportFormat = null;
 
-// ==================== UNDO / REDO ====================
-let undoStack = [];               // array of snapshots
-let undoIndex = -1;               // current position in stack (-1 means no state yet)
+// ==================== UNDO / REDO (EDITOR CONTENT ONLY) ====================
+let editorUndoStack = [];         // array of HTML content strings
+let undoIndex = -1;               // current position in stack
 const MAX_UNDO = 50;
 
 /**
- * Capture a deep copy of the entire state and push it onto the undo stack.
+ * Capture content-only snapshot for the current note.
+ * Undo system is now restricted to editor content.
  */
 export function pushToUndo() {
-    if (undoIndex < undoStack.length - 1) {
-        undoStack = undoStack.slice(0, undoIndex + 1);
+    if (!activeNoteId) return;
+
+    const content = writingCanvas.innerHTML;
+
+    // Don't push duplicate states
+    if (undoIndex >= 0 && editorUndoStack[undoIndex] === content) return;
+
+    if (undoIndex < editorUndoStack.length - 1) {
+        editorUndoStack = editorUndoStack.slice(0, undoIndex + 1);
     }
-    const snapshot = {
-        notes: JSON.parse(JSON.stringify(notes)),
-        folders: JSON.parse(JSON.stringify(folders)),
-        activeNoteId: activeNoteId,
-        activeFolderId: activeFolderId
-    };
-    undoStack.push(snapshot);
-    if (undoStack.length > MAX_UNDO) {
-        undoStack.shift();
+
+    editorUndoStack.push(content);
+
+    if (editorUndoStack.length > MAX_UNDO) {
+        editorUndoStack.shift();
     } else {
         undoIndex++;
     }
 }
 window.pushToUndo = pushToUndo;
 
-function restoreState(index) {
-    if (index < 0 || index >= undoStack.length) return;
-    const state = undoStack[index];
-    notes = JSON.parse(JSON.stringify(state.notes));
-    folders = JSON.parse(JSON.stringify(state.folders));
-    activeNoteId = state.activeNoteId;
-    activeFolderId = state.activeFolderId;
+/**
+ * Reset undo stack when switching notes to prevent cross-note data leaks.
+ */
+function resetUndoStack() {
+    editorUndoStack = [];
+    undoIndex = -1;
+    // Push initial state
+    if (activeNoteId) pushToUndo();
+}
 
-    renderNoteChips();
-    loadActiveNote();
+function restoreState(index) {
+    if (index < 0 || index >= editorUndoStack.length) return;
+    const content = editorUndoStack[index];
+
+    writingCanvas.innerHTML = content;
     undoIndex = index;
+
+    // Persist restored state
+    saveCurrentNote();
 }
 
 function undo() {
@@ -100,7 +112,7 @@ function undo() {
 }
 
 function redo() {
-    if (undoIndex < undoStack.length - 1) {
+    if (undoIndex < editorUndoStack.length - 1) {
         restoreState(undoIndex + 1);
         showToast('Redo', 'success');
     } else {
@@ -152,7 +164,7 @@ async function fetchInitialData() {
 
         renderNoteChips();
         loadActiveNote();
-        pushToUndo();
+        resetUndoStack();
 
     } catch (error) {
         showToast('Error loading data', 'error');
@@ -211,7 +223,7 @@ async function createNote(title, folderId = null) {
     renderNoteChips();
     loadActiveNote();
     showToast('Note created!', 'success');
-    pushToUndo();
+    resetUndoStack();
 }
 
 async function deleteNote(noteId) {
@@ -235,7 +247,7 @@ async function deleteNote(noteId) {
     renderNoteChips();
     loadActiveNote();
     showToast('Note deleted!', 'success');
-    pushToUndo();
+    resetUndoStack();
 }
 
 async function renameNote(noteId, newTitle) {
@@ -254,7 +266,6 @@ async function renameNote(noteId, newTitle) {
 
     renderNoteChips();
     showToast('Note renamed', 'success');
-    pushToUndo();
 }
 
 async function createFolder(name) {
@@ -276,7 +287,6 @@ async function createFolder(name) {
     renderFolderList();
     updateFolderDropdown();
     showToast('Folder created!', 'success');
-    pushToUndo();
 }
 
 async function deleteFolder(folderId) {
@@ -302,7 +312,6 @@ async function deleteFolder(folderId) {
 
     renderNoteChips();
     showToast('Folder deleted!', 'success');
-    pushToUndo();
 }
 
 async function moveNoteToFolder(noteId, targetFolderId) {
@@ -330,7 +339,6 @@ async function moveNoteToFolder(noteId, targetFolderId) {
     renderNoteChips();
     loadActiveNote();
     showToast('Note moved', 'success');
-    pushToUndo();
 }
 
 async function togglePinNote(noteId) {
@@ -469,6 +477,7 @@ function switchNote(noteId) {
     activeNoteId = noteId;
     loadActiveNote();
     renderNoteChips();
+    resetUndoStack();
 }
 
 function setActiveFolder(folderId) {
@@ -478,6 +487,7 @@ function setActiveFolder(folderId) {
     activeNoteId = folderNotes.length > 0 ? folderNotes[0].id : null;
     renderNoteChips();
     loadActiveNote();
+    resetUndoStack();
 }
 
 

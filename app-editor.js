@@ -95,6 +95,13 @@ function attachEventListeners() {
         if (e.key === 'Backspace') handleBackspace(e);
         if (e.key === 'Enter') handleEnter(e);
         if (e.key === 'Tab') handleTab(e);
+
+        // Ctrl + Shift + V (Clean Paste)
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'v') {
+            handleCleanPaste(e);
+            return;
+        }
+
         handleStandardShortcuts(e);
     });
 
@@ -462,6 +469,31 @@ function handleTab(e) {
 }
 
 /**
+ * Clean Paste logic (Ctrl + Shift + V)
+ */
+async function handleCleanPaste(e) {
+    e.preventDefault();
+    try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+            // Normalize: max 1 blank line, trim ends
+            const sanitized = text.replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim();
+
+            // Insert as simple divs to avoid external styles
+            const html = sanitized.split('\n').map(line => {
+                const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return escaped.trim() ? `<div>${escaped}</div>` : '<div><br></div>';
+            }).join('');
+
+            insertHTMLAtCursor(html);
+            saveCurrentNote();
+        }
+    } catch (err) {
+        console.error('Failed to read clipboard:', err);
+    }
+}
+
+/**
  * Standard Shortcuts (Bold, Italic, Underline)
  */
 function handleStandardShortcuts(e) {
@@ -482,6 +514,11 @@ function handleStandardShortcuts(e) {
 
 // Paste handling (Markdown & Sanitization)
 writingCanvas.addEventListener('paste', (e) => {
+    // If it's a Ctrl+Shift+V paste, we let the separate listener handle it
+    // Wait, the keydown listener for Ctrl+Shift+V won't prevent this 'paste' event
+    // unless we check it here too.
+    if (e.ctrlKey && e.shiftKey) return;
+
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData('text/plain');
 
@@ -500,17 +537,22 @@ writingCanvas.addEventListener('paste', (e) => {
             return;
         }
 
-        if (isCodeLike(text)) {
+        // Normalize vertical spacing: Replace 3+ newlines with 2
+        const normalizedText = text.replace(/\n{3,}/g, '\n\n').trim();
+
+        if (normalizedText.includes('```') || isCodeLike(normalizedText)) {
             // Auto-wrap code in a block
-            const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            // Remove fences if they exist for clean insertion
+            const cleanCode = normalizedText.replace(/^```\w*\n?/, '').replace(/\n?```$/, '');
+            const escaped = cleanCode.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const highlighted = highlightCode(escaped, 'js');
             htmlToInsert = `<pre class="code-block"><code>${highlighted}</code></pre><div><br></div>`;
-        } else if (isMarkdown(text)) {
+        } else if (isMarkdown(normalizedText)) {
             // Transform Markdown to Rich Text
-            htmlToInsert = parseMarkdown(text);
+            htmlToInsert = parseMarkdown(normalizedText);
         } else {
             // Standard Sanitization for plain text
-            htmlToInsert = text.split(/\r\n|\r|\n/).map(line => {
+            htmlToInsert = normalizedText.split(/\r\n|\r|\n/).map(line => {
                 const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 return escaped.trim() ? `<div>${escaped}</div>` : '<div><br></div>';
             }).join('');
