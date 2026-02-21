@@ -28,7 +28,7 @@ import {
 
 import { handleShortcuts } from './editor/shortcutEngine.js';
 import { writingCanvas, pushToUndo, saveCurrentNote } from './app-core.js';
-import { parseMarkdown, isMarkdown } from './editor/markdownParser.js';
+import { smartParse } from './editor/markdownParser.js';
 
 let isProcessing = false;
 
@@ -349,27 +349,18 @@ function handleStandardShortcuts(e) {
     }
 }
 
-// Paste handling (Markdown & Sanitization)
+// Paste handling (Smart Detection: Markdown / Code / Plain Text)
 writingCanvas.addEventListener('paste', (e) => {
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData('text/plain');
 
     if (text) {
-        let htmlToInsert;
-
-        if (isMarkdown(text)) {
-            // Transform Markdown to Rich Text
-            htmlToInsert = parseMarkdown(text);
-        } else {
-            // Standard Sanitization for plain text
-            htmlToInsert = text.split(/\r\n|\r|\n/).map(line => {
-                const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                return escaped.trim() ? `<div>${escaped}</div>` : '<div><br></div>';
-            }).join('');
-        }
+        // Use intelligent smartParse to decide strategy (MD vs Code vs Text)
+        const htmlToInsert = smartParse(text);
 
         execCommand('insertHTML', htmlToInsert);
         saveCurrentNote();
+        pushToUndo();
     }
 });
 
