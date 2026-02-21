@@ -36,22 +36,24 @@ export const modalTemplates = {
     `,
 
     manageFolders: () => `
-        <div class="confirm-icon primary">
-            <i class="fas fa-folder-plus"></i>
-        </div>
-        <div class="folder-creation-section">
-            <div class="form-group">
-                <label>Create New Folder</label>
-                <div class="input-with-btn">
-                    <input type="text" id="newFolderName" placeholder="Enter folder name...">
-                    <button class="form-btn primary" id="createFolderBtn"><i class="fas fa-plus"></i> Create</button>
+        <div class="manage-folders-body">
+            <div class="folder-details-panel" id="folderDetailsPanel">
+                <div class="folder-detail-placeholder">
+                    <i class="fas fa-info-circle" style="display: block; font-size: 32px; margin-bottom: 12px; opacity: 0.5;"></i>
+                    Select a folder to view details
                 </div>
             </div>
+            <div class="folder-chips-panel">
+                <div class="folder-chips-grid" id="folderChipsGrid"></div>
+            </div>
         </div>
-        <div class="divider-h" style="margin: 24px 0;"></div>
-        <div class="folder-management-section">
-            <label class="section-label">Existing Folders</label>
-            <div class="folder-list" id="folderList"></div>
+        <div class="modal-footer-compact">
+            <div class="create-folder-form">
+                <input type="text" id="newFolderName" class="create-folder-input" placeholder="Enter new folder name..." autocomplete="off">
+                <button class="form-btn primary create-folder-btn" id="createFolderBtn">
+                    <i class="fas fa-plus"></i> Create
+                </button>
+            </div>
         </div>
     `,
 

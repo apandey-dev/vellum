@@ -748,9 +748,13 @@ deleteBtn.onclick = () => {
     });
 };
 
+let selectedFolderIdInModal = null;
+
 manageFoldersBtn.onclick = () => {
+    selectedFolderIdInModal = activeFolderId;
     modalManager.openModal('manage-folders', {
         title: 'Manage Folders',
+        boxClass: 'manage-folders-box',
         content: modalTemplates.manageFolders(),
         actions: [
             { text: '<i class="fas fa-check"></i> Done', class: 'secondary' }
@@ -773,69 +777,115 @@ manageFoldersBtn.onclick = () => {
             newFolderInput.onkeydown = (e) => { if (e.key === 'Enter') handleCreate(); };
 
             renderFolderListInModal(container);
+            renderFolderDetails(selectedFolderIdInModal, container);
         }
     });
 };
 
 function renderFolderListInModal(container) {
-    const folderList = container.querySelector('#folderList');
-    if (!folderList) return;
-    folderList.innerHTML = '';
+    const chipsGrid = container.querySelector('#folderChipsGrid');
+    if (!chipsGrid) return;
+    chipsGrid.innerHTML = '';
 
-    // Add "All Notes" option
-    const allItem = document.createElement('div');
-    allItem.className = 'folder-item';
-    if (activeFolderId === null) allItem.classList.add('active');
-    allItem.innerHTML = `<div class="folder-name">All Notes</div>`;
-    allItem.onclick = () => {
+    // "All Notes" Chip
+    const allChip = document.createElement('div');
+    allChip.className = 'folder-chip';
+    if (selectedFolderIdInModal === null) allChip.classList.add('active');
+    allChip.innerHTML = `
+        <i class="fas fa-layer-group"></i>
+        <span class="folder-chip-name">All Notes</span>
+    `;
+    allChip.onclick = () => {
+        selectedFolderIdInModal = null;
+        renderFolderListInModal(container);
+        renderFolderDetails(null, container);
         setActiveFolder(null);
-        modalManager.closeModal();
     };
-    folderList.appendChild(allItem);
+    chipsGrid.appendChild(allChip);
 
     folders.forEach(folder => {
-        const item = document.createElement('div');
-        item.className = 'folder-item';
-        if (folder.id === activeFolderId) item.classList.add('active');
+        const chip = document.createElement('div');
+        chip.className = 'folder-chip';
+        if (folder.id === selectedFolderIdInModal) chip.classList.add('active');
 
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'folder-name';
-        nameDiv.textContent = folder.name;
-        nameDiv.onclick = () => {
-            setActiveFolder(folder.id);
-            modalManager.closeModal();
-        };
+        chip.innerHTML = `
+            <i class="fas fa-folder"></i>
+            <span class="folder-chip-name">${escapeHtml(folder.name)}</span>
+            <div class="delete-btn" title="Delete Folder">
+                <i class="fas fa-times"></i>
+            </div>
+        `;
 
-        const actions = document.createElement('div');
-        actions.className = 'folder-actions';
-        const delBtn = document.createElement('button');
-        delBtn.className = 'folder-action-btn';
-        delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-        delBtn.onclick = (e) => {
-            e.stopPropagation();
-            modalManager.openModal('delete-folder', {
-                title: 'Delete Folder?',
-                content: modalTemplates.deleteFolder(folder.name),
-                actions: [
-                    { text: '<i class="fas fa-times"></i> Cancel', class: 'secondary' },
-                    {
-                        text: '<i class="fas fa-trash-alt"></i> Delete Folder',
-                        class: 'delete',
-                        onClick: () => {
-                            deleteFolder(folder.id).then(() => {
-                                renderFolderListInModal(container);
-                            });
+        chip.onclick = (e) => {
+            if (e.target.closest('.delete-btn')) {
+                e.stopPropagation();
+                modalManager.openModal('delete-folder', {
+                    title: 'Delete Folder?',
+                    content: modalTemplates.deleteFolder(folder.name),
+                    actions: [
+                        { text: '<i class="fas fa-times"></i> Cancel', class: 'secondary' },
+                        {
+                            text: '<i class="fas fa-trash-alt"></i> Delete Folder',
+                            class: 'delete',
+                            onClick: () => {
+                                deleteFolder(folder.id).then(() => {
+                                    if (selectedFolderIdInModal === folder.id) selectedFolderIdInModal = null;
+                                    renderFolderListInModal(container);
+                                    renderFolderDetails(selectedFolderIdInModal, container);
+                                });
+                            }
                         }
-                    }
-                ]
-            });
+                    ]
+                });
+                return;
+            }
+            selectedFolderIdInModal = folder.id;
+            renderFolderListInModal(container);
+            renderFolderDetails(folder.id, container);
+            setActiveFolder(folder.id);
         };
 
-        actions.appendChild(delBtn);
-        item.appendChild(nameDiv);
-        item.appendChild(actions);
-        folderList.appendChild(item);
+        chipsGrid.appendChild(chip);
     });
+}
+
+function renderFolderDetails(folderId, container) {
+    const detailsPanel = container.querySelector('#folderDetailsPanel');
+    if (!detailsPanel) return;
+
+    if (folderId === null) {
+        detailsPanel.innerHTML = `
+            <div class="folder-detail-content">
+                <div class="folder-detail-icon"><i class="fas fa-layer-group"></i></div>
+                <div class="folder-detail-name">All Notes</div>
+                <div class="folder-detail-meta">
+                    <span><i class="fas fa-file-alt"></i> ${notes.length} notes total</span>
+                    <span><i class="fas fa-info-circle"></i> Showing all notes across all folders.</span>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) {
+        detailsPanel.innerHTML = '<div class="folder-detail-placeholder">Select a folder to view details</div>';
+        return;
+    }
+
+    const folderNotes = notes.filter(n => n.folder_id === folder.id);
+    const createdDate = new Date(folder.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+
+    detailsPanel.innerHTML = `
+        <div class="folder-detail-content">
+            <div class="folder-detail-icon"><i class="fas fa-folder-open"></i></div>
+            <div class="folder-detail-name">${escapeHtml(folder.name)}</div>
+            <div class="folder-detail-meta">
+                <span><i class="fas fa-file-alt"></i> ${folderNotes.length} notes inside</span>
+                <span><i class="fas fa-calendar-alt"></i> Created on ${createdDate}</span>
+            </div>
+        </div>
+    `;
 }
 
 // ==================== SHARE LOGIC ====================
