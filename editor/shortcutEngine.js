@@ -27,7 +27,7 @@ export function handleShortcuts(e, writingCanvas, options = {}) {
     const textBeforeCursor = text.slice(0, offset);
 
     const currentBlock = getCurrentBlock(node, writingCanvas);
-    if (!currentBlock) return;
+    if (!currentBlock || currentBlock.tagName === 'PRE') return;
 
     const currentFont = getCurrentFontName(writingCanvas);
     const fontFamily = getFontFamilyValue(currentFont);
@@ -45,12 +45,15 @@ export function handleShortcuts(e, writingCanvas, options = {}) {
             { pattern: '## ', tag: 'h2' },
             { pattern: '### ', tag: 'h3' },
             { pattern: '#### ', tag: 'h4' },
-            { pattern: '> ', tag: 'blockquote' },
+            { pattern: '> ', tag: 'code-block' },
             { pattern: '* ', tag: 'list' },
             { pattern: '[] ', tag: 'task' }
         ];
 
         for (const trigger of blockTriggers) {
+            // Special check for code block trigger: must be ONLY "> " on the line
+            if (trigger.tag === 'code-block' && textBeforeCursor !== '> ') continue;
+
             if (textBeforeCursor.endsWith(trigger.pattern)) {
                 e.preventDefault();
                 if (pushToUndo) pushToUndo();
@@ -76,10 +79,18 @@ export function handleShortcuts(e, writingCanvas, options = {}) {
                 } else if (trigger.tag === 'task') {
                     newBlock = transformToTask(currentBlock, writingCanvas, { fontFamily });
                 } else {
+                    const tag = trigger.tag === 'code-block' ? 'pre' : trigger.tag;
+                    const className = trigger.tag === 'code-block' ? 'code-block' : '';
+
                     if (currentBlock.tagName === 'LI') {
-                        newBlock = splitList(currentBlock, trigger.tag, '', { fontFamily });
+                        newBlock = splitList(currentBlock, tag, className, { fontFamily });
                     } else {
-                        newBlock = convertBlockTo(currentBlock, trigger.tag, '', { fontFamily });
+                        newBlock = convertBlockTo(currentBlock, tag, className, { fontFamily });
+                    }
+
+                    if (trigger.tag === 'code-block') {
+                        newBlock.innerHTML = '<code>&#8203;</code>';
+                        newBlock = newBlock.firstChild;
                     }
                 }
 

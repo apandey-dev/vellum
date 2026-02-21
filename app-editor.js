@@ -23,12 +23,13 @@ import {
 import {
     getCurrentBlock,
     unwrapBlock,
-    convertBlockTo
+    convertBlockTo,
+    isInCodeBlock
 } from './editor/blockManager.js';
 
 import { handleShortcuts } from './editor/shortcutEngine.js';
 import { writingCanvas, pushToUndo, saveCurrentNote } from './app-core.js';
-import { parseMarkdown, isMarkdown } from './editor/markdownParser.js';
+import { parseMarkdown, isMarkdown, isCodeLike, highlightCode } from './editor/markdownParser.js';
 
 let isProcessing = false;
 
@@ -64,18 +65,26 @@ function updateFontDisplay() {
  * Event Listeners
  */
 function attachEventListeners() {
-    // Input for shortcuts
+    // Input for shortcuts and highlighting
     writingCanvas.addEventListener('input', (e) => {
         if (isProcessing) return;
         isProcessing = true;
 
-        const triggered = handleShortcuts(e, writingCanvas, {
-            pushToUndo: pushToUndo,
-            saveCurrentNote: saveCurrentNote
-        });
+        const sel = window.getSelection();
+        const codeBlock = isInCodeBlock(sel.anchorNode, writingCanvas);
 
-        if (!triggered) {
+        if (codeBlock) {
+            debouncedHighlight(codeBlock);
             saveCurrentNote();
+        } else {
+            const triggered = handleShortcuts(e, writingCanvas, {
+                pushToUndo: pushToUndo,
+                saveCurrentNote: saveCurrentNote
+            });
+
+            if (!triggered) {
+                saveCurrentNote();
+            }
         }
 
         isProcessing = false;
@@ -178,6 +187,41 @@ function handleBackspace(e) {
 }
 
 /**
+ * Modern selection-based text insertion
+ */
+function insertTextAtCursor(text) {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    const textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+    range.setStartAfter(textNode);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+
+/**
+ * Modern selection-based HTML insertion
+ */
+function insertHTMLAtCursor(html) {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    const fragment = range.createContextualFragment(html);
+    const lastNode = fragment.lastChild;
+    range.insertNode(fragment);
+    if (lastNode) {
+        range.setStartAfter(lastNode);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+}
+
+/**
  * Enter key logic
  */
 function handleEnter(e) {
@@ -211,7 +255,7 @@ function handleEnter(e) {
     }
 
     // 2. Normal paragraph behavior: Reset alignment but keep color/font/bold
-    if (currentBlock.tagName === 'DIV' || currentBlock.parentElement === writingCanvas || currentBlock.nodeType === 3) {
+    if (currentBlock.tagName === 'DIV' || (currentBlock.parentElement === writingCanvas && currentBlock.tagName !== 'PRE') || currentBlock.nodeType === 3) {
         // If it's a normal block, we want to continue formatting but reset alignment
         // Actually, if we use default browser behavior, it might inherit alignment.
         // So we intercept and handle it.
@@ -240,7 +284,47 @@ function handleEnter(e) {
         return;
     }
 
-    // 3. Lists and Tasks
+    // 3. Code Block Handling
+    const codeBlock = isInCodeBlock(node, writingCanvas);
+    if (codeBlock) {
+        // Normal Enter and Shift+Enter both stay inside except for Shift+Enter on empty last line
+        const textContent = codeBlock.textContent.replace(/\u200B/g, '');
+        const selection = window.getSelection();
+        const range = selection.getRangeAt(0);
+
+        // Check if we are at the end of the block and it's an empty line
+        const isAtEnd = range.startOffset === node.length || node.nodeType !== 3;
+        const lineContent = node.textContent || '';
+        const isEmptyLine = lineContent.trim().replace(/\u200B/g, '') === '';
+
+        if (e.shiftKey && isEmptyLine && isAtEnd) {
+            // Exit code block
+            e.preventDefault();
+            pushToUndo();
+
+            const newP = document.createElement('div');
+            newP.innerHTML = '<br>';
+            codeBlock.after(newP);
+
+            // If the code block is empty (except for our exit line), maybe keep it?
+            // User said "Remove code block wrapper" - wait, does that mean DELETE the code block or just move out?
+            // "Exit the code block -> Create a normal paragraph below -> Remove code block wrapper"
+            // Actually "Remove code block wrapper" might mean if it's empty?
+            // Usually it means move out. I'll just move out.
+
+            setCursorAtEnd(newP, writingCanvas);
+            saveCurrentNote();
+            return;
+        }
+
+        // Otherwise, just insert a newline
+        e.preventDefault();
+        insertTextAtCursor('\n');
+        saveCurrentNote();
+        return;
+    }
+
+    // 4. Lists and Tasks
     if (currentBlock.tagName === 'LI' || currentBlock.classList.contains('task-item')) {
         const text = currentBlock.textContent.trim().replace(/\u200B/g, '');
         if (!text) {
@@ -300,8 +384,53 @@ function handleEnter(e) {
 function handleTab(e) {
     const sel = window.getSelection();
     if (!sel.rangeCount) return;
-    const currentBlock = getCurrentBlock(sel.anchorNode, writingCanvas);
-    if (!currentBlock || currentBlock.tagName !== 'LI') return;
+    const node = sel.anchorNode;
+    const currentBlock = getCurrentBlock(node, writingCanvas);
+    if (!currentBlock) return;
+
+    // 1. Code Block Tab Handling
+    if (isInCodeBlock(node, writingCanvas)) {
+        e.preventDefault();
+        pushToUndo();
+
+        const range = sel.getRangeAt(0);
+        if (e.shiftKey) {
+            if (range.collapsed) {
+                const text = node.textContent;
+                const offset = range.startOffset;
+                if (text.slice(offset - 2, offset) === '  ') {
+                    range.setStart(node, offset - 2);
+                    range.deleteContents();
+                } else if (text.slice(offset - 1, offset) === ' ') {
+                    range.setStart(node, offset - 1);
+                    range.deleteContents();
+                }
+            } else {
+                // Multi-line Unindent
+                const selectedText = range.toString();
+                const unindentedText = selectedText.split('\n').map(line => {
+                    if (line.startsWith('  ')) return line.slice(2);
+                    if (line.startsWith(' ')) return line.slice(1);
+                    return line;
+                }).join('\n');
+                insertTextAtCursor(unindentedText);
+            }
+        } else {
+            if (range.collapsed) {
+                insertTextAtCursor('  ');
+            } else {
+                // Multi-line Indent
+                const selectedText = range.toString();
+                const indentedText = selectedText.split('\n').map(line => '  ' + line).join('\n');
+                insertTextAtCursor(indentedText);
+            }
+        }
+
+        saveCurrentNote();
+        return;
+    }
+
+    if (currentBlock.tagName !== 'LI') return;
 
     e.preventDefault();
     pushToUndo();
@@ -342,7 +471,7 @@ function handleStandardShortcuts(e) {
 
         if (cmd) {
             e.preventDefault();
-            execCommand(cmd);
+            document.execCommand(cmd); // These standard ones are still okay-ish but I could replace them
             saveCurrentNote();
             updateFontDisplay();
         }
@@ -357,7 +486,24 @@ writingCanvas.addEventListener('paste', (e) => {
     if (text) {
         let htmlToInsert;
 
-        if (isMarkdown(text)) {
+        const sel = window.getSelection();
+        const node = sel.anchorNode;
+        const codeBlock = isInCodeBlock(node, writingCanvas);
+
+        if (codeBlock) {
+            // Paste inside code block: Escape and preserve exact text
+            const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            insertHTMLAtCursor(escaped);
+            saveCurrentNote();
+            return;
+        }
+
+        if (isCodeLike(text)) {
+            // Auto-wrap code in a block
+            const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const highlighted = highlightCode(escaped, 'js');
+            htmlToInsert = `<pre class="code-block"><code>${highlighted}</code></pre><div><br></div>`;
+        } else if (isMarkdown(text)) {
             // Transform Markdown to Rich Text
             htmlToInsert = parseMarkdown(text);
         } else {
@@ -368,10 +514,71 @@ writingCanvas.addEventListener('paste', (e) => {
             }).join('');
         }
 
-        execCommand('insertHTML', htmlToInsert);
+        insertHTMLAtCursor(htmlToInsert);
         saveCurrentNote();
     }
 });
+
+/**
+ * Robust cursor position management for real-time highlighting
+ */
+function getCursorOffset(container) {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return 0;
+    const range = sel.getRangeAt(0);
+    const preCursorRange = range.cloneRange();
+    preCursorRange.selectNodeContents(container);
+    preCursorRange.setEnd(range.endContainer, range.endOffset);
+    return preCursorRange.toString().length;
+}
+
+function setCursorOffset(container, offset) {
+    const sel = window.getSelection();
+    const range = document.createRange();
+    let currentOffset = 0;
+
+    const nodeStack = [container];
+    while (nodeStack.length > 0) {
+        const node = nodeStack.pop();
+        if (node.nodeType === 3) {
+            const nextOffset = currentOffset + node.length;
+            if (offset <= nextOffset) {
+                range.setStart(node, offset - currentOffset);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                return;
+            }
+            currentOffset = nextOffset;
+        } else {
+            for (let i = node.childNodes.length - 1; i >= 0; i--) {
+                nodeStack.push(node.childNodes[i]);
+            }
+        }
+    }
+    // Fallback to end
+    range.selectNodeContents(container);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+
+let highlightTimer;
+function debouncedHighlight(codeBlock) {
+    clearTimeout(highlightTimer);
+    highlightTimer = setTimeout(() => {
+        const offset = getCursorOffset(codeBlock);
+        const code = codeBlock.textContent;
+        const lang = codeBlock.dataset.lang || 'javascript';
+        const highlighted = highlightCode(code, lang);
+
+        const codeTag = codeBlock.querySelector('code');
+        if (codeTag) {
+            codeTag.innerHTML = highlighted + (code.endsWith('\n') ? '\n' : ''); // Ensure trailing newline doesn't collapse
+            setCursorOffset(codeBlock, offset);
+        }
+    }, 500);
+}
 
 // Start the editor
 initEditor();

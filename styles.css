@@ -680,23 +680,6 @@ body {
     transition: color 0.2s ease;
 }
 
-.horizontal-line {
-    display: block;
-    width: 100%;
-    height: 1px;
-    background: var(--border-color);
-    margin: 24px 0;
-    border: none;
-}
-
-.horizontal-line.thick {
-    height: 2px;
-}
-
-.horizontal-line.dashed {
-    background: none;
-    border-top: 2px dashed var(--border-color);
-}
 
 /* --- Formatting Indicator --- */
 .formatting-indicator {
@@ -1061,20 +1044,21 @@ body {
     color: var(--text-primary);
 }
 
-/* Code Block Styling */
+/* Code Block Styling (Legacy fallback) */
 pre {
-    background: #1e1e1e;
-    color: #ffffff;
-    padding: 12px;
-    border-radius: 6px;
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    padding: 16px;
+    border-radius: 10px;
     overflow-x: auto;
-    margin: 8px 0;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    white-space: pre-wrap;
+    margin: 16px 0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    white-space: pre;
+    border: 1px solid var(--border-color);
 }
 
 code {
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
     font-size: 0.9em;
 }
 
@@ -1082,6 +1066,7 @@ pre code {
     color: inherit;
     background: none;
     padding: 0;
+    border: none;
 }
 
 .copy-btn {
@@ -2102,30 +2087,34 @@ body.dark .icon-circle {
 
 /* Code Blocks */
 .code-block {
-    background: #1a1b1e;
-    color: #e4e7eb;
-    padding: 16px; /* 8px grid */
-    border-radius: 12px;
-    margin: 16px 0;
+    background: #f8f9fa; /* Subtle gray for light mode */
+    color: #24292e;
+    padding: 16px;
+    border-radius: 10px;
+    margin: 12px 0;
     font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
     font-size: 0.9em;
     line-height: 1.6;
     overflow-x: auto;
     position: relative;
     border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    white-space: pre; /* Essential for code preservation */
+    tab-size: 4;
+    -moz-tab-size: 4;
 }
 
 [data-theme="dark"] .code-block {
-    background: #0d0d0e;
+    background: #0d0d0e; /* Darker contrast for dark mode */
+    color: #e4e7eb;
 }
 
 .code-block code {
-    background: none;
-    padding: 0;
-    font-family: inherit;
-    color: inherit;
-    border: none; /* Override inline code border */
+    background: none !important;
+    padding: 0 !important;
+    font-family: inherit !important;
+    color: inherit !important;
+    border: none !important;
+    white-space: pre !important;
 }
 
 /* Syntax Highlighting Tokens */
@@ -2176,7 +2165,7 @@ body.dark .icon-circle {
 }
 
 /* Horizontal Rule (Custom Divider) */
-.writing-canvas hr {
+.writing-canvas hr, .horizontal-line {
     border: none;
     height: 2px;
     background: var(--text-secondary);
@@ -2184,6 +2173,7 @@ body.dark .icon-circle {
     margin: 24px auto; /* Centered */
     width: 40%; /* Controlled width */
     border-radius: 10px;
+    display: block;
 }
 
 /* List Spacing */
