@@ -31,6 +31,11 @@
     --tooltip-text: #ffffff;
     --pinned-border: #f59e0b;
     --pinned-bg: rgba(245, 158, 11, 0.1);
+
+    /* Spacing Scale */
+    --block-gap: 10px;
+    --heading-top-gap: 16px;
+    --divider-gap: 12px;
 }
 
 [data-theme="dark"] {
@@ -513,56 +518,53 @@ body {
     font-family: inherit; /* Ensure they inherit font from parent */
 }
 
-/* Strict Heading Resets */
+/* Block Spacing & Resets */
 .writing-canvas h1,
 .writing-canvas h2,
 .writing-canvas h3,
 .writing-canvas h4,
 .writing-canvas h5,
-.writing-canvas h6 {
-    margin: 0;
+.writing-canvas h6,
+.writing-canvas p,
+.writing-canvas div,
+.writing-canvas blockquote,
+.writing-canvas pre,
+.writing-canvas ul,
+.writing-canvas ol,
+.writing-canvas table,
+.writing-canvas hr {
+    margin-top: 0;
+    margin-bottom: var(--block-gap);
     padding: 0;
-    font-weight: bold;
-    line-height: 1.2; /* Tighter line-height for headings */
-    display: block;
 }
 
-.writing-canvas div {
-    line-height: inherit;
+/* Heading Hierarchy Gap */
+.writing-canvas h1 { margin-top: var(--heading-top-gap); font-size: 2em; }
+.writing-canvas h2 { margin-top: calc(var(--heading-top-gap) * 0.8); font-size: 1.5em; }
+.writing-canvas h3 { margin-top: calc(var(--heading-top-gap) * 0.6); font-size: 1.25em; }
+
+.writing-canvas h1:first-child,
+.writing-canvas h2:first-child,
+.writing-canvas h3:first-child {
+    margin-top: 0;
+}
+
+.writing-canvas div, .writing-canvas p {
+    line-height: 1.6;
     min-height: 1.5em;
 }
 
-.writing-canvas h1 {
-    font-size: 2em;
-}
-
-.writing-canvas h2 {
-    font-size: 1.5em;
-}
-
-.writing-canvas h3 {
-    font-size: 1.25em;
-}
-
-.writing-canvas ul {
-    margin: 0;
+.writing-canvas ul, .writing-canvas ol {
     padding-left: 24px;
-    list-style-type: disc;
-}
-
-.writing-canvas * {
-    color: var(--text-primary);
-}
-
-.writing-canvas ul {
-    margin: 8px 0;
-    padding-left: 24px;
-    list-style-type: disc;
 }
 
 .writing-canvas li {
     margin-bottom: 4px;
     line-height: 1.6;
+}
+
+.writing-canvas li:last-child {
+    margin-bottom: 0;
 }
 
 .writing-canvas * {
@@ -594,7 +596,6 @@ body {
 /* --- Blockquote --- */
 .writing-canvas blockquote {
     border-left: 4px solid var(--accent-color);
-    margin: 8px 0;
     padding: 8px 16px;
     background: rgba(128, 128, 128, 0.05);
     border-radius: 4px;
@@ -2064,49 +2065,13 @@ body.dark .icon-circle {
 }
 /* ==================== MARKDOWN STYLES ==================== */
 
-/* Headings */
-.writing-canvas h1 {
-    font-size: 2.25em;
-    font-weight: 700;
-    margin: 32px 0 8px; /* Compact 8px grid */
-    color: var(--text-primary);
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-}
-
-.writing-canvas h1:first-child {
-    margin-top: 0;
-}
-
-.writing-canvas h2 {
-    font-size: 1.75em;
-    font-weight: 600;
-    margin: 24px 0 8px;
-    color: var(--text-primary);
-    line-height: 1.3;
-}
-
-.writing-canvas h3 {
-    font-size: 1.35em;
-    font-weight: 600;
-    margin: 16px 0 8px;
-    color: var(--text-primary);
-    line-height: 1.4;
-}
-
-/* Paragraph Spacing (assuming divs/p used for text blocks) */
-.writing-canvas div, .writing-canvas p {
-    margin-bottom: 8px;
-    line-height: 1.6;
-}
-
 /* Code Blocks */
 .code-block {
     background: #1a1b1e;
     color: #e4e7eb;
-    padding: 16px; /* 8px grid */
+    padding: 16px;
     border-radius: 12px;
-    margin: 16px 0;
+    margin-bottom: var(--block-gap) !important;
     font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
     font-size: 0.9em;
     line-height: 1.6;
@@ -2114,6 +2079,7 @@ body.dark .icon-circle {
     position: relative;
     border: 1px solid var(--border-color);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    white-space: pre !important;
 }
 
 [data-theme="dark"] .code-block {
@@ -2125,7 +2091,8 @@ body.dark .icon-circle {
     padding: 0;
     font-family: inherit;
     color: inherit;
-    border: none; /* Override inline code border */
+    border: none;
+    white-space: inherit;
 }
 
 /* Syntax Highlighting Tokens */
@@ -2150,7 +2117,6 @@ body.dark .icon-circle {
 .writing-canvas table {
     width: 100%;
     border-collapse: collapse;
-    margin: 16px 0;
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--border-color);
@@ -2181,14 +2147,13 @@ body.dark .icon-circle {
     height: 2px;
     background: var(--text-secondary);
     opacity: 0.3;
-    margin: 24px auto; /* Centered */
-    width: 40%; /* Controlled width */
+    margin: var(--divider-gap) auto; /* Centered with controlled gap */
+    width: 40%;
     border-radius: 10px;
 }
 
 /* List Spacing */
 .writing-canvas ul, .writing-canvas ol {
-    margin: 8px 0;
     padding-left: 24px;
 }
 
