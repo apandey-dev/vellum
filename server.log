@@ -1,31 +1,13 @@
-127.0.0.1 - - [23/Feb/2026 16:10:54] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:10:54] "GET /app-core.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:10:54] "GET /app-editor.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:10:54] "GET /styles.css HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:10:54] "GET /js/auth-guard.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:10:54] "GET /js/route-guard.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:10:54] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:10:55] code 404, message File not found
-127.0.0.1 - - [23/Feb/2026 16:10:55] "GET /login HTTP/1.1" 404 -
-127.0.0.1 - - [23/Feb/2026 16:11:22] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:11:22] "GET /styles.css HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:11:22] "GET /app-core.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:11:22] "GET /app-editor.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:11:22] "GET /js/auth-guard.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:11:22] "GET /js/route-guard.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:11:22] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:11:22] code 404, message File not found
-127.0.0.1 - - [23/Feb/2026 16:11:22] "GET /login HTTP/1.1" 404 -
-127.0.0.1 - - [23/Feb/2026 16:12:22] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:12:22] "GET /styles.css HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:12:22] "GET /js/route-guard.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:12:22] "GET /app-core.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:12:22] "GET /js/auth-guard.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:12:22] "GET /app-editor.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:12:22] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:12:23] "GET /js/utils.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:12:23] "GET /js/modalManager.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:12:23] "GET /js/supabase-client.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:12:23] "GET /js/modalTemplates.js HTTP/1.1" 200 -
-127.0.0.1 - - [23/Feb/2026 16:12:23] code 404, message File not found
-127.0.0.1 - - [23/Feb/2026 16:12:23] "GET /login HTTP/1.1" 404 -
+127.0.0.1 - - [23/Feb/2026 16:26:39] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 16:26:39] "GET /app-core.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 16:26:39] "GET /js/route-guard.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 16:26:39] "GET /app-editor.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 16:26:39] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 16:26:39] "GET /js/auth-guard.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 16:26:39] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 16:26:39] "GET /js/modalTemplates.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 16:26:39] "GET /js/supabase-client.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 16:26:39] "GET /js/modalManager.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 16:26:39] "GET /js/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 16:26:40] code 404, message File not found
+127.0.0.1 - - [23/Feb/2026 16:26:40] "GET /login HTTP/1.1" 404 -

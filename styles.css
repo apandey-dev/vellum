@@ -60,6 +60,10 @@
     color: var(--theme-text-inverse) !important;
 }
 
+.hidden {
+    display: none !important;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -1719,14 +1723,14 @@ body {
 }
 
 .empty-folder-message {
+    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 20px;
     padding: 40px;
-    max-width: 400px;
-    margin: 0 auto;
+    width: 100%;
 }
 
 .empty-folder-icon {
