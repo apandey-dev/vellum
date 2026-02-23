@@ -11,6 +11,16 @@
         href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Markdown Rendering & Security Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+
+    <!-- Code Highlight Themes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-light" disabled>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
+
     <script src="/js/route-guard.js"></script>
 
     <style>
@@ -156,13 +166,94 @@
             min-height: 500px;
             font-size: 18px;
             line-height: 1.6;
-            white-space: pre-wrap;
-            word-break: break-word;
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
         }
 
-        .note-content * {
+        /* --- MARKDOWN STYLES FOR CONSISTENCY --- */
+        .markdown-body h1, .markdown-body h2, .markdown-body h3,
+        .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+            color: var(--text-primary);
+        }
+
+        .markdown-body h1 { font-size: 2em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        .markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        .markdown-body h3 { font-size: 1.25em; }
+
+        .markdown-body p { margin-bottom: 16px; }
+        .markdown-body strong { font-weight: 600; }
+        .markdown-body em { font-style: italic; }
+
+        .markdown-body blockquote {
+            padding: 0 1em;
+            color: var(--text-secondary);
+            border-left: 0.25em solid var(--accent-color);
+            margin: 0 0 16px 0;
+            background: rgba(128, 128, 128, 0.05);
+            border-radius: 4px;
+        }
+
+        .markdown-body ul, .markdown-body ol {
+            padding-left: 2em;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body code {
+            padding: 0.2em 0.4em;
+            font-size: 85%;
+            background-color: rgba(128, 128, 128, 0.15);
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .markdown-body pre {
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+            background-color: var(--bg-canvas);
+            border-radius: 10px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+            font-size: 100%;
+            border-radius: 0;
+        }
+
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body table th, .markdown-body table td {
+            padding: 6px 13px;
+            border: 1px solid var(--border-color);
+        }
+
+        .markdown-body hr {
+            height: 2px;
+            background: var(--border-color);
+            border: none;
+            margin: 24px 0;
+        }
+
+        .markdown-body * {
             max-width: 100%;
+        }
+
+        .hljs {
+            display: block;
+            overflow-x: auto;
+            padding: 0.5em;
+            background: transparent !important;
         }
 
         /* Error/Loading State */
@@ -254,12 +345,13 @@
     <template id="noteTemplate">
         <div class="paper-container">
             <h1 class="note-title" id="displayTitle">Untitled Note</h1>
-            <div class="note-content" id="displayContent"></div>
+            <div class="note-content markdown-body" id="displayContent"></div>
         </div>
     </template>
 
     <script type="module">
         import { supabase } from '/js/supabase-client.js';
+        import { MarkdownEngine } from '/js/markdown-engine.js';
 
         const template = document.getElementById('noteTemplate');
         const app = document.getElementById('app');
@@ -269,6 +361,20 @@
         const dynamicStyle = document.getElementById('dynamic-print-style');
 
         // 1. Theme Logic
+        function updateHljsTheme() {
+            const theme = html.getAttribute('data-theme') || 'light';
+            const lightLink = document.getElementById('hljs-light');
+            const darkLink = document.getElementById('hljs-dark');
+
+            if (theme === 'dark') {
+                lightLink.disabled = true;
+                darkLink.disabled = false;
+            } else {
+                lightLink.disabled = false;
+                darkLink.disabled = true;
+            }
+        }
+
         function toggleTheme() {
             const current = html.getAttribute('data-theme');
             const next = current === 'dark' ? 'light' : 'dark';
@@ -280,6 +386,7 @@
             } else {
                 icon.className = 'ph ph-sun';
             }
+            updateHljsTheme();
         }
         themeToggle.addEventListener('click', toggleTheme);
 
@@ -310,7 +417,7 @@
                 const clone = template.content.cloneNode(true);
 
                 clone.getElementById('displayTitle').textContent = note.title;
-                clone.getElementById('displayContent').textContent = note.content;
+                clone.getElementById('displayContent').innerHTML = MarkdownEngine.render(note.content);
 
                 app.appendChild(clone);
 
@@ -340,6 +447,7 @@
         } else {
             icon.className = 'ph ph-sun';
         }
+        updateHljsTheme();
 
     </script>
 </body>

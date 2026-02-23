@@ -14,6 +14,15 @@
     <script src="/js/route-guard.js"></script>
     <script src="/js/auth-guard.js"></script>
 
+    <!-- Markdown Rendering & Security Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+
+    <!-- Code Highlight Themes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-light" disabled>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
+
     <style>
         /* --- GLOBAL RESET --- */
         * {
@@ -174,41 +183,106 @@
             height: 100%;
             background-color: transparent;
             color: var(--text-color);
-            /* Typography Reset */
             line-height: 1.6;
             font-size: 12pt;
             word-wrap: break-word;
-            /* Structure */
             overflow: hidden;
             display: flow-root;
             padding: 40px;
-            /* Default inner padding */
         }
 
-        /* FIRST CHILD RESET - PREVENT TOP GAP */
-        #editor-print-container> :first-child {
-            margin-top: 0 !important;
-            padding-top: 0 !important;
-            page-break-before: auto !important;
-            break-before: auto !important;
+        /* --- MARKDOWN STYLES FOR PRINT CONSISTENCY --- */
+        .markdown-body h1, .markdown-body h2, .markdown-body h3,
+        .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+            color: var(--text-color);
         }
 
-        /* --- CONTENT STYLING --- */
+        .markdown-body h1 { font-size: 2em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        .markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        .markdown-body h3 { font-size: 1.25em; }
 
-        #editor-print-container {
-            white-space: pre-wrap;
-            word-wrap: break-word;
+        .markdown-body p { margin-bottom: 16px; }
+        .markdown-body strong { font-weight: 600; }
+        .markdown-body em { font-style: italic; }
+
+        .markdown-body blockquote {
+            padding: 0 1em;
+            color: #666;
+            border-left: 0.25em solid var(--accent-color);
+            margin: 0 0 16px 0;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
         }
 
-        #editor-print-container h1 {
-            font-size: 2em;
-            margin-bottom: 20px;
+        .markdown-body ul, .markdown-body ol {
+            padding-left: 2em;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body code {
+            padding: 0.2em 0.4em;
+            font-size: 85%;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .markdown-body pre {
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+            background-color: #f6f8fa;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            border: 1px solid #ddd;
+        }
+
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+            font-size: 100%;
+            border-radius: 0;
+        }
+
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body table th, .markdown-body table td {
+            padding: 6px 13px;
+            border: 1px solid #ddd;
+        }
+
+        .markdown-body hr {
+            height: 2px;
+            background: #eee;
+            border: none;
+            margin: 24px 0;
         }
 
         /* Page break control */
-        #editor-print-container * {
+        .markdown-body pre,
+        .markdown-body blockquote,
+        .markdown-body tr,
+        .markdown-body img,
+        .markdown-body ul,
+        .markdown-body ol {
             page-break-inside: avoid;
             break-inside: avoid;
+        }
+
+        .hljs {
+            display: block;
+            overflow-x: auto;
+            padding: 0.5em;
+            background: transparent !important;
         }
 
         /* --- PAGE SIZE CLASSES --- */
@@ -255,10 +329,11 @@
         /* --- PRINT MEDIA QUERIES --- */
         @media print {
             body {
-                background: none;
+                background: white !important;
                 height: auto;
                 overflow: visible;
                 display: block;
+                color: black !important;
             }
 
             #settings-sidebar {
@@ -268,7 +343,7 @@
             #preview-container {
                 padding: 0;
                 margin: 0;
-                background: none;
+                background: white !important;
                 display: block;
                 overflow: visible;
                 height: auto;
@@ -279,21 +354,41 @@
                 padding: 0 !important;
                 box-shadow: none;
                 margin: 0;
-                width: 100%;
+                width: 100% !important;
                 max-width: none;
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
                 height: auto;
                 overflow: visible;
+                background: white !important;
             }
 
             #editor-print-container {
-                width: 100%;
+                width: 100% !important;
+                background: white !important;
+                color: black !important;
+            }
+
+            .markdown-body pre {
+                background-color: #f6f8fa !important;
+                border: 1px solid #ddd !important;
+                -webkit-print-color-adjust: exact;
+            }
+
+            .markdown-body blockquote {
+                background: rgba(0, 0, 0, 0.05) !important;
+                border-left-color: var(--accent-color) !important;
             }
 
             body.size-infinity #page-sheet {
                 height: auto !important;
                 overflow: visible !important;
+            }
+
+            /* Force color preservation */
+            span[style*="color"] {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
     </style>
@@ -361,14 +456,16 @@
         <!-- THE PAPER -->
         <div id="page-sheet">
             <!-- THE CONTENT -->
-            <div id="editor-print-container">
+            <div id="editor-print-container" class="markdown-body">
                 <p style="color: grey; text-align: center; margin-top: 50%;">Loading content...</p>
             </div>
         </div>
     </div>
 
     <!-- LOGIC -->
-    <script>
+    <script type="module">
+        import { MarkdownEngine } from '/js/markdown-engine.js';
+
         document.addEventListener('DOMContentLoaded', () => {
             const content = localStorage.getItem('vellum_print_content');
             const pageSheet = document.getElementById('page-sheet');
@@ -377,6 +474,20 @@
             const sizeSelect = document.getElementById('sizeSelect');
             const themeSelect = document.getElementById('themeSelect');
             const printBtn = document.getElementById('printBtn');
+
+            function updateHljsTheme() {
+                const theme = document.documentElement.getAttribute('data-theme') || 'light';
+                const lightLink = document.getElementById('hljs-light');
+                const darkLink = document.getElementById('hljs-dark');
+
+                if (theme === 'dark') {
+                    lightLink.disabled = true;
+                    darkLink.disabled = false;
+                } else {
+                    lightLink.disabled = false;
+                    darkLink.disabled = true;
+                }
+            }
             const closeBtn = document.getElementById('closeBtn');
             const styleInjection = document.getElementById('page-style-injection');
 
@@ -392,7 +503,7 @@
             const title = localStorage.getItem('vellum_print_title') || 'Untitled Document';
 
             if (content) {
-                // Inject title as H1 at the beginning
+                // The content from handleExport is already rendered HTML
                 editorContainer.innerHTML = `<h1>${escapeHtml(title)}</h1>` + content;
                 // Update window title
                 document.title = `Print Preview - ${title}`;
@@ -449,6 +560,7 @@
             themeSelect.addEventListener('change', (e) => {
                 const theme = e.target.value;
                 document.documentElement.setAttribute('data-theme', theme);
+                updateHljsTheme();
             });
 
             Object.values(paddingInputs).forEach(input => {
@@ -471,6 +583,7 @@
             // Init
             updatePageSize();
             updateContentPadding();
+            updateHljsTheme();
         });
     </script>
 </body>
