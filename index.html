@@ -33,12 +33,12 @@
 
 <body>
     <nav class="sidebar" id="sidebar">
-        <div class="icon-circle">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" aria-hidden="true">
-                <path
-                    d="m438-413 212-212-43-42-169.33 170L353-582l-43 42 128 127ZM40-120v-60h880v60H40Zm100-120q-24 0-42-18t-18-42v-480q0-24 18-42t42-18h680q24 0 42 18t18 42v480q0 24-18 42t-42 18H140Zm0-60h680v-480H140v480Zm0 0v-480 480Z" />
-            </svg>
+        <div class="sidebar-top">
+            <div class="brand-icon">
+                <i class="fas fa-laptop-code"></i>
+            </div>
         </div>
+
         <div class="tool-group">
             <div class="tool-btn" id="searchBtn" data-tooltip="Search">
                 <i class="fas fa-search"></i>
@@ -55,11 +55,10 @@
 
             <div class="divider"></div>
 
-            <!-- View Modes -->
-            <div class="tool-btn" id="editorOnlyBtn" data-tooltip="Editor Only">
-                <i class="fas fa-edit"></i>
+            <div class="tool-btn active" id="editorOnlyBtn" data-tooltip="Editor Only">
+                <i class="fas fa-pen-to-square"></i>
             </div>
-            <div class="tool-btn active" id="splitViewBtn" data-tooltip="Split View">
+            <div class="tool-btn" id="splitViewBtn" data-tooltip="Split View">
                 <i class="fas fa-columns"></i>
             </div>
             <div class="tool-btn" id="previewOnlyBtn" data-tooltip="Preview Only">
@@ -68,12 +67,13 @@
 
             <div class="divider"></div>
         </div>
+
         <div class="bottom-actions">
             <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
-                <i class="fas fa-sun" id="themeIcon"></i>
+                <i class="fas fa-moon" id="themeIcon"></i>
             </div>
             <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode">
-                <i class="fas fa-expand-alt"></i>
+                <i class="fas fa-expand"></i>
             </div>
             <div class="tool-btn" id="userProfileBtn" data-tooltip="User Profile">
                 <i class="fas fa-user-circle"></i>
