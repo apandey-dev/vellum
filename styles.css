@@ -1568,7 +1568,9 @@ body.resizing .preview-canvas {
 .modal-body {
     flex: 1;
     overflow-y: auto;
+    padding-top: px;
 }
+
 
 .modal-actions {
     display: grid;
