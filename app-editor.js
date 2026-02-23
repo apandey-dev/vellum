@@ -23,15 +23,12 @@ const fontMap = {
  * UI Updates
  */
 function updateFontDisplay() {
-    const currentFontFamily = writingCanvas.style.fontFamily || 'Fredoka';
-    // Find the name from the map
-    let current = 'Fredoka';
-    for (const [name, value] of Object.entries(fontMap)) {
-        if (currentFontFamily.includes(name)) {
-            current = name;
-            break;
-        }
-    }
+    const currentFont = localStorage.getItem('vellum_current_font') || 'Fredoka';
+    const fontValue = fontMap[currentFont];
+
+    writingCanvas.style.fontFamily = fontValue;
+    const previewCanvas = document.getElementById('previewCanvas');
+    if (previewCanvas) previewCanvas.style.fontFamily = fontValue;
 
     const currentFontSpan = document.getElementById('currentFont');
     const fontOptions = document.querySelectorAll('.font-option');
@@ -76,7 +73,7 @@ function attachEventListeners() {
     fontOptions.forEach(option => {
         option.addEventListener('click', () => {
             const selectedFont = option.dataset.font;
-            writingCanvas.style.fontFamily = fontMap[selectedFont] || selectedFont;
+            localStorage.setItem('vellum_current_font', selectedFont);
             updateFontDisplay();
             fontSelectorBtn.classList.remove('active');
             fontDropdown.classList.remove('active');

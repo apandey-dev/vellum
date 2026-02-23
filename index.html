@@ -54,6 +54,19 @@
             </div>
 
             <div class="divider"></div>
+
+            <!-- View Modes -->
+            <div class="tool-btn" id="editorOnlyBtn" data-tooltip="Editor Only">
+                <i class="fas fa-edit"></i>
+            </div>
+            <div class="tool-btn active" id="splitViewBtn" data-tooltip="Split View">
+                <i class="fas fa-columns"></i>
+            </div>
+            <div class="tool-btn" id="previewOnlyBtn" data-tooltip="Preview Only">
+                <i class="fas fa-eye"></i>
+            </div>
+
+            <div class="divider"></div>
         </div>
         <div class="bottom-actions">
             <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
@@ -118,10 +131,13 @@
 
     <main class="workspace">
         <div class="editor-split-container" id="editorContainer">
-            <div class="editor-pane">
+            <div class="editor-pane" id="editorPane">
                 <textarea class="writing-canvas" id="writingCanvas" placeholder="Start typing markdown here..."></textarea>
             </div>
-            <div class="preview-pane">
+            <div class="resizer" id="resizer">
+                <div class="resizer-handle"></div>
+            </div>
+            <div class="preview-pane" id="previewPane">
                 <div class="preview-canvas markdown-body" id="previewCanvas"></div>
             </div>
         </div>
