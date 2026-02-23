@@ -173,137 +173,6 @@
             color: var(--text-secondary);
         }
 
-        /* --- STYLES FROM EDITOR FOR COMPATIBILITY --- */
-
-        /* 1. Checkboxes (Circular) */
-        .task-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            margin: 2px 0;
-            padding: 0;
-            line-height: 1.6;
-            width: 100%;
-        }
-
-        .custom-checkbox-wrapper {
-            display: inline-flex;
-            position: relative;
-            cursor: default; /* Read only */
-            user-select: none;
-            margin-top: 5px;
-            flex-shrink: 0;
-            margin-left: 2px;
-        }
-
-        .custom-checkbox-wrapper input {
-            position: absolute;
-            opacity: 0;
-            cursor: default;
-            height: 0;
-            width: 0;
-            appearance: none;
-            -webkit-appearance: none;
-        }
-
-        .checkmark {
-            height: 20px;
-            width: 20px;
-            background-color: transparent;
-            border: 3px solid var(--border-color);
-            border-radius: 50%; /* Circular */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .custom-checkbox-wrapper input:checked ~ .checkmark {
-            background-color: var(--text-primary); /* Use text color for print contrast */
-            border-color: var(--text-primary);
-        }
-
-        .checkmark:after {
-            content: "";
-            display: none;
-            width: 5px;
-            height: 9px;
-            border: solid var(--bg-panel);
-            border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
-            margin-bottom: 2px;
-        }
-
-        .custom-checkbox-wrapper input:checked ~ .checkmark:after {
-            display: block;
-        }
-
-        .task-item.completed span {
-            text-decoration: line-through;
-            opacity: 0.6;
-        }
-
-        /* 2. Blockquotes */
-        blockquote {
-            border-left: 4px solid var(--accent-color);
-            margin: 8px 0;
-            padding: 8px 16px;
-            background: rgba(128, 128, 128, 0.05);
-            border-radius: 4px;
-            color: var(--text-secondary);
-        }
-
-        /* 3. Horizontal Line */
-        .horizontal-line {
-            display: block;
-            width: 100%;
-            height: 1px;
-            background: var(--border-color);
-            margin: 24px 0;
-            border: none;
-        }
-
-        /* 4. Lists */
-        ul {
-            margin: 8px 0;
-            padding-left: 24px;
-            list-style-type: disc;
-        }
-
-        li {
-            margin-bottom: 4px;
-        }
-
-        /* 5. Headings */
-        h1 { font-size: 2em; margin: 0; padding: 0; line-height: 1.4; }
-        h2 { font-size: 1.5em; margin: 0; padding: 0; line-height: 1.4; }
-        h3 { font-size: 1.25em; margin: 0; padding: 0; line-height: 1.4; }
-        h4 { font-size: 1.1em; margin: 0; padding: 0; line-height: 1.4; font-weight: bold; }
-
-        .text-bold {
-            font-weight: bold;
-        }
-
-        .text-italic {
-            font-style: italic;
-        }
-
-        .text-underline {
-            text-decoration: underline;
-        }
-
-        .text-strike {
-            text-decoration: line-through;
-        }
-
-        .text-center {
-            text-align: center;
-            display: block;
-        }
-
-        .text-right {
-            text-align: right;
-            display: block;
-        }
 
         /* --- PRINT STYLES (Infinite Page) --- */
         @media print {
@@ -441,7 +310,7 @@
                 const clone = template.content.cloneNode(true);
 
                 clone.getElementById('displayTitle').textContent = note.title;
-                clone.getElementById('displayContent').innerHTML = note.content;
+                clone.getElementById('displayContent').textContent = note.content;
 
                 app.appendChild(clone);
 
