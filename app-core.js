@@ -6,11 +6,13 @@ import { supabase, restoreSession } from '/js/supabase-client.js';
 import { showToast, escapeHtml } from '/js/utils.js';
 import { modalManager } from '/js/modalManager.js';
 import { modalTemplates } from '/js/modalTemplates.js';
+import { EditorUI } from '/js/editor-ui.js';
 
 // --- ELEMENT REFERENCES (GLOBAL) ---
 const sidebar = document.getElementById('sidebar');
 const topBar = document.getElementById('topBar');
 const workspace = document.querySelector('.workspace');
+const editorContainer = document.getElementById('editorContainer');
 const emptyState = document.getElementById('emptyState');
 const focusBtn = document.getElementById('focusBtn');
 const restoreBtn = document.getElementById('restoreBtn');
@@ -356,8 +358,12 @@ function loadActiveNote() {
     if (note) {
         writingCanvas.value = note.content || '';
         writingCanvas.disabled = false;
-        writingCanvas.style.display = 'block';
+        if (editorContainer) editorContainer.classList.remove('hidden');
         if (emptyState) emptyState.classList.add('hidden');
+
+        // Update live preview immediately after loading content
+        EditorUI.updatePreview();
+
         updatePinButton();
         deleteBtn.classList.remove('disabled');
         shareBtn.classList.remove('disabled');
@@ -366,7 +372,7 @@ function loadActiveNote() {
         // Empty State Screen
         writingCanvas.value = '';
         writingCanvas.disabled = true;
-        writingCanvas.style.display = 'none';
+        if (editorContainer) editorContainer.classList.add('hidden');
         if (emptyState) {
             emptyState.classList.remove('hidden');
             const createBtn = document.getElementById('createNoteFromEmpty');
@@ -922,8 +928,8 @@ function handleExport(note) {
 
     const content = writingCanvas.value;
     if (selectedExportFormat === 'pdf') {
-        // Convert plain text to simple HTML for print view
-        const htmlContent = content.split('\n').map(line => `<div>${escapeHtml(line) || '<br>'}</div>`).join('');
+        // Use MarkdownEngine to render high-quality HTML for the print view
+        const htmlContent = MarkdownEngine.render(content);
         localStorage.setItem('vellum_print_content', htmlContent);
         localStorage.setItem('vellum_print_title', fileName);
         window.open('/print', '_blank');

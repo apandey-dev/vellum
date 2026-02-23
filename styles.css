@@ -479,29 +479,181 @@ body {
     margin-left: 0px;
     height: 100vh;
     padding: 90px 20px 10px 20px;
+    position: relative;
+}
+
+.editor-split-container {
+    display: flex;
+    gap: 20px;
+    height: 100%;
+    width: 100%;
+}
+
+.editor-pane, .preview-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+}
+
+.writing-canvas, .preview-canvas {
+    flex: 1;
+    border-radius: 16px;
+    padding: 32px;
+    overflow-y: auto;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
 }
 
 .writing-canvas {
-    flex: 1;
-    border-radius: 16px;
-    padding: 24px;
-    overflow-y: auto;
     outline: none;
-    font-size: 18px;
-    line-height: 1.5;
-    transition: all 0.3s ease;
-    font-family: 'Fredoka', sans-serif;
-    min-height: 400px;
-    background: var(--bg-panel);
-    border: 1px solid var(--border-color);
-    word-break: break-word;
-    overflow-wrap: break-word;
+    font-size: 16px;
+    line-height: 1.6;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    word-break: break-all;
     white-space: pre-wrap;
-    max-width: 100%;
     color: var(--text-primary) !important;
     caret-color: var(--text-primary);
     resize: none;
     width: 100%;
+    scrollbar-width: thin;
+}
+
+.preview-canvas {
+    font-family: 'Fredoka', sans-serif;
+    color: var(--text-primary);
+    line-height: 1.6;
+    scrollbar-width: thin;
+}
+
+/* ==================== RENDERED MARKDOWN STYLES ==================== */
+
+.markdown-body {
+    word-wrap: break-word;
+}
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3,
+.markdown-body h4, .markdown-body h5, .markdown-body h6 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text-primary);
+}
+
+.markdown-body h1 { font-size: 2em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+.markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+.markdown-body h3 { font-size: 1.25em; }
+.markdown-body h4 { font-size: 1em; }
+
+.markdown-body p {
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+.markdown-body strong { font-weight: 600; }
+.markdown-body em { font-style: italic; }
+
+.markdown-body blockquote {
+    padding: 0 1em;
+    color: var(--text-secondary);
+    border-left: 0.25em solid var(--accent-color);
+    margin: 0 0 16px 0;
+    background: rgba(128, 128, 128, 0.05);
+    border-radius: 4px;
+}
+
+.markdown-body ul, .markdown-body ol {
+    padding-left: 2em;
+    margin-bottom: 16px;
+}
+
+.markdown-body li { margin-bottom: 4px; }
+
+.markdown-body code {
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: rgba(128, 128, 128, 0.15);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+.markdown-body pre {
+    padding: 16px;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: var(--hover-bg);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.markdown-body pre code {
+    background-color: transparent;
+    padding: 0;
+    font-size: 100%;
+    border-radius: 0;
+}
+
+.markdown-body hr {
+    height: 0.25em;
+    padding: 0;
+    margin: 24px 0;
+    background-color: var(--border-color);
+    border: 0;
+}
+
+.markdown-body table {
+    display: block;
+    width: 100%;
+    overflow: auto;
+    border-spacing: 0;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+}
+
+.markdown-body table th, .markdown-body table td {
+    padding: 6px 13px;
+    border: 1px solid var(--border-color);
+}
+
+.markdown-body table tr {
+    background-color: var(--bg-panel);
+    border-top: 1px solid var(--border-color);
+}
+
+.markdown-body table tr:nth-child(2n) {
+    background-color: var(--hover-bg);
+}
+
+.markdown-body img {
+    max-width: 100%;
+    box-sizing: content-box;
+}
+
+.markdown-body a {
+    color: #0969da;
+    text-decoration: none;
+}
+
+.markdown-body a:hover {
+    text-decoration: underline;
+}
+
+[data-theme="dark"] .markdown-body a {
+    color: #58a6ff;
+}
+
+/* Highlight.js specific overrides */
+.hljs {
+    display: block;
+    overflow-x: auto;
+    padding: 0.5em;
+    background: transparent !important;
 }
 
 .writing-canvas::placeholder {
@@ -1165,15 +1317,21 @@ body {
     width: 100vw;
     height: 100vh;
     margin: 0;
-    padding: 5px;
+    padding: 20px;
     z-index: 100;
+    background-color: var(--bg-canvas);
 }
 
-.workspace.focus-mode .writing-canvas {
-    width: 100%;
+.workspace.focus-mode .editor-split-container {
+    max-width: 1200px;
+    margin: 0 auto;
     height: 100%;
-    margin: 0;
+}
+
+.workspace.focus-mode .writing-canvas,
+.workspace.focus-mode .preview-canvas {
     border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .restore-pill {
