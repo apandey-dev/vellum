@@ -26,18 +26,24 @@ function updateFontDisplay() {
     const currentFont = localStorage.getItem('vellum_current_font') || 'Fredoka';
     const fontValue = fontMap[currentFont];
 
-    writingCanvas.style.fontFamily = fontValue;
+    if (writingCanvas) {
+        writingCanvas.style.fontFamily = fontValue;
+    }
+
     const previewCanvas = document.getElementById('previewCanvas');
-    if (previewCanvas) previewCanvas.style.fontFamily = fontValue;
+    if (previewCanvas) {
+        previewCanvas.style.fontFamily = fontValue;
+    }
 
     const currentFontSpan = document.getElementById('currentFont');
+    if (currentFontSpan) {
+        currentFontSpan.textContent = currentFont;
+    }
+
     const fontOptions = document.querySelectorAll('.font-option');
-
-    if (currentFontSpan) currentFontSpan.textContent = current;
-
     fontOptions.forEach(opt => {
         opt.classList.remove('active');
-        if (opt.dataset.font === current) opt.classList.add('active');
+        if (opt.dataset.font === currentFont) opt.classList.add('active');
     });
 }
 
@@ -70,15 +76,16 @@ function attachEventListeners() {
         }
     });
 
-    fontOptions.forEach(option => {
-        option.addEventListener('click', () => {
+    fontDropdown.addEventListener('click', (e) => {
+        const option = e.target.closest('.font-option');
+        if (option) {
             const selectedFont = option.dataset.font;
             localStorage.setItem('vellum_current_font', selectedFont);
             updateFontDisplay();
             fontSelectorBtn.classList.remove('active');
             fontDropdown.classList.remove('active');
             saveCurrentNote();
-        });
+        }
     });
 }
 
