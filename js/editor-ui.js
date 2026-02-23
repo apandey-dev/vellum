@@ -7,20 +7,15 @@ import { MarkdownEngine } from './markdown-engine.js';
 import { writingCanvas } from '../app-core.js';
 
 export const EditorUI = (function() {
-    const editorPane = document.getElementById('editorPane');
-    const previewPane = document.getElementById('previewPane');
-    const resizer = document.getElementById('resizer');
-    const previewCanvas = document.getElementById('previewCanvas');
-    const editorOnlyBtn = document.getElementById('editorOnlyBtn');
-    const splitViewBtn = document.getElementById('splitViewBtn');
-    const previewOnlyBtn = document.getElementById('previewOnlyBtn');
-
+    let editorPane, previewPane, resizer, previewCanvas;
+    let editorOnlyBtn, splitViewBtn, previewOnlyBtn;
     let renderTimeout;
 
     /**
      * Updates the preview with debounced rendering for performance
      */
     function updatePreview() {
+        if (!previewCanvas) return;
         clearTimeout(renderTimeout);
         renderTimeout = setTimeout(() => {
             const content = writingCanvas.value;
@@ -72,17 +67,16 @@ export const EditorUI = (function() {
             previewPane.classList.add('hidden');
             resizer.classList.add('hidden');
             editorOnlyBtn.classList.add('active');
-            editorPane.style.flex = '1';
+            editorPane.style.flex = '1 1 100%';
         } else if (mode === 'preview') {
             editorPane.classList.add('hidden');
             resizer.classList.add('hidden');
             previewOnlyBtn.classList.add('active');
-            previewPane.style.flex = '1';
+            previewPane.style.flex = '1 1 100%';
         } else {
             splitViewBtn.classList.add('active');
-            // Reset to default split if it was hidden
-            if (!editorPane.style.flex) editorPane.style.flex = '1';
-            if (!previewPane.style.flex) previewPane.style.flex = '1';
+            editorPane.style.flex = '1 1 50%';
+            previewPane.style.flex = '1 1 50%';
         }
     }
 
@@ -95,6 +89,7 @@ export const EditorUI = (function() {
         resizer.onmousedown = (e) => {
             isResizing = true;
             document.body.style.cursor = 'col-resize';
+            document.body.classList.add('resizing');
             document.addEventListener('mousemove', handleMouseMove);
             document.addEventListener('mouseup', handleMouseUp);
         };
@@ -102,11 +97,13 @@ export const EditorUI = (function() {
         function handleMouseMove(e) {
             if (!isResizing) return;
 
-            const containerWidth = editorPane.parentElement.clientWidth;
-            const mouseX = e.clientX - editorPane.parentElement.getBoundingClientRect().left;
+            const container = editorPane.parentElement;
+            const containerWidth = container.clientWidth;
+            const mouseX = e.clientX - container.getBoundingClientRect().left;
 
             // Boundary checks
-            if (mouseX < 100 || mouseX > containerWidth - 100) return;
+            const minWidth = 150;
+            if (mouseX < minWidth || mouseX > containerWidth - minWidth) return;
 
             const editorWidthPercent = (mouseX / containerWidth) * 100;
             const previewWidthPercent = 100 - editorWidthPercent;
@@ -116,8 +113,10 @@ export const EditorUI = (function() {
         }
 
         function handleMouseUp() {
+            if (!isResizing) return;
             isResizing = false;
             document.body.style.cursor = 'default';
+            document.body.classList.remove('resizing');
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         }
@@ -132,11 +131,11 @@ export const EditorUI = (function() {
         const darkLink = document.getElementById('hljs-dark');
 
         if (theme === 'dark') {
-            lightLink.disabled = true;
-            darkLink.disabled = false;
+            if (lightLink) lightLink.disabled = true;
+            if (darkLink) darkLink.disabled = false;
         } else {
-            lightLink.disabled = false;
-            darkLink.disabled = true;
+            if (lightLink) lightLink.disabled = false;
+            if (darkLink) darkLink.disabled = true;
         }
     }
 
@@ -144,6 +143,16 @@ export const EditorUI = (function() {
      * Initialize UI features
      */
     function init() {
+        editorPane = document.getElementById('editorPane');
+        previewPane = document.getElementById('previewPane');
+        resizer = document.getElementById('resizer');
+        previewCanvas = document.getElementById('previewCanvas');
+        editorOnlyBtn = document.getElementById('editorOnlyBtn');
+        splitViewBtn = document.getElementById('splitViewBtn');
+        previewOnlyBtn = document.getElementById('previewOnlyBtn');
+
+        if (!writingCanvas) return;
+
         writingCanvas.addEventListener('input', updatePreview);
         setupScrollSync();
         updateHljsTheme();
@@ -163,6 +172,9 @@ export const EditorUI = (function() {
             });
         });
         observer.observe(document.documentElement, { attributes: true });
+
+        // Initial render
+        updatePreview();
     }
 
     return {
