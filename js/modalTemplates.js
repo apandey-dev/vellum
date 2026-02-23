@@ -39,8 +39,8 @@ export const modalTemplates = {
         <div class="manage-folders-body">
             <div class="folder-details-panel" id="folderDetailsPanel">
                 <div class="folder-detail-placeholder">
-                    <i class="fas fa-info-circle" style="display: block; font-size: 32px; margin-bottom: 12px; opacity: 0.5;"></i>
-                    Select a folder to view details
+                    <i class="fas fa-info-circle"></i>
+                    <p>Select a folder to view details</p>
                 </div>
             </div>
             <div class="folder-chips-panel">

@@ -501,6 +501,17 @@
 
             // 1. Load Content
             const title = localStorage.getItem('vellum_print_title') || 'Untitled Document';
+            const currentFont = localStorage.getItem('vellum_current_font') || 'Fredoka';
+            const fontMap = {
+                'Fredoka': "'Fredoka', sans-serif",
+                'Kalam': "'Kalam', cursive",
+                'Playpen Sans': "'Playpen Sans', cursive",
+                'Patrick Hand': "'Patrick Hand', cursive",
+                'Baloo 2': "'Baloo 2', cursive",
+                'Comic Neue': "'Comic Neue', cursive",
+                'Comic Sans MS': "'Comic Sans MS', cursive, sans-serif"
+            };
+            editorContainer.style.fontFamily = fontMap[currentFont];
 
             if (content) {
                 // The content from handleExport is already rendered HTML

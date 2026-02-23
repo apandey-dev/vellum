@@ -738,7 +738,7 @@ function renderFolderListInModal(container) {
             <i class="fas fa-folder"></i>
             <span class="folder-chip-name">${escapeHtml(folder.name)}</span>
             <div class="delete-btn" title="Delete Folder">
-                <i class="fas fa-times"></i>
+                <i class="fas fa-trash-alt"></i>
             </div>
         `;
 
