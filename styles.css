@@ -607,6 +607,16 @@ body {
     border: 0;
 }
 
+.markdown-body pre,
+.markdown-body blockquote,
+.markdown-body tr,
+.markdown-body img,
+.markdown-body ul,
+.markdown-body ol {
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
 .markdown-body table {
     display: block;
     width: 100%;
@@ -654,6 +664,51 @@ body {
     overflow-x: auto;
     padding: 0.5em;
     background: transparent !important;
+}
+
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+
+    .sidebar, .top-bar-wrapper, .formatting-indicator, .restore-pill {
+        display: none !important;
+    }
+
+    .workspace {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .editor-split-container {
+        display: block !important;
+    }
+
+    .editor-pane {
+        display: none !important;
+    }
+
+    .preview-pane {
+        width: 100% !important;
+    }
+
+    .preview-canvas {
+        border: none !important;
+        background: white !important;
+        padding: 0 !important;
+    }
+
+    .markdown-body pre {
+        background-color: #f6f8fa !important;
+        border: 1px solid #ddd !important;
+        -webkit-print-color-adjust: exact;
+    }
+
+    span[style*="color"] {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
 }
 
 .writing-canvas::placeholder {

@@ -7,6 +7,7 @@ import { showToast, escapeHtml } from '/js/utils.js';
 import { modalManager } from '/js/modalManager.js';
 import { modalTemplates } from '/js/modalTemplates.js';
 import { EditorUI } from '/js/editor-ui.js';
+import { MarkdownEngine } from '/js/markdown-engine.js';
 
 // --- ELEMENT REFERENCES (GLOBAL) ---
 const sidebar = document.getElementById('sidebar');
