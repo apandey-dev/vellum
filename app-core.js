@@ -11,6 +11,7 @@ import { modalTemplates } from '/js/modalTemplates.js';
 const sidebar = document.getElementById('sidebar');
 const topBar = document.getElementById('topBar');
 const workspace = document.querySelector('.workspace');
+const emptyState = document.getElementById('emptyState');
 const focusBtn = document.getElementById('focusBtn');
 const restoreBtn = document.getElementById('restoreBtn');
 const themeToggle = document.getElementById('themeToggle');
@@ -50,88 +51,6 @@ let activeFolderId = null; // null means 'All' or no folder filter
 // Export state
 let selectedExportFormat = null;
 
-// ==================== UNDO / REDO (EDITOR CONTENT ONLY) ====================
-let editorUndoStack = [];         // array of HTML content strings
-let undoIndex = -1;               // current position in stack
-const MAX_UNDO = 50;
-
-/**
- * Capture content-only snapshot for the current note.
- * Undo system is now restricted to editor content.
- */
-export function pushToUndo() {
-    if (!activeNoteId) return;
-
-    const content = writingCanvas.innerHTML;
-
-    // Don't push duplicate states
-    if (undoIndex >= 0 && editorUndoStack[undoIndex] === content) return;
-
-    if (undoIndex < editorUndoStack.length - 1) {
-        editorUndoStack = editorUndoStack.slice(0, undoIndex + 1);
-    }
-
-    editorUndoStack.push(content);
-
-    if (editorUndoStack.length > MAX_UNDO) {
-        editorUndoStack.shift();
-    } else {
-        undoIndex++;
-    }
-}
-window.pushToUndo = pushToUndo;
-
-/**
- * Reset undo stack when switching notes to prevent cross-note data leaks.
- */
-function resetUndoStack() {
-    editorUndoStack = [];
-    undoIndex = -1;
-    // Push initial state
-    if (activeNoteId) pushToUndo();
-}
-
-function restoreState(index) {
-    if (index < 0 || index >= editorUndoStack.length) return;
-    const content = editorUndoStack[index];
-
-    writingCanvas.innerHTML = content;
-    undoIndex = index;
-
-    // Persist restored state
-    saveCurrentNote();
-}
-
-function undo() {
-    if (undoIndex > 0) {
-        restoreState(undoIndex - 1);
-        showToast('Undo', 'success');
-    } else {
-        showToast('Nothing to undo', 'warning');
-    }
-}
-
-function redo() {
-    if (undoIndex < editorUndoStack.length - 1) {
-        restoreState(undoIndex + 1);
-        showToast('Redo', 'success');
-    } else {
-        showToast('Nothing to redo', 'warning');
-    }
-}
-
-// Keyboard shortcuts for undo/redo
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'z' && !e.shiftKey) {
-            e.preventDefault();
-            undo();
-        } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
-            e.preventDefault();
-            redo();
-        }
-    }
-});
 
 // ==================== SUPABASE DATA OPERATIONS ====================
 
@@ -164,7 +83,6 @@ async function fetchInitialData() {
 
         renderNoteChips();
         loadActiveNote();
-        resetUndoStack();
 
     } catch (error) {
         showToast('Error loading data', 'error');
@@ -177,7 +95,7 @@ export async function saveCurrentNote() {
     const note = notes.find(n => n.id === activeNoteId);
     if (!note) return;
 
-    const content = writingCanvas.innerHTML;
+    const content = writingCanvas.value;
 
     if (note.content !== content) {
         note.content = content;
@@ -223,7 +141,6 @@ async function createNote(title, folderId = null) {
     renderNoteChips();
     loadActiveNote();
     showToast('Note created!', 'success');
-    resetUndoStack();
 }
 
 async function deleteNote(noteId) {
@@ -247,7 +164,6 @@ async function deleteNote(noteId) {
     renderNoteChips();
     loadActiveNote();
     showToast('Note deleted!', 'success');
-    resetUndoStack();
 }
 
 async function renameNote(noteId, newTitle) {
@@ -438,37 +354,32 @@ function renderNoteChips() {
 function loadActiveNote() {
     const note = notes.find(n => n.id === activeNoteId);
     if (note) {
-        writingCanvas.innerHTML = note.content || '';
-        writingCanvas.contentEditable = 'true';
-        writingCanvas.classList.remove('empty-folder-message');
+        writingCanvas.value = note.content || '';
+        writingCanvas.disabled = false;
+        writingCanvas.style.display = 'block';
+        if (emptyState) emptyState.classList.add('hidden');
         updatePinButton();
         deleteBtn.classList.remove('disabled');
         shareBtn.classList.remove('disabled');
         exportBtn.classList.remove('disabled');
     } else {
         // Empty State Screen
-        writingCanvas.innerHTML = `
-            <div class="empty-folder-message">
-                <div class="empty-folder-icon"><i class="fas fa-note-sticky"></i></div>
-                <h3>📄 No notes yet</h3>
-                <p>Create your first note to get started.</p>
-                <button class="create-note-btn abc" id="createNoteFromEmpty">+ Create New Note</button>
-            </div>
-        `;
-        writingCanvas.contentEditable = 'false';
-        writingCanvas.classList.add('empty-folder-message');
-        deleteBtn.classList.add('disabled');
-        shareBtn.classList.add('disabled');
-        exportBtn.classList.add('disabled');
-        updatePinButton();
-        setTimeout(() => {
+        writingCanvas.value = '';
+        writingCanvas.disabled = true;
+        writingCanvas.style.display = 'none';
+        if (emptyState) {
+            emptyState.classList.remove('hidden');
             const createBtn = document.getElementById('createNoteFromEmpty');
             if (createBtn) {
                 createBtn.onclick = () => {
                     createNote('Untitled', activeFolderId);
                 };
             }
-        }, 100);
+        }
+        deleteBtn.classList.add('disabled');
+        shareBtn.classList.add('disabled');
+        exportBtn.classList.add('disabled');
+        updatePinButton();
     }
 }
 
@@ -477,7 +388,6 @@ function switchNote(noteId) {
     activeNoteId = noteId;
     loadActiveNote();
     renderNoteChips();
-    resetUndoStack();
 }
 
 function setActiveFolder(folderId) {
@@ -487,7 +397,6 @@ function setActiveFolder(folderId) {
     activeNoteId = folderNotes.length > 0 ? folderNotes[0].id : null;
     renderNoteChips();
     loadActiveNote();
-    resetUndoStack();
 }
 
 
@@ -1011,14 +920,15 @@ function handleExport(note) {
     const fileName = document.getElementById('exportFileName').value.trim() || 'note';
     showToast(`Exporting as ${selectedExportFormat.toUpperCase()}...`);
 
-    const content = writingCanvas.innerHTML;
+    const content = writingCanvas.value;
     if (selectedExportFormat === 'pdf') {
-        localStorage.setItem('vellum_print_content', content);
+        // Convert plain text to simple HTML for print view
+        const htmlContent = content.split('\n').map(line => `<div>${escapeHtml(line) || '<br>'}</div>`).join('');
+        localStorage.setItem('vellum_print_content', htmlContent);
         localStorage.setItem('vellum_print_title', fileName);
         window.open('/print', '_blank');
     } else if (selectedExportFormat === 'markdown') {
-        let md = content.replace(/<[^>]+>/g, '').trim();
-        const blob = new Blob([md], { type: 'text/markdown' });
+        const blob = new Blob([content], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -1192,7 +1102,6 @@ writingCanvas.oninput = () => {
     clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(() => {
         saveCurrentNote();
-        pushToUndo();
     }, 1000);
 };
 
