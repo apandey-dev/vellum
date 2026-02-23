@@ -5,6 +5,8 @@
  */
 
 import { writingCanvas, saveCurrentNote } from './app-core.js';
+import { EditorUI } from './js/editor-ui.js';
+import { TextareaEnhancer } from './js/textarea-enhancer.js';
 
 // Minimal font mapping
 const fontMap = {
@@ -89,6 +91,10 @@ function attachEventListeners() {
 function initEditor() {
     updateFontDisplay();
     attachEventListeners();
+
+    // Initialize Markdown and UI features
+    EditorUI.init();
+    TextareaEnhancer.init(writingCanvas);
 }
 
 // Start the editor

@@ -18,6 +18,15 @@
     <!-- Font Awesome 6 (Free) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="/styles.css">
+    <!-- Markdown Rendering & Security Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+
+    <!-- Code Highlight Themes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-light" disabled>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
+
     <script src="/js/route-guard.js"></script>
     <script src="/js/auth-guard.js"></script>
 </head>
@@ -108,7 +117,14 @@
     </div>
 
     <main class="workspace">
-        <textarea class="writing-canvas" id="writingCanvas" placeholder="Start typing here..."></textarea>
+        <div class="editor-split-container" id="editorContainer">
+            <div class="editor-pane">
+                <textarea class="writing-canvas" id="writingCanvas" placeholder="Start typing markdown here..."></textarea>
+            </div>
+            <div class="preview-pane">
+                <div class="preview-canvas markdown-body" id="previewCanvas"></div>
+            </div>
+        </div>
         <div id="emptyState" class="empty-folder-message hidden">
             <div class="empty-folder-icon">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
