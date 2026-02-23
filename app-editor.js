@@ -89,8 +89,7 @@ function initEditor() {
     updateFontDisplay();
     attachEventListeners();
 
-    // Initialize Markdown and UI features
-    EditorUI.init();
+    // Initialize Textarea features
     TextareaEnhancer.init(writingCanvas);
 }
 

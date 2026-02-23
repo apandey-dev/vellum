@@ -1078,6 +1078,9 @@ document.onclick = (e) => {
 async function init() {
     loadTheme();
 
+    // Initialize UI early
+    EditorUI.init();
+
     // Ensure session is restored before fetching data
     const isRestored = await restoreSession();
     const { data: { session } } = await supabase.auth.getSession();
