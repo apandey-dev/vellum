@@ -96,7 +96,8 @@ function initEditor() {
     updateFontDisplay();
     attachEventListeners();
 
-    // Initialize Textarea features
+    // Initialize UI and Textarea features
+    EditorUI.init();
     TextareaEnhancer.init(writingCanvas);
 }
 
