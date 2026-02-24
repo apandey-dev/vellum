@@ -6,7 +6,9 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
-        persistSession: false // Managed manually via sessionStorage
+        persistSession: false, // Managed manually via sessionStorage for security
+        autoRefreshToken: true,
+        detectSessionInUrl: true
     }
 });
 
@@ -22,7 +24,7 @@ export async function restoreSession() {
         const session = JSON.parse(sessionStr);
         if (!session.access_token || !session.refresh_token) return false;
 
-        // Attempt to set the session
+        // Attempt to set the session in Supabase client
         const { data, error } = await supabase.auth.setSession({
             access_token: session.access_token,
             refresh_token: session.refresh_token
@@ -30,12 +32,11 @@ export async function restoreSession() {
 
         if (error) {
             console.error("Supabase session restore failed:", error.message);
+            // Clear invalid session
+            sessionStorage.removeItem('vellum_session');
+            sessionStorage.removeItem('vellum_login_time');
             return false;
         }
-
-        // Verify we actually have a user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return false;
 
         // Update sessionStorage with fresh tokens (rotated)
         if (data.session) {
@@ -49,5 +50,5 @@ export async function restoreSession() {
     }
 }
 
-// Expose to window for legacy scripts
+// Expose to window for legacy scripts and debugging
 window.supabaseClient = supabase;
