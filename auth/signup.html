@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="/js/route-guard.js"></script>
+    <script src="/js/auth-guard.js"></script>
     <style>
         body { font-family: 'Fredoka', sans-serif !important; }
         * { font-family: 'Fredoka', sans-serif !important; }
@@ -43,22 +44,8 @@
         </div>
     </div>
     <script type="module">
-        import { supabase, checkConnectivity } from '/js/supabase-client.js';
+        import { auth } from '/js/auth.js';
         import { showToast } from '/js/utils.js';
-
-        // Check connectivity on load
-        async function initAuth() {
-            const isOnline = await checkConnectivity();
-            if (!isOnline) {
-                const err = document.getElementById('error-message');
-                err.textContent = 'Server Unreachable: Please check your internet or VPN.';
-                err.style.display = 'block';
-                err.style.background = '#fffbeb';
-                err.style.borderColor = '#fef3c7';
-                err.style.color = '#92400e';
-            }
-        }
-        initAuth();
 
         const signupForm = document.getElementById('signup-form');
         const btn = document.getElementById('submit-btn');
@@ -74,31 +61,12 @@
             btn.innerHTML = '<span>Creating Account...</span>';
 
             try {
-                const { data, error } = await supabase.auth.signUp({ email, password });
-
-                if (error) throw error;
-
-                if (data.session) {
-                    sessionStorage.setItem('vellum_session', JSON.stringify(data.session));
-                    sessionStorage.setItem('vellum_login_time', Date.now().toString());
-                    showToast('Account created successfully!', 'success');
-                    setTimeout(() => window.location.href = '/dashboard', 800);
-                } else {
-                    showToast('Signup successful! Check your email.', 'info');
-                    btn.innerHTML = '<span>Check Email</span><i class="fa-solid fa-envelope"></i>';
-                }
-
+                await auth.signup(email, password);
+                showToast('Account created successfully!', 'success');
+                setTimeout(() => window.location.href = '/dashboard', 800);
             } catch (err) {
                 console.error('Signup error:', err);
-                let msg = err.message || 'An unexpected error occurred.';
-                if (msg.toLowerCase().includes('fetch')) {
-                    msg = 'Connection Error: Could not reach the authentication server. Please check your internet connection.';
-                }
-                if (msg.includes('Signup Blocked')) {
-                    msg = 'User limit reached. No more accounts allowed.';
-                }
-
-                errEl.textContent = msg;
+                errEl.textContent = err.message || 'An unexpected error occurred.';
                 errEl.style.display = 'block';
                 btn.disabled = false;
                 btn.innerHTML = '<span>Get Started</span>';

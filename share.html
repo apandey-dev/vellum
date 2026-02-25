@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
@@ -41,31 +42,29 @@
     <div id="app" class="content-wrapper"><div class="state-msg">Loading note...</div></div>
 
     <script type="module">
-        import { supabase } from '/js/supabase-client.js';
+        import { share } from '/js/share.js';
         import { MarkdownEngine } from '/js/markdown-engine.js';
 
         async function loadNote() {
-            const pathParts = window.location.pathname.split('/');
-            const publicId = pathParts[pathParts.length - 1];
+            const urlParams = new URLSearchParams(window.location.search);
+            const publicId = urlParams.get('share') || window.location.pathname.split('/').pop();
+
             if (!publicId || publicId === 'share') {
                 document.getElementById('app').innerHTML = '<div class="state-msg">No note ID specified.</div>';
                 return;
             }
-            try {
-                const { data, error } = await supabase.rpc('get_public_note', { p_share_token: publicId });
-                if (error || !data || data.length === 0) {
-                    document.getElementById('app').innerHTML = '<div class="state-msg">This link has expired or is no longer available.</div>';
-                    return;
-                }
-                const note = data[0];
-                document.getElementById('app').innerHTML = `
-                    <div class="paper-container">
-                        <h1 class="note-title">${note.title}</h1>
-                        <div class="note-content markdown-body">${MarkdownEngine.render(note.content)}</div>
-                    </div>`;
-            } catch (e) {
-                document.getElementById('app').innerHTML = '<div class="state-msg">Error loading note.</div>';
+
+            const note = share.getPublicNote(publicId);
+            if (!note) {
+                document.getElementById('app').innerHTML = '<div class="state-msg">This link has expired or is no longer available.</div>';
+                return;
             }
+
+            document.getElementById('app').innerHTML = `
+                <div class="paper-container">
+                    <h1 class="note-title">${note.title}</h1>
+                    <div class="note-content markdown-body">${MarkdownEngine.render(note.content)}</div>
+                </div>`;
         }
 
         const html = document.documentElement;
