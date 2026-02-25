@@ -1,10 +1,7 @@
-// js/utils.js
-
 /**
- * Escapes HTML to prevent XSS
- * @param {string} unsafe
- * @returns {string}
+ * js/utils.js
  */
+
 export function escapeHtml(unsafe) {
     if (typeof unsafe !== 'string') return unsafe;
     return unsafe.replace(/[&<>"]/g, function (m) {
@@ -16,11 +13,6 @@ export function escapeHtml(unsafe) {
     });
 }
 
-/**
- * Toast Notification System
- * @param {string} message
- * @param {'success' | 'error' | 'warning' | 'info'} type
- */
 export function showToast(message, type = 'info') {
     let container = document.querySelector('.toast-container');
     if (!container) {
@@ -43,12 +35,8 @@ export function showToast(message, type = 'info') {
     `;
 
     container.appendChild(toast);
-
-    // Remove toast after animation
     setTimeout(() => {
         toast.remove();
-        if (container.childNodes.length === 0) {
-            container.remove();
-        }
+        if (container.childNodes.length === 0) container.remove();
     }, 4000);
 }

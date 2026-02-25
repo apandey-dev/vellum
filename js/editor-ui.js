@@ -1,19 +1,16 @@
 /**
- * editor-ui.js
+ * js/editor-ui.js
  * Manages the split-view UI, scroll synchronization, and theme-aware styling.
  */
 
 import { MarkdownEngine } from './markdown-engine.js';
-import { writingCanvas } from '../app-core.js';
+import { writingCanvas } from './core.js';
 
 export const EditorUI = (function() {
     let editorPane, previewPane, resizer, previewCanvas;
     let editorOnlyBtn, splitViewBtn, previewOnlyBtn;
     let renderTimeout;
 
-    /**
-     * Updates the preview with debounced rendering for performance
-     */
     function updatePreview() {
         if (!previewCanvas) return;
         clearTimeout(renderTimeout);
@@ -23,42 +20,29 @@ export const EditorUI = (function() {
         }, 50);
     }
 
-    /**
-     * Synchronizes scrolling between editor and preview
-     */
     function setupScrollSync() {
         let isSyncingEditor = false;
         let isSyncingPreview = false;
 
         writingCanvas.onscroll = () => {
-            if (isSyncingPreview) {
-                isSyncingPreview = false;
-                return;
-            }
+            if (isSyncingPreview) { isSyncingPreview = false; return; }
             isSyncingEditor = true;
             const scrollPercentage = writingCanvas.scrollTop / (writingCanvas.scrollHeight - writingCanvas.clientHeight);
             previewCanvas.scrollTop = scrollPercentage * (previewCanvas.scrollHeight - previewCanvas.clientHeight);
         };
 
         previewCanvas.onscroll = () => {
-            if (isSyncingEditor) {
-                isSyncingEditor = false;
-                return;
-            }
+            if (isSyncingEditor) { isSyncingEditor = false; return; }
             isSyncingPreview = true;
             const scrollPercentage = previewCanvas.scrollTop / (previewCanvas.scrollHeight - previewCanvas.clientHeight);
             writingCanvas.scrollTop = scrollPercentage * (writingCanvas.scrollHeight - writingCanvas.clientHeight);
         };
     }
 
-    /**
-     * View mode switching
-     */
     function setViewMode(mode) {
         editorPane.classList.remove('hidden');
         previewPane.classList.remove('hidden');
         resizer.classList.remove('hidden');
-
         editorOnlyBtn.classList.remove('active');
         splitViewBtn.classList.remove('active');
         previewOnlyBtn.classList.remove('active');
@@ -80,12 +64,8 @@ export const EditorUI = (function() {
         }
     }
 
-    /**
-     * Resizer Logic
-     */
     function initResizer() {
         let isResizing = false;
-
         resizer.onmousedown = (e) => {
             isResizing = true;
             document.body.style.cursor = 'col-resize';
@@ -96,18 +76,13 @@ export const EditorUI = (function() {
 
         function handleMouseMove(e) {
             if (!isResizing) return;
-
             const container = editorPane.parentElement;
             const containerWidth = container.clientWidth;
             const mouseX = e.clientX - container.getBoundingClientRect().left;
-
-            // Boundary checks
             const minWidth = 150;
             if (mouseX < minWidth || mouseX > containerWidth - minWidth) return;
-
             const editorWidthPercent = (mouseX / containerWidth) * 100;
             const previewWidthPercent = 100 - editorWidthPercent;
-
             editorPane.style.flex = `0 0 ${editorWidthPercent}%`;
             previewPane.style.flex = `0 0 ${previewWidthPercent}%`;
         }
@@ -122,14 +97,10 @@ export const EditorUI = (function() {
         }
     }
 
-    /**
-     * Switches Highlight.js theme based on current app theme
-     */
     function updateHljsTheme() {
         const theme = document.documentElement.getAttribute('data-theme') || 'light';
         const lightLink = document.getElementById('hljs-light');
         const darkLink = document.getElementById('hljs-dark');
-
         if (theme === 'dark') {
             if (lightLink) lightLink.disabled = true;
             if (darkLink) darkLink.disabled = false;
@@ -139,9 +110,6 @@ export const EditorUI = (function() {
         }
     }
 
-    /**
-     * Initialize UI features
-     */
     function init() {
         editorPane = document.getElementById('editorPane');
         previewPane = document.getElementById('previewPane');
@@ -158,27 +126,14 @@ export const EditorUI = (function() {
         updateHljsTheme();
         initResizer();
 
-        // View mode listeners
         if (editorOnlyBtn) editorOnlyBtn.onclick = () => setViewMode('editor');
         if (splitViewBtn) splitViewBtn.onclick = () => setViewMode('split');
         if (previewOnlyBtn) previewOnlyBtn.onclick = () => setViewMode('preview');
 
-        // Listen for theme changes (triggered by themeToggle in app-core.js)
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.attributeName === 'data-theme') {
-                    updateHljsTheme();
-                }
-            });
-        });
-        observer.observe(document.documentElement, { attributes: true });
-
-        // Initial render
+        const observer = new MutationObserver(() => updateHljsTheme());
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
         updatePreview();
     }
 
-    return {
-        init,
-        updatePreview
-    };
+    return { init, updatePreview };
 })();
