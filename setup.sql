@@ -1,9 +1,13 @@
+-- Vellum Database Initialization Script
+-- Provides: Folders, Notes, Secure Sharing (24h), and 10-User Limit
+
 -- 1. Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 2. Drop existing tables if any (Clean rebuild)
-DROP TABLE IF EXISTS public.notes;
-DROP TABLE IF EXISTS public.folders;
+DROP TABLE IF EXISTS public.notes CASCADE;
+DROP TABLE IF EXISTS public.folders CASCADE;
 
 -- 3. Create Folders Table
 CREATE TABLE public.folders (
@@ -28,48 +32,33 @@ CREATE TABLE public.notes (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. Enable RLS
+-- 5. Enable Row Level Security (RLS)
 ALTER TABLE public.folders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
 -- 6. RLS Policies for Folders
-CREATE POLICY "Users can view their own folders" ON public.folders
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own folders" ON public.folders
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own folders" ON public.folders
-    FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own folders" ON public.folders
-    FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own folders" ON public.folders
+    FOR ALL USING (auth.uid() = user_id);
 
 -- 7. RLS Policies for Notes
-CREATE POLICY "Users can view their own notes" ON public.notes
-    FOR SELECT USING (auth.uid() = user_id OR (is_public = true AND share_expires_at > NOW()));
+CREATE POLICY "Users can manage their own notes" ON public.notes
+    FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own notes" ON public.notes
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Public can view shared notes via token" ON public.notes
+    FOR SELECT USING (is_public = true AND share_expires_at > NOW());
 
-CREATE POLICY "Users can update their own notes" ON public.notes
-    FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own notes" ON public.notes
-    FOR DELETE USING (auth.uid() = user_id);
-
--- 8. Function to handle 10-user limit
+-- 8. Enforce 10-user limit
 CREATE OR REPLACE FUNCTION public.check_user_limit()
 RETURNS TRIGGER AS $$
 BEGIN
     IF (SELECT count(*) FROM auth.users) >= 10 THEN
-        RAISE EXCEPTION 'Signup Blocked: User limit reached. Contact Admin.';
+        RAISE EXCEPTION 'Signup Blocked: User limit reached. No more accounts allowed.';
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger for user limit (on auth.users)
+-- Trigger for user limit (Must be on auth.users)
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'auth') THEN
@@ -80,7 +69,7 @@ BEGIN
     END IF;
 END $$;
 
--- 9. RPC function for secure sharing
+-- 9. RPC function for generating secure share tokens
 CREATE OR REPLACE FUNCTION public.share_note(p_note_id UUID)
 RETURNS TEXT AS $$
 DECLARE
@@ -103,7 +92,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 10. RPC function to get public note
+-- 10. RPC function to safely retrieve public note (with auto-expiry check)
 CREATE OR REPLACE FUNCTION public.get_public_note(p_share_token TEXT)
 RETURNS TABLE (
     title TEXT,
@@ -111,7 +100,7 @@ RETURNS TABLE (
     updated_at TIMESTAMPTZ
 ) AS $$
 BEGIN
-    -- Cleanup expired note if found
+    -- If note is expired, atomically disable it
     UPDATE public.notes
     SET is_public = false,
         share_token = NULL,
@@ -129,6 +118,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 11. Grant permissions
+-- 11. Permissions
 GRANT ALL ON public.folders TO authenticated, anon, service_role;
 GRANT ALL ON public.notes TO authenticated, anon, service_role;
