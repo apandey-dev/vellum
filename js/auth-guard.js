@@ -1,36 +1,39 @@
 /**
  * js/auth-guard.js
- * Enforces authentication and session timeout.
+ * Enforces authentication and session timeout (localStorage version).
  */
 (function() {
     const path = window.location.pathname;
+    const search = window.location.search;
     const publicPages = ['/login', '/signup', '/error'];
 
-    // Allow share pages to be public
-    if (path.startsWith('/share/')) return;
+    // Allow share links to be public
+    if (search.includes('share=')) return;
 
     const sessionStr = sessionStorage.getItem('vellum_session');
-    const loginTime = sessionStorage.getItem('vellum_login_time');
 
     if (!publicPages.includes(path)) {
         // Protected page
-        if (!sessionStr || !loginTime) {
+        if (!sessionStr) {
             window.location.href = '/login';
             return;
         }
 
-        // 2-hour session check (7200000 ms)
-        if (Date.now() - parseInt(loginTime) > 7200000) {
-            sessionStorage.clear();
+        const session = JSON.parse(sessionStr);
+        // 2-hour session check
+        if (Date.now() > session.expiresAt) {
+            sessionStorage.removeItem('vellum_session');
             window.location.href = '/login';
             return;
         }
     } else {
         // Public page (login/signup)
-        // If already logged in and session valid, redirect to dashboard
-        if (sessionStr && loginTime && (Date.now() - parseInt(loginTime) < 7200000)) {
-            if (path === '/login' || path === '/signup') {
-                window.location.href = '/dashboard';
+        if (sessionStr) {
+            const session = JSON.parse(sessionStr);
+            if (Date.now() < session.expiresAt) {
+                if (path === '/login' || path === '/signup') {
+                    window.location.href = '/dashboard';
+                }
             }
         }
     }

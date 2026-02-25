@@ -1,10 +1,15 @@
 /**
  * js/core.js
- * Central application logic for Vellum.
+ * Central application logic for Vellum (localStorage version).
  */
-import { supabase, restoreSession } from './supabase-client.js';
+import { storage } from './storage.js';
+import { auth } from './auth.js';
+import { session } from './session.js';
+import { notes } from './notes.js';
+import { share } from './share.js';
 import { showToast } from './utils.js';
 import { modalManager } from './modalManager.js';
+import { MarkdownEngine } from './markdown-engine.js';
 
 export const writingCanvas = document.getElementById('writingCanvas');
 
@@ -21,25 +26,32 @@ class VellumCore {
     }
 
     async init() {
-        const hasSession = await restoreSession();
-        if (!hasSession) {
+        // Handle share link viewing
+        const urlParams = new URLSearchParams(window.location.search);
+        const shareToken = urlParams.get('share');
+        if (shareToken) {
+            this.handlePublicView(shareToken);
+            return;
+        }
+
+        // Standard dashboard initialization
+        if (!session.isValid()) {
             window.location.href = '/login';
             return;
         }
 
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError || !user) {
-            window.location.href = '/login';
+        this.user = auth.getCurrentUser();
+        if (!this.user) {
+            auth.logout();
             return;
         }
 
-        this.user = user;
-        await Promise.all([this.loadFolders(), this.loadNotes()]);
+        session.initAutoLogout();
+        this.loadData();
         this.initialized = true;
         this.setupEventListeners();
         this.renderNotes();
 
-        const urlParams = new URLSearchParams(window.location.search);
         const noteId = urlParams.get('note');
         if (noteId) {
             this.selectNote(noteId);
@@ -48,6 +60,15 @@ class VellumCore {
         } else {
             this.showEmptyState();
         }
+
+        // Periodic share cleanup
+        share.cleanExpiredShares();
+        setInterval(() => share.cleanExpiredShares(), 60000);
+    }
+
+    loadData() {
+        this.folders = storage.getFolders(this.user.id);
+        this.notes = storage.getNotes(this.user.id);
     }
 
     setupEventListeners() {
@@ -87,6 +108,35 @@ class VellumCore {
         document.addEventListener('click', () => this.closeContextMenu());
     }
 
+    handlePublicView(token) {
+        const note = share.getPublicNote(token);
+        if (!note) {
+            document.body.innerHTML = `
+                <div style="height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Fredoka', sans-serif;">
+                    <div style="text-align: center;">
+                        <h1 style="font-size: 48px;">404</h1>
+                        <p style="font-size: 20px; color: #666;">Link expired or note is private.</p>
+                        <a href="/login" style="margin-top: 20px; display: inline-block; color: #000; text-decoration: underline;">Go to Login</a>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // Minimalist public viewer
+        document.body.innerHTML = `
+            <div style="max-width: 800px; margin: 0 auto; padding: 60px 20px; font-family: 'Fredoka', sans-serif;">
+                <h1 style="font-size: 42px; margin-bottom: 30px;">${note.title}</h1>
+                <div class="markdown-body" style="font-size: 18px; line-height: 1.6;">
+                    ${MarkdownEngine.render(note.content)}
+                </div>
+                <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #eee; color: #888; font-size: 14px;">
+                    Shared via Vellum • Expires in 24 hours
+                </div>
+            </div>
+        `;
+    }
+
     toggleFocusMode() {
         const workspace = document.querySelector('.workspace');
         const sidebar = document.getElementById('sidebar');
@@ -103,51 +153,17 @@ class VellumCore {
         if (btn) btn.textContent = theme === 'light' ? 'M' : 'S';
     }
 
-    async loadFolders() {
-        const { data, error } = await supabase.from('folders').select('*').order('name');
-        if (!error) this.folders = data || [];
-    }
-
-    async loadNotes() {
-        const { data, error } = await supabase.from('notes').select('*').order('updated_at', { ascending: false });
-        if (!error) this.notes = data || [];
-    }
-
     async createNewNote() {
-        const note = await this.createNote('Untitled Note', '');
-        if (note) showToast('New note created', 'success');
-    }
-
-    async createNote(title = 'Untitled Note', content = '', folderId = null) {
-        const { data, error } = await supabase.from('notes').insert([{ title, content, folder_id: folderId }]).select().single();
-        if (error) {
-            showToast("Failed to create note: " + error.message, "error");
-            return null;
-        }
-        this.notes.unshift(data);
+        const note = notes.create(this.user.id, 'Untitled Note', '');
+        this.notes.unshift(note);
         this.renderNotes();
-        this.selectNote(data.id);
-        return data;
+        this.selectNote(note.id);
+        showToast('New note created', 'success');
     }
 
     debouncedSave() {
         clearTimeout(this.saveTimeout);
         this.saveTimeout = setTimeout(() => this.saveCurrentNote(), 1000);
-    }
-
-    async updateNote(id, updates) {
-        if (!id) return false;
-        const { error } = await supabase.from('notes').update(updates).eq('id', id);
-        if (error) {
-            showToast("Update failed: " + error.message, "error");
-            return false;
-        }
-        const note = this.notes.find(n => n.id === id);
-        if (note) {
-            Object.assign(note, updates);
-            this.renderNotes();
-        }
-        return true;
     }
 
     async saveCurrentNote() {
@@ -156,17 +172,13 @@ class VellumCore {
         const note = this.notes.find(n => n.id === this.currentNoteId);
         if (note && note.content === content) return;
 
-        const { error } = await supabase.from('notes').update({ content, updated_at: new Date().toISOString() }).eq('id', this.currentNoteId);
-        if (!error && note) note.content = content;
+        const updated = notes.update(this.currentNoteId, { content });
+        if (updated) note.content = content;
     }
 
     async deleteNote(id) {
-        if (!id) return false;
-        const { error } = await supabase.from('notes').delete().eq('id', id);
-        if (error) {
-            showToast("Delete failed: " + error.message, "error");
-            return false;
-        }
+        if (!id) return;
+        notes.delete(id);
         this.notes = this.notes.filter(n => n.id !== id);
         if (this.currentNoteId === id) {
             this.currentNoteId = null;
@@ -175,7 +187,6 @@ class VellumCore {
         }
         this.renderNotes();
         showToast('Note deleted', 'success');
-        return true;
     }
 
     confirmDeleteNote() {
@@ -185,13 +196,13 @@ class VellumCore {
 
     async togglePin(id) {
         if (!id) return;
-        const note = this.notes.find(n => n.id === id);
-        if (!note) return;
-        const newPinnedStatus = !note.is_pinned;
-        const success = await this.updateNote(id, { is_pinned: newPinnedStatus });
-        if (success) {
-            if (id === this.currentNoteId) this.updatePinButton(newPinnedStatus);
-            showToast(newPinnedStatus ? 'Note pinned' : 'Note unpinned', 'success');
+        const updated = notes.togglePin(id);
+        if (updated) {
+            const note = this.notes.find(n => n.id === id);
+            if (note) note.isPinned = updated.isPinned;
+            if (id === this.currentNoteId) this.updatePinButton(updated.isPinned);
+            this.renderNotes();
+            showToast(updated.isPinned ? 'Note pinned' : 'Note unpinned', 'success');
         }
     }
 
@@ -203,16 +214,16 @@ class VellumCore {
         const noteChips = document.getElementById('noteChips');
         if (!noteChips) return;
         noteChips.innerHTML = '';
-        const filteredNotes = this.currentFolderId ? this.notes.filter(n => n.folder_id === this.currentFolderId) : this.notes;
+        const filteredNotes = this.currentFolderId ? this.notes.filter(n => n.folderId === this.currentFolderId) : this.notes;
         const sortedNotes = [...filteredNotes].sort((a, b) => {
-            if (a.is_pinned && !b.is_pinned) return -1;
-            if (!a.is_pinned && b.is_pinned) return 1;
-            return new Date(b.updated_at) - new Date(a.updated_at);
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return b.updatedAt - a.updatedAt;
         });
 
         sortedNotes.forEach(note => {
             const noteEl = document.createElement('div');
-            noteEl.className = `chip ${this.currentNoteId === note.id ? 'active' : ''} ${note.is_pinned ? 'pinned' : ''}`;
+            noteEl.className = `chip ${this.currentNoteId === note.id ? 'active' : ''} ${note.isPinned ? 'pinned' : ''}`;
             noteEl.innerHTML = `<div class="chip-content"><span>${note.title || 'Untitled'}</span></div>`;
             noteEl.onclick = () => this.selectNote(note.id);
             noteEl.oncontextmenu = (e) => this.handleNoteContextMenu(e, note.id);
@@ -239,7 +250,7 @@ class VellumCore {
                 writingCanvas.value = note.content || '';
                 writingCanvas.dispatchEvent(new Event('input'));
             }
-            this.updatePinButton(note.is_pinned);
+            this.updatePinButton(note.isPinned);
             this.renderNotes();
             const url = new URL(window.location);
             url.searchParams.set('note', id);
@@ -264,7 +275,7 @@ class VellumCore {
             const note = this.notes.find(n => n.id === id);
             const pinItem = document.getElementById('ctxPin');
             if (pinItem && note) {
-                pinItem.innerHTML = note.is_pinned ? 'Unpin Note' : 'Pin Note';
+                pinItem.innerHTML = note.isPinned ? 'Unpin Note' : 'Pin Note';
             }
         }
     }
@@ -286,13 +297,19 @@ class VellumCore {
         const input = document.getElementById('newFolderName');
         const name = input.value.trim();
         if (!name) return;
-        const { data, error } = await supabase.from('folders').insert([{ name }]).select().single();
-        if (!error) {
-            this.folders.push(data);
-            input.value = '';
-            this.renderModalFolders();
-            showToast('Folder created', 'success');
-        }
+
+        const newFolder = {
+            id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+            userId: this.user.id,
+            name,
+            createdAt: Date.now()
+        };
+
+        this.folders.push(newFolder);
+        storage.saveFolders(this.folders, this.user.id);
+        input.value = '';
+        this.renderModalFolders();
+        showToast('Folder created', 'success');
     }
 
     renderModalFolders() {
@@ -317,12 +334,11 @@ class VellumCore {
     }
 
     async deleteFolder(id) {
-        const { error } = await supabase.from('folders').delete().eq('id', id);
-        if (!error) {
-            this.folders = this.folders.filter(f => f.id !== id);
-            this.renderModalFolders();
-            showToast('Folder deleted', 'success');
-        }
+        storage.deleteFolder(id);
+        this.folders = this.folders.filter(f => f.id !== id);
+        this.renderModalFolders();
+        this.renderNotes();
+        showToast('Folder deleted', 'success');
     }
 
     openRenameModal() {
@@ -332,7 +348,11 @@ class VellumCore {
             title: note.title,
             onConfirm: () => {
                 const newTitle = document.getElementById('renameNoteInput').value;
-                this.updateNote(this.contextNoteId, { title: newTitle });
+                const updated = notes.update(this.contextNoteId, { title: newTitle });
+                if (updated) {
+                    note.title = updated.title;
+                    this.renderNotes();
+                }
             }
         });
     }
@@ -349,7 +369,12 @@ class VellumCore {
                 select.onclick = (e) => {
                     const opt = e.target.closest('.select-option');
                     if (opt) {
-                        this.updateNote(this.contextNoteId, { folder_id: opt.dataset.id || null });
+                        const fid = opt.dataset.id || null;
+                        const updated = notes.update(this.contextNoteId, { folderId: fid });
+                        if (updated) {
+                            note.folderId = fid;
+                            this.renderNotes();
+                        }
                         modalManager.close();
                         showToast('Note moved', 'success');
                     }
@@ -357,13 +382,24 @@ class VellumCore {
                 modalEl.querySelector('#createAndMoveBtn').onclick = async () => {
                     const name = modalEl.querySelector('#moveNewFolderName').value.trim();
                     if (!name) return;
-                    const { data, error } = await supabase.from('folders').insert([{ name }]).select().single();
-                    if (!error) {
-                        this.folders.push(data);
-                        await this.updateNote(this.contextNoteId, { folder_id: data.id });
-                        modalManager.close();
-                        showToast('Folder created and note moved', 'success');
+
+                    const newFolder = {
+                        id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+                        userId: this.user.id,
+                        name,
+                        createdAt: Date.now()
+                    };
+
+                    this.folders.push(newFolder);
+                    storage.saveFolders(this.folders, this.user.id);
+
+                    const updated = notes.update(this.contextNoteId, { folderId: newFolder.id });
+                    if (updated) {
+                        note.folderId = newFolder.id;
+                        this.renderNotes();
                     }
+                    modalManager.close();
+                    showToast('Folder created and note moved', 'success');
                 };
             }
         });
@@ -373,14 +409,8 @@ class VellumCore {
         modalManager.open('userProfile', {
             name: this.user.email.split('@')[0],
             email: this.user.email,
-            onOpen: (modalEl) => { modalEl.querySelector('#logoutBtn').onclick = () => this.logout(); }
+            onOpen: (modalEl) => { modalEl.querySelector('#logoutBtn').onclick = () => auth.logout(); }
         });
-    }
-
-    async logout() {
-        await supabase.auth.signOut();
-        sessionStorage.clear();
-        window.location.href = '/login';
     }
 
     openSearchModal() {
@@ -424,25 +454,40 @@ class VellumCore {
             options.forEach(opt => opt.classList.toggle('active', opt.dataset.value === (isPublic ? 'public' : 'private')));
             shareLinkSection.style.display = isPublic ? 'block' : 'none';
             sharePrivateMsg.style.display = isPublic ? 'none' : 'block';
-            if (isPublic && note.share_token) shareLinkInput.value = `${window.location.origin}/share/${note.share_token}`;
+            if (isPublic && note.shareToken) shareLinkInput.value = `${window.location.origin}/index.html?share=${note.shareToken}`;
         };
 
-        updateUI(note.is_public);
+        updateUI(note.isPublic);
         shareToggle.onclick = async (e) => {
             const opt = e.target.closest('.toggle-option');
             if (!opt) return;
             const newVal = opt.dataset.value === 'public';
-            if (newVal === note.is_public) return;
+            if (newVal === note.isPublic) return;
+
             if (newVal) {
-                const { data: token, error } = await supabase.rpc('share_note', { p_note_id: note.id });
-                if (!error) { note.is_public = true; note.share_token = token; showToast('Note is now public', 'success'); }
+                const updated = share.activateShare(note.id);
+                if (updated) {
+                    note.isPublic = true;
+                    note.shareToken = updated.shareToken;
+                    note.shareExpiresAt = updated.shareExpiresAt;
+                    showToast('Note is now public', 'success');
+                }
             } else {
-                const { error } = await supabase.from('notes').update({ is_public: false, share_token: null, share_expires_at: null }).eq('id', note.id);
-                if (!error) { note.is_public = false; note.share_token = null; showToast('Note is now private', 'info'); }
+                const updated = share.deactivateShare(note.id);
+                if (updated) {
+                    note.isPublic = false;
+                    note.shareToken = null;
+                    note.shareExpiresAt = null;
+                    showToast('Note is now private', 'info');
+                }
             }
-            updateUI(note.is_public);
+            updateUI(note.isPublic);
         };
-        copyLinkBtn.onclick = () => { shareLinkInput.select(); document.execCommand('copy'); showToast('Link copied', 'success'); };
+        copyLinkBtn.onclick = () => {
+            shareLinkInput.select();
+            navigator.clipboard.writeText(shareLinkInput.value);
+            showToast('Link copied', 'success');
+        };
     }
 
     openExportModal() {
@@ -480,7 +525,6 @@ class VellumCore {
 export const core = new VellumCore();
 export const saveCurrentNote = () => core.saveCurrentNote();
 
-if (window.location.pathname === '/dashboard' || window.location.pathname === '/') {
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => core.init());
-    else core.init();
-}
+// Initialize on Dashboard or Share Link
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => core.init());
+else core.init();
