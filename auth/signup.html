@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up | Vellum</title>
     <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="/js/route-guard.js"></script>
     <style>
@@ -17,34 +16,25 @@
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <svg class="auth-logo" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="24" height="24" rx="6" fill="#111111"/>
-                    <path d="M7 8H17" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M7 12H17" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M7 16H13" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                </svg>
                 <h1>Create Account</h1>
                 <p>Join Vellum and start writing beautifully.</p>
             </div>
             <form id="signup-form" class="auth-form">
                 <div class="form-group">
                     <label>Email Address</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-envelope"></i>
+                    <div class="input-wrapper no-icon">
                         <input type="email" id="email" placeholder="name@company.com" required autocomplete="email">
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-lock"></i>
+                    <div class="input-wrapper no-icon">
                         <input type="password" id="password" placeholder="Min. 6 characters" required minlength="6" autocomplete="new-password">
                     </div>
                 </div>
                 <div id="error-message" class="auth-error" style="display: none;"></div>
                 <button type="submit" id="submit-btn" class="auth-btn">
                     <span>Get Started</span>
-                    <i class="fa-solid fa-user-plus"></i>
                 </button>
             </form>
             <div class="auth-footer">
@@ -67,7 +57,7 @@
 
             errEl.style.display = 'none';
             btn.disabled = true;
-            btn.innerHTML = '<span>Creating...</span><i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.innerHTML = '<span>Creating Account...</span>';
 
             try {
                 const { data, error } = await supabase.auth.signUp({ email, password });
@@ -86,14 +76,18 @@
 
             } catch (err) {
                 console.error('Signup error:', err);
-                let msg = err.message || 'Failed to connect. Please check your internet.';
-                if (msg.includes('fetch')) msg = 'Network error: Could not reach Supabase.';
-                if (msg.includes('Signup Blocked')) msg = 'User limit reached. Contact Admin.';
+                let msg = err.message || 'An unexpected error occurred.';
+                if (msg.toLowerCase().includes('fetch')) {
+                    msg = 'Connection Error: Could not reach the authentication server. Please check your internet connection.';
+                }
+                if (msg.includes('Signup Blocked')) {
+                    msg = 'User limit reached. No more accounts allowed.';
+                }
 
                 errEl.textContent = msg;
                 errEl.style.display = 'block';
                 btn.disabled = false;
-                btn.innerHTML = '<span>Get Started</span><i class="fa-solid fa-user-plus"></i>';
+                btn.innerHTML = '<span>Get Started</span>';
             }
         });
     </script>

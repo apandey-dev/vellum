@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Vellum</title>
     <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="/js/route-guard.js"></script>
     <style>
@@ -17,34 +16,25 @@
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <svg class="auth-logo" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="24" height="24" rx="6" fill="#111111"/>
-                    <path d="M7 8H17" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M7 12H17" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M7 16H13" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                </svg>
                 <h1>Welcome Back</h1>
                 <p>Log in to your Vellum account</p>
             </div>
             <form id="login-form" class="auth-form">
                 <div class="form-group">
                     <label>Email Address</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-envelope"></i>
+                    <div class="input-wrapper no-icon">
                         <input type="email" id="email" placeholder="name@company.com" required autocomplete="email">
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-lock"></i>
+                    <div class="input-wrapper no-icon">
                         <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
                     </div>
                 </div>
                 <div id="error-message" class="auth-error" style="display: none;"></div>
                 <button type="submit" id="submit-btn" class="auth-btn">
                     <span>Log In</span>
-                    <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </form>
             <div class="auth-footer">
@@ -67,7 +57,7 @@
 
             errEl.style.display = 'none';
             btn.disabled = true;
-            btn.innerHTML = '<span>Verifying...</span><i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.innerHTML = '<span>Verifying...</span>';
 
             try {
                 const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -84,13 +74,15 @@
 
             } catch (err) {
                 console.error('Login error:', err);
-                let msg = err.message || 'Failed to connect. Please check your internet.';
-                if (msg.includes('fetch')) msg = 'Network error: Could not reach Supabase.';
+                let msg = err.message || 'An unexpected error occurred.';
+                if (msg.toLowerCase().includes('fetch')) {
+                    msg = 'Connection Error: Could not reach the authentication server. Please check your internet connection.';
+                }
 
                 errEl.textContent = msg;
                 errEl.style.display = 'block';
                 btn.disabled = false;
-                btn.innerHTML = '<span>Log In</span><i class="fa-solid fa-arrow-right"></i>';
+                btn.innerHTML = '<span>Log In</span>';
             }
         });
     </script>
