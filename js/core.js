@@ -1,9 +1,11 @@
-// app-core.js
-import { supabase, restoreSession } from './js/supabase-client.js';
-import { showToast } from './js/utils.js';
-import { ModalManager } from './js/modalManager.js';
+/**
+ * js/core.js
+ * Central application logic for Vellum.
+ */
+import { supabase, restoreSession } from './supabase-client.js';
+import { showToast } from './utils.js';
+import { modalManager } from './modalManager.js';
 
-// DOM Elements
 export const writingCanvas = document.getElementById('writingCanvas');
 
 class VellumCore {
@@ -32,15 +34,9 @@ class VellumCore {
         }
 
         this.user = user;
-
-        await Promise.all([
-            this.loadFolders(),
-            this.loadNotes()
-        ]);
-
+        await Promise.all([this.loadFolders(), this.loadNotes()]);
         this.initialized = true;
         this.setupEventListeners();
-        this.renderFolders();
         this.renderNotes();
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -80,17 +76,14 @@ class VellumCore {
         document.getElementById('searchBtn')?.addEventListener('click', () => this.openSearchModal());
         document.getElementById('exportBtn')?.addEventListener('click', () => this.openExportModal());
         document.getElementById('createNoteFromEmpty')?.addEventListener('click', () => this.createNewNote());
-
         document.getElementById('focusBtn')?.addEventListener('click', () => this.toggleFocusMode());
         document.getElementById('restoreBtn')?.addEventListener('click', () => this.toggleFocusMode());
 
-        // Context Menu Actions
         document.getElementById('ctxRename')?.addEventListener('click', () => this.openRenameModal());
         document.getElementById('ctxPin')?.addEventListener('click', () => this.togglePin(this.contextNoteId));
         document.getElementById('ctxDelete')?.addEventListener('click', () => this.deleteNote(this.contextNoteId));
         document.getElementById('moveToFolderItem')?.addEventListener('click', () => this.openMoveModal());
 
-        window.addEventListener('contextmenu', (e) => this.handleGlobalContextMenu(e));
         document.addEventListener('click', () => this.closeContextMenu());
     }
 
@@ -99,7 +92,6 @@ class VellumCore {
         const sidebar = document.getElementById('sidebar');
         const topBar = document.getElementById('topBar');
         const restoreBtn = document.getElementById('restoreBtn');
-
         workspace?.classList.toggle('focus-mode');
         sidebar?.classList.toggle('hidden');
         topBar?.classList.toggle('hidden');
@@ -108,39 +100,30 @@ class VellumCore {
 
     updateThemeIcon(theme) {
         const icon = document.getElementById('themeIcon');
-        if (icon) {
-            icon.className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
-        }
+        if (icon) icon.className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
     }
 
     async loadFolders() {
         const { data, error } = await supabase.from('folders').select('*').order('name');
         if (!error) this.folders = data || [];
-        this.renderFolders();
     }
 
     async loadNotes() {
         const { data, error } = await supabase.from('notes').select('*').order('updated_at', { ascending: false });
         if (!error) this.notes = data || [];
-        this.renderNotes();
     }
 
     async createNewNote() {
-        const note = await this.createNote('Untitled Note', '# Untitled Note\n\nStart writing...');
+        const note = await this.createNote('Untitled Note', '');
         if (note) showToast('New note created', 'success');
     }
 
-    async createNote(title = 'Untitled', content = '', folderId = null) {
-        const { data, error } = await supabase
-            .from('notes')
-            .insert([{ title, content, folder_id: folderId }])
-            .select().single();
-
+    async createNote(title = 'Untitled Note', content = '', folderId = null) {
+        const { data, error } = await supabase.from('notes').insert([{ title, content, folder_id: folderId }]).select().single();
         if (error) {
             showToast("Failed to create note: " + error.message, "error");
             return null;
         }
-
         this.notes.unshift(data);
         this.renderNotes();
         this.selectNote(data.id);
@@ -152,54 +135,43 @@ class VellumCore {
         this.saveTimeout = setTimeout(() => this.saveCurrentNote(), 1000);
     }
 
+    async updateNote(id, updates) {
+        if (!id) return false;
+        const { error } = await supabase.from('notes').update(updates).eq('id', id);
+        if (error) {
+            showToast("Update failed: " + error.message, "error");
+            return false;
+        }
+        const note = this.notes.find(n => n.id === id);
+        if (note) {
+            Object.assign(note, updates);
+            this.renderNotes();
+        }
+        return true;
+    }
+
     async saveCurrentNote() {
         if (!this.currentNoteId || !writingCanvas) return;
         const content = writingCanvas.value;
-        const title = this.extractTitle(content);
-
         const note = this.notes.find(n => n.id === this.currentNoteId);
-        if (note && note.content === content && note.title === title) return;
+        if (note && note.content === content) return;
 
-        const { error } = await supabase
-            .from('notes')
-            .update({ title, content, updated_at: new Date().toISOString() })
-            .eq('id', this.currentNoteId);
-
-        if (!error) {
-            if (note) {
-                note.title = title;
-                note.content = content;
-            }
-            this.renderNotes();
-        }
-    }
-
-    extractTitle(content) {
-        const lines = content.split('\n');
-        for (let line of lines) {
-            line = line.trim();
-            if (line.startsWith('# ')) return line.replace('# ', '').substring(0, 50);
-            if (line.length > 0) return line.substring(0, 50);
-        }
-        return 'Untitled';
+        const { error } = await supabase.from('notes').update({ content, updated_at: new Date().toISOString() }).eq('id', this.currentNoteId);
+        if (!error && note) note.content = content;
     }
 
     async deleteNote(id) {
-        if (!id) return;
+        if (!id) return false;
         const { error } = await supabase.from('notes').delete().eq('id', id);
         if (error) {
             showToast("Delete failed: " + error.message, "error");
             return false;
         }
-
         this.notes = this.notes.filter(n => n.id !== id);
         if (this.currentNoteId === id) {
             this.currentNoteId = null;
-            if (this.notes.length > 0) {
-                this.selectNote(this.notes[0].id);
-            } else {
-                this.showEmptyState();
-            }
+            if (this.notes.length > 0) this.selectNote(this.notes[0].id);
+            else this.showEmptyState();
         }
         this.renderNotes();
         showToast('Note deleted', 'success');
@@ -208,22 +180,16 @@ class VellumCore {
 
     confirmDeleteNote() {
         if (!this.currentNoteId) return;
-        ModalManager.open('deleteNote', {
-            onConfirm: () => this.deleteNote(this.currentNoteId)
-        });
+        modalManager.open('deleteNote', { onConfirm: () => this.deleteNote(this.currentNoteId) });
     }
 
     async togglePin(id) {
         if (!id) return;
         const note = this.notes.find(n => n.id === id);
         if (!note) return;
-
         const newPinnedStatus = !note.is_pinned;
-        const { error } = await supabase.from('notes').update({ is_pinned: newPinnedStatus }).eq('id', id);
-
-        if (!error) {
-            note.is_pinned = newPinnedStatus;
-            this.renderNotes();
+        const success = await this.updateNote(id, { is_pinned: newPinnedStatus });
+        if (success) {
             if (id === this.currentNoteId) this.updatePinButton(newPinnedStatus);
             showToast(newPinnedStatus ? 'Note pinned' : 'Note unpinned', 'success');
         }
@@ -233,24 +199,11 @@ class VellumCore {
         document.getElementById('pinBtn')?.classList.toggle('active', isPinned);
     }
 
-    renderFolders() {
-        const noteChips = document.getElementById('noteChips');
-        if (!noteChips) return;
-        // In this hybrid UI, maybe we show folders as chips at the top?
-        // But the requirements say "All Notes" chip too.
-        // Let's stick to showing notes for now and use a modal for folders.
-    }
-
     renderNotes() {
         const noteChips = document.getElementById('noteChips');
         if (!noteChips) return;
-
         noteChips.innerHTML = '';
-
-        const filteredNotes = this.currentFolderId
-            ? this.notes.filter(n => n.folder_id === this.currentFolderId)
-            : this.notes;
-
+        const filteredNotes = this.currentFolderId ? this.notes.filter(n => n.folder_id === this.currentFolderId) : this.notes;
         const sortedNotes = [...filteredNotes].sort((a, b) => {
             if (a.is_pinned && !b.is_pinned) return -1;
             if (!a.is_pinned && b.is_pinned) return 1;
@@ -260,12 +213,7 @@ class VellumCore {
         sortedNotes.forEach(note => {
             const noteEl = document.createElement('div');
             noteEl.className = `chip ${this.currentNoteId === note.id ? 'active' : ''} ${note.is_pinned ? 'pinned' : ''}`;
-            noteEl.innerHTML = `
-                <div class="chip-content">
-                    <i class="fa-solid ${note.is_pinned ? 'fa-thumbtack' : 'fa-file-lines'}"></i>
-                    <span>${note.title || 'Untitled'}</span>
-                </div>
-            `;
+            noteEl.innerHTML = `<div class="chip-content"><i class="fa-solid ${note.is_pinned ? 'fa-thumbtack' : 'fa-file-lines'}"></i><span>${note.title || 'Untitled'}</span></div>`;
             noteEl.onclick = () => this.selectNote(note.id);
             noteEl.oncontextmenu = (e) => this.handleNoteContextMenu(e, note.id);
             noteChips.appendChild(noteEl);
@@ -273,7 +221,6 @@ class VellumCore {
 
         const emptyState = document.getElementById('emptyState');
         const editorContainer = document.getElementById('editorContainer');
-
         if (sortedNotes.length === 0) {
             emptyState?.classList.remove('hidden');
             editorContainer?.classList.add('hidden');
@@ -288,19 +235,15 @@ class VellumCore {
         this.currentNoteId = id;
         const note = this.notes.find(n => n.id === id);
         if (note) {
-            this.loadNoteIntoEditor(note);
+            if (writingCanvas) {
+                writingCanvas.value = note.content || '';
+                writingCanvas.dispatchEvent(new Event('input'));
+            }
             this.updatePinButton(note.is_pinned);
             this.renderNotes();
             const url = new URL(window.location);
             url.searchParams.set('note', id);
             window.history.pushState({}, '', url);
-        }
-    }
-
-    loadNoteIntoEditor(note) {
-        if (writingCanvas) {
-            writingCanvas.value = note.content || '';
-            writingCanvas.dispatchEvent(new Event('input'));
         }
     }
 
@@ -318,7 +261,6 @@ class VellumCore {
             menu.style.top = `${e.clientY}px`;
             menu.style.left = `${e.clientX}px`;
             menu.classList.add('show');
-
             const note = this.notes.find(n => n.id === id);
             const pinItem = document.getElementById('ctxPin');
             if (pinItem && note) {
@@ -327,18 +269,12 @@ class VellumCore {
         }
     }
 
-    handleGlobalContextMenu(e) {
-        // No global context menu for now
-    }
-
     closeContextMenu() {
         document.getElementById('noteContextMenu')?.classList.remove('show');
     }
 
     openManageFolders() {
-        ModalManager.open('manageFolders', {
-            onOpen: () => this.initManageFoldersModal()
-        });
+        modalManager.open('manageFolders', { onOpen: () => this.initManageFoldersModal() });
     }
 
     initManageFoldersModal() {
@@ -363,19 +299,19 @@ class VellumCore {
         const grid = document.getElementById('folderChipsGrid');
         if (!grid) return;
         grid.innerHTML = '';
+
+        const allNotesEl = document.createElement('div');
+        allNotesEl.className = 'folder-chip all-notes-chip';
+        allNotesEl.innerHTML = `<span class="folder-chip-name"><i class="fas fa-list"></i> All Notes</span>`;
+        allNotesEl.onclick = () => { this.currentFolderId = null; modalManager.close(); this.renderNotes(); };
+        grid.appendChild(allNotesEl);
+
         this.folders.forEach(folder => {
             const el = document.createElement('div');
             el.className = 'folder-chip';
             el.innerHTML = `<span class="folder-chip-name">${folder.name}</span><div class="delete-btn"><i class="fas fa-times"></i></div>`;
-            el.onclick = () => {
-                this.currentFolderId = folder.id;
-                ModalManager.close();
-                this.renderNotes();
-            };
-            el.querySelector('.delete-btn').onclick = (e) => {
-                e.stopPropagation();
-                this.deleteFolder(folder.id);
-            };
+            el.onclick = () => { this.currentFolderId = folder.id; modalManager.close(); this.renderNotes(); };
+            el.querySelector('.delete-btn').onclick = (e) => { e.stopPropagation(); this.deleteFolder(folder.id); };
             grid.appendChild(el);
         });
     }
@@ -392,12 +328,11 @@ class VellumCore {
     openRenameModal() {
         const note = this.notes.find(n => n.id === this.contextNoteId);
         if (!note) return;
-        ModalManager.open('renameNote', {
+        modalManager.open('renameNote', {
             title: note.title,
             onConfirm: () => {
                 const newTitle = document.getElementById('renameNoteInput').value;
                 this.updateNote(this.contextNoteId, { title: newTitle });
-                this.renderNotes();
             }
         });
     }
@@ -405,22 +340,29 @@ class VellumCore {
     openMoveModal() {
         const note = this.notes.find(n => n.id === this.contextNoteId);
         if (!note) return;
-        ModalManager.open('moveNote', {
+        modalManager.open('moveNote', {
             noteTitle: note.title,
-            onOpen: () => {
-                const select = document.getElementById('moveFolderSelectOptions');
-                if (!select) return;
+            onOpen: (modalEl) => {
+                const select = modalEl.querySelector('#moveFolderSelectOptions');
                 select.innerHTML = '<div class="select-option" data-id="">Uncategorized</div>';
-                this.folders.forEach(f => {
-                    select.innerHTML += `<div class="select-option" data-id="${f.id}">${f.name}</div>`;
-                });
+                this.folders.forEach(f => { select.innerHTML += `<div class="select-option" data-id="${f.id}">${f.name}</div>`; });
                 select.onclick = (e) => {
                     const opt = e.target.closest('.select-option');
                     if (opt) {
                         this.updateNote(this.contextNoteId, { folder_id: opt.dataset.id || null });
-                        ModalManager.close();
-                        this.renderNotes();
+                        modalManager.close();
                         showToast('Note moved', 'success');
+                    }
+                };
+                modalEl.querySelector('#createAndMoveBtn').onclick = async () => {
+                    const name = modalEl.querySelector('#moveNewFolderName').value.trim();
+                    if (!name) return;
+                    const { data, error } = await supabase.from('folders').insert([{ name }]).select().single();
+                    if (!error) {
+                        this.folders.push(data);
+                        await this.updateNote(this.contextNoteId, { folder_id: data.id });
+                        modalManager.close();
+                        showToast('Folder created and note moved', 'success');
                     }
                 };
             }
@@ -428,36 +370,33 @@ class VellumCore {
     }
 
     openUserProfile() {
-        ModalManager.open('userProfile', {
+        modalManager.open('userProfile', {
             name: this.user.email.split('@')[0],
             email: this.user.email,
-            onOpen: () => {
-                document.getElementById('logoutBtn').onclick = () => this.logout();
-            }
+            onOpen: (modalEl) => { modalEl.querySelector('#logoutBtn').onclick = () => this.logout(); }
         });
     }
 
     async logout() {
         await supabase.auth.signOut();
-        sessionStorage.removeItem('vellum_session');
-        sessionStorage.removeItem('vellum_login_time');
+        sessionStorage.clear();
         window.location.href = '/login';
     }
 
     openSearchModal() {
-        ModalManager.open('searchNotes', {
-            onOpen: () => {
-                const input = document.getElementById('searchInput');
-                const results = document.getElementById('searchResults');
+        modalManager.open('searchNotes', {
+            onOpen: (modalEl) => {
+                const input = modalEl.querySelector('#searchInput');
+                const results = modalEl.querySelector('#searchResults');
                 input.oninput = () => {
                     const query = input.value.toLowerCase();
                     const filtered = this.notes.filter(n => n.title.toLowerCase().includes(query) || n.content.toLowerCase().includes(query));
-                    results.innerHTML = '';
+                    results.innerHTML = filtered.length ? '' : '<div class="search-placeholder">No results found</div>';
                     filtered.forEach(n => {
                         const el = document.createElement('div');
                         el.className = 'search-result-card';
                         el.innerHTML = `<div class="search-result-name">${n.title}</div>`;
-                        el.onclick = () => { this.selectNote(n.id); ModalManager.close(); };
+                        el.onclick = () => { this.selectNote(n.id); modalManager.close(); };
                         results.appendChild(el);
                     });
                 };
@@ -465,12 +404,76 @@ class VellumCore {
         });
     }
 
-    openShareModal() {
-        ModalManager.open('shareNote');
+    async openShareModal() {
+        if (!this.currentNoteId) return;
+        const note = this.notes.find(n => n.id === this.currentNoteId);
+        if (!note) return;
+        modalManager.open('shareNote', { onOpen: (modalEl) => this.initShareModal(modalEl, note) });
+    }
+
+    initShareModal(modalEl, note) {
+        const shareToggle = modalEl.querySelector('#shareToggle');
+        const options = shareToggle.querySelectorAll('.toggle-option');
+        const shareLinkSection = modalEl.querySelector('#shareLinkSection');
+        const sharePrivateMsg = modalEl.querySelector('#sharePrivateMsg');
+        const shareLinkInput = modalEl.querySelector('#shareLinkInput');
+        const copyLinkBtn = modalEl.querySelector('#copyLinkBtn');
+
+        const updateUI = (isPublic) => {
+            shareToggle.className = `share-toggle ${isPublic ? 'public' : ''}`;
+            options.forEach(opt => opt.classList.toggle('active', opt.dataset.value === (isPublic ? 'public' : 'private')));
+            shareLinkSection.style.display = isPublic ? 'block' : 'none';
+            sharePrivateMsg.style.display = isPublic ? 'none' : 'block';
+            if (isPublic && note.share_token) shareLinkInput.value = `https://apandey-vellum.vercel.app/share/${note.share_token}`;
+        };
+
+        updateUI(note.is_public);
+        shareToggle.onclick = async (e) => {
+            const opt = e.target.closest('.toggle-option');
+            if (!opt) return;
+            const newVal = opt.dataset.value === 'public';
+            if (newVal === note.is_public) return;
+            if (newVal) {
+                const { data: token, error } = await supabase.rpc('share_note', { p_note_id: note.id });
+                if (!error) { note.is_public = true; note.share_token = token; showToast('Note is now public', 'success'); }
+            } else {
+                const { error } = await supabase.from('notes').update({ is_public: false, share_token: null, share_expires_at: null }).eq('id', note.id);
+                if (!error) { note.is_public = false; note.share_token = null; showToast('Note is now private', 'info'); }
+            }
+            updateUI(note.is_public);
+        };
+        copyLinkBtn.onclick = () => { shareLinkInput.select(); document.execCommand('copy'); showToast('Link copied', 'success'); };
     }
 
     openExportModal() {
-        ModalManager.open('exportNote', { fileName: this.extractTitle(writingCanvas.value) });
+        const note = this.notes.find(n => n.id === this.currentNoteId);
+        if (!note) return;
+        modalManager.open('exportNote', { fileName: note.title, onOpen: (modalEl) => {
+            modalEl.querySelectorAll('.export-card').forEach(card => {
+                card.onclick = () => {
+                    this.exportNote(note, card.dataset.format, modalEl.querySelector('#exportFileName').value || note.title);
+                    modalManager.close();
+                };
+            });
+        }});
+    }
+
+    exportNote(note, format, fileName) {
+        if (format === 'markdown') this.downloadFile(`${fileName}.md`, note.content);
+        else if (format === 'text') this.downloadFile(`${fileName}.txt`, note.content.replace(/[#*`]/g, ''));
+        else if (format === 'pdf' && window.html2pdf) {
+            window.html2pdf().set({ margin: 10, filename: `${fileName}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(document.getElementById('previewCanvas')).save();
+        }
+    }
+
+    downloadFile(filename, text) {
+        const el = document.createElement('a');
+        el.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        el.setAttribute('download', filename);
+        el.style.display = 'none';
+        document.body.appendChild(el);
+        el.click();
+        document.body.removeChild(el);
     }
 }
 
@@ -478,9 +481,6 @@ export const core = new VellumCore();
 export const saveCurrentNote = () => core.saveCurrentNote();
 
 if (window.location.pathname === '/dashboard' || window.location.pathname === '/') {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => core.init());
-    } else {
-        core.init();
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => core.init());
+    else core.init();
 }

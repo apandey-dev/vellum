@@ -13,91 +13,54 @@
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <img src="/assets/logo.svg" alt="Vellum Logo" class="auth-logo">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSAzQzMuODk1NDMgMyAzIDMuODk1NDMgMyA1VjE5QzMwMjAuMTA0NiAzIDIwLjEwNDYgMjEgMTlWNUMyMSAzLjg5NTQzIDIwLjEwNDYgMyAxOSAzSDVaIiBmaWxsPSIjM0I4MkY2Ii8+PHBhdGggZD0iTTcgOEgxNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik03IDEySDE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTcgMTZIMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxOC41IiBjeT0iMTQuNSIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==" alt="Vellum Logo" class="auth-logo">
                 <h1>Create Account</h1>
                 <p>Start your minimal writing journey today</p>
             </div>
-
             <form id="signup-form" class="auth-form">
                 <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <div class="input-wrapper">
-                        <i class="fa-regular fa-envelope"></i>
-                        <input type="email" id="email" placeholder="email@example.com" required autocomplete="email">
-                    </div>
+                    <label>Email Address</label>
+                    <div class="input-wrapper"><i class="fa-regular fa-envelope"></i><input type="email" id="email" placeholder="email@example.com" required></div>
                 </div>
-
                 <div class="form-group">
-                    <label for="password">Password</label>
-                    <div class="input-wrapper">
-                        <i class="fa-regular fa-lock"></i>
-                        <input type="password" id="password" placeholder="At least 6 characters" required minlength="6" autocomplete="new-password">
-                    </div>
+                    <label>Password</label>
+                    <div class="input-wrapper"><i class="fa-regular fa-lock"></i><input type="password" id="password" placeholder="At least 6 characters" required minlength="6"></div>
                 </div>
-
                 <div id="error-message" class="auth-error" style="display: none;"></div>
-
-                <button type="submit" id="submit-btn" class="auth-btn">
-                    <span>Create Account</span>
-                    <i class="fa-solid fa-user-plus"></i>
-                </button>
+                <button type="submit" id="submit-btn" class="auth-btn"><span>Create Account</span><i class="fa-solid fa-user-plus"></i></button>
             </form>
-
-            <div class="auth-footer">
-                <p>Already have an account? <a href="/login">Log in here</a></p>
-            </div>
+            <div class="auth-footer"><p>Already have an account? <a href="/login">Log in here</a></p></div>
         </div>
     </div>
-
     <script type="module">
         import { supabase } from '/js/supabase-client.js';
         import { showToast } from '/js/utils.js';
 
         const signupForm = document.getElementById('signup-form');
-        const submitBtn = document.getElementById('submit-btn');
-        const errorMessage = document.getElementById('error-message');
-
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
-
-            // Reset UI
-            errorMessage.style.display = 'none';
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span>Creating account...</span><i class="fa-solid fa-spinner fa-spin"></i>';
-
+            const btn = document.getElementById('submit-btn');
+            const errEl = document.getElementById('error-message');
+            errEl.style.display = 'none';
+            btn.disabled = true;
+            btn.innerHTML = '<span>Creating account...</span><i class="fa-solid fa-spinner fa-spin"></i>';
             try {
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password
-                });
-
+                const { data, error } = await supabase.auth.signUp({ email, password });
                 if (error) throw error;
-
                 if (data.session) {
-                    // Auto-logged in
-                    sessionStorage.setItem('vellum_session', JSON.stringify(data.session));
                     sessionStorage.setItem('vellum_login_time', Date.now().toString());
-
                     showToast('Account created successfully!', 'success');
-
-                    setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 500);
-                } else if (data.user) {
-                    // Confirmation email sent
-                    showToast('Check your email for a confirmation link!', 'info');
-                    submitBtn.innerHTML = '<span>Check Email</span><i class="fa-solid fa-envelope-circle-check"></i>';
+                    setTimeout(() => window.location.href = '/dashboard', 500);
+                } else {
+                    showToast('Signup successful! Please check your email.', 'info');
                 }
-
             } catch (err) {
-                console.error('Signup error:', err.message);
-                errorMessage.textContent = err.message || 'An error occurred during signup.';
-                errorMessage.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>Create Account</span><i class="fa-solid fa-user-plus"></i>';
+                errEl.textContent = err.message;
+                errEl.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = '<span>Create Account</span><i class="fa-solid fa-user-plus"></i>';
             }
         });
     </script>

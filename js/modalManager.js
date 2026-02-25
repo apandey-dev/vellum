@@ -1,14 +1,14 @@
 /**
- * modalManager.js
+ * js/modalManager.js
  * Centralized modal controller.
  */
+import { modalTemplates } from './modalTemplates.js';
 
-class ModalManager {
+export class ModalManager {
     constructor() {
         this.stack = [];
         this.container = null;
         this._handleKeydown = this._handleKeydown.bind(this);
-        this._ensureContainer();
     }
 
     _ensureContainer() {
@@ -21,17 +21,71 @@ class ModalManager {
     }
 
     /**
-     * Opens a modal.
-     * @param {string} id - Unique identifier for the modal.
-     * @param {object} options - Modal options.
-     * @param {string} options.title - Modal title.
-     * @param {string} options.content - Modal body HTML.
-     * @param {Array} options.actions - Array of action button objects { text, class, onClick, closeOnClick }.
-     * @param {function} options.onClose - Callback when modal closes.
-     * @param {function} options.onMount - Callback when modal is added to DOM.
+     * Opens a modal using a template ID.
      */
+    open(templateId, options = {}) {
+        const templateFn = modalTemplates[templateId];
+        if (!templateFn) {
+            console.error(`Template not found: ${templateId}`);
+            return;
+        }
+
+        const content = templateFn(options.title || options.noteTitle || options.fileName || options.name, options.email);
+
+        let title = '';
+        let actions = [];
+
+        switch (templateId) {
+            case 'deleteNote':
+                title = 'Delete Note';
+                actions = [
+                    { text: 'Cancel', class: 'secondary' },
+                    { text: 'Delete', class: 'danger', onClick: options.onConfirm }
+                ];
+                break;
+            case 'renameNote':
+                title = 'Rename Note';
+                actions = [
+                    { text: 'Cancel', class: 'secondary' },
+                    { text: 'Save Changes', class: 'primary', onClick: options.onConfirm }
+                ];
+                break;
+            case 'manageFolders':
+                title = 'Manage Folders';
+                break;
+            case 'moveNote':
+                title = 'Move Note';
+                break;
+            case 'shareNote':
+                title = 'Share Note';
+                break;
+            case 'exportNote':
+                title = 'Export Note';
+                actions = [{ text: 'Cancel', class: 'secondary' }];
+                break;
+            case 'searchNotes':
+                title = 'Search Notes';
+                break;
+            case 'userProfile':
+                title = 'User Profile';
+                break;
+        }
+
+        this.openModal(templateId, {
+            title: title,
+            content: content,
+            actions: actions,
+            onMount: options.onOpen || options.onMount,
+            onClose: options.onClose
+        });
+    }
+
+    close() {
+        this.closeModal();
+    }
+
     openModal(id, options) {
-        // Prevent background scroll
+        this._ensureContainer();
         document.body.style.overflow = 'hidden';
 
         const previousFocus = document.activeElement;
@@ -41,13 +95,12 @@ class ModalManager {
 
         const boxClass = options.boxClass ? `modal-box ${options.boxClass}` : 'modal-box';
 
-        // Use a standard box structure for all modals
         modalEl.innerHTML = `
             <div class="${boxClass}" role="dialog" aria-modal="true" aria-labelledby="modal-title-${id}">
                 <button class="modal-close-x" aria-label="Close modal">&times;</button>
                 ${options.title ? `<h3 id="modal-title-${id}">${options.title}</h3>` : ''}
                 <div class="modal-body">${options.content}</div>
-                ${options.actions ? `
+                ${options.actions && options.actions.length > 0 ? `
                     <div class="modal-actions">
                         ${options.actions.map((action, index) => `
                             <button class="modal-btn ${action.class || 'secondary'}" data-action-index="${index}">
@@ -60,113 +113,67 @@ class ModalManager {
         `;
 
         this.container.appendChild(modalEl);
-
-        // Force reflow for animation
-        modalEl.offsetHeight;
+        modalEl.offsetHeight; // Reflow
         modalEl.classList.add('show');
 
-        const modalState = {
-            id,
-            element: modalEl,
-            options,
-            previousFocus
-        };
+        this.stack.push({ id, element: modalEl, options, previousFocus });
 
-        this.stack.push(modalState);
-
-        // Attach event listeners
         modalEl.addEventListener('click', (e) => {
             if (e.target === modalEl) this.closeModal();
         });
 
         const closeX = modalEl.querySelector('.modal-close-x');
-        if (closeX) {
-            closeX.onclick = () => this.closeModal();
-        }
+        if (closeX) closeX.onclick = () => this.closeModal();
 
         const actionButtons = modalEl.querySelectorAll('.modal-btn');
         actionButtons.forEach(btn => {
             btn.onclick = () => {
-                const index = btn.dataset.actionIndex;
-                const action = options.actions[index];
+                const action = options.actions[btn.dataset.actionIndex];
                 if (action.onClick) action.onClick();
                 if (action.closeOnClick !== false) this.closeModal();
             };
         });
 
-        if (this.stack.length === 1) {
-            document.addEventListener('keydown', this._handleKeydown);
-        }
-
-        if (options.onMount) {
-            options.onMount(modalEl);
-        }
-
+        if (this.stack.length === 1) document.addEventListener('keydown', this._handleKeydown);
+        if (options.onMount) options.onMount(modalEl);
         this._trapFocus(modalEl);
     }
 
     closeModal() {
         if (this.stack.length === 0) return;
-
-        const modalState = this.stack.pop();
-        const { element, options, previousFocus } = modalState;
-
+        const { element, options, previousFocus } = this.stack.pop();
         element.classList.remove('show');
 
-        // Cleanup
         setTimeout(() => {
             element.remove();
-
             if (this.stack.length === 0) {
                 document.removeEventListener('keydown', this._handleKeydown);
                 document.body.style.overflow = '';
             } else {
-                // Focus the previous modal in stack if any
-                const topModal = this.stack[this.stack.length - 1];
-                this._trapFocus(topModal.element);
+                this._trapFocus(this.stack[this.stack.length - 1].element);
             }
-
-            if (options.onClose) {
-                options.onClose();
-            }
-
-            if (previousFocus && previousFocus.focus) {
-                previousFocus.focus();
-            }
-        }, 300); // Match CSS transition
+            if (options.onClose) options.onClose();
+            if (previousFocus) previousFocus.focus();
+        }, 300);
     }
 
     _handleKeydown(e) {
-        if (e.key === 'Escape') {
-            this.closeModal();
-        }
+        if (e.key === 'Escape') this.closeModal();
     }
 
     _trapFocus(modalEl) {
-        const focusableElements = modalEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        const firstFocusable = focusableElements[0];
-        const lastFocusable = focusableElements[focusableElements.length - 1];
+        const focusable = modalEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
 
         modalEl.onkeydown = (e) => {
             if (e.key === 'Tab') {
-                if (e.shiftKey) {
-                    if (document.activeElement === firstFocusable) {
-                        e.preventDefault();
-                        lastFocusable.focus();
-                    }
-                } else {
-                    if (document.activeElement === lastFocusable) {
-                        e.preventDefault();
-                        firstFocusable.focus();
-                    }
-                }
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
             }
         };
-
-        if (firstFocusable) {
-            // Delay slightly for animation and content injection
-            setTimeout(() => firstFocusable.focus(), 100);
-        }
+        setTimeout(() => first.focus(), 100);
     }
 }
 
