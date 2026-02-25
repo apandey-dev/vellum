@@ -424,7 +424,7 @@ class VellumCore {
             options.forEach(opt => opt.classList.toggle('active', opt.dataset.value === (isPublic ? 'public' : 'private')));
             shareLinkSection.style.display = isPublic ? 'block' : 'none';
             sharePrivateMsg.style.display = isPublic ? 'none' : 'block';
-            if (isPublic && note.share_token) shareLinkInput.value = `https://apandey-vellum.vercel.app/share/${note.share_token}`;
+            if (isPublic && note.share_token) shareLinkInput.value = `${window.location.origin}/share/${note.share_token}`;
         };
 
         updateUI(note.is_public);
