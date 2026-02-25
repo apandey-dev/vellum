@@ -8,28 +8,48 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="/js/route-guard.js"></script>
+    <style>
+        body { font-family: 'Fredoka', sans-serif !important; }
+        * { font-family: 'Fredoka', sans-serif !important; }
+    </style>
 </head>
 <body class="auth-page">
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSAzQzMuODk1NDMgMyAzIDMuODk1NDMgMyA1VjE5QzMwMjAuMTA0NiAzIDIwLjEwNDYgMjEgMTlWNUMyMSAzLjg5NTQzIDIwLjEwNDYgMyAxOSAzSDVaIiBmaWxsPSIjM0I4MkY2Ii8+PHBhdGggZD0iTTcgOEgxNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik03IDEySDE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTcgMTZIMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxOC41IiBjeT0iMTQuNSIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==" alt="Vellum Logo" class="auth-logo">
+                <svg class="auth-logo" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="24" height="24" rx="6" fill="#111111"/>
+                    <path d="M7 8H17" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M7 12H17" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M7 16H13" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </svg>
                 <h1>Welcome Back</h1>
                 <p>Log in to your Vellum account</p>
             </div>
             <form id="login-form" class="auth-form">
                 <div class="form-group">
                     <label>Email Address</label>
-                    <div class="input-wrapper"><i class="fa-regular fa-envelope"></i><input type="email" id="email" placeholder="email@example.com" required></div>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="email" placeholder="name@company.com" required autocomplete="email">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <div class="input-wrapper"><i class="fa-regular fa-lock"></i><input type="password" id="password" placeholder="••••••••" required></div>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
                 </div>
                 <div id="error-message" class="auth-error" style="display: none;"></div>
-                <button type="submit" id="submit-btn" class="auth-btn"><span>Log In</span><i class="fa-solid fa-arrow-right"></i></button>
+                <button type="submit" id="submit-btn" class="auth-btn">
+                    <span>Log In</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
             </form>
-            <div class="auth-footer"><p>Don't have an account? <a href="/signup">Sign up for free</a></p></div>
+            <div class="auth-footer">
+                <p>New to Vellum? <a href="/signup">Create an account</a></p>
+            </div>
         </div>
     </div>
     <script type="module">
@@ -37,23 +57,37 @@
         import { showToast } from '/js/utils.js';
 
         const loginForm = document.getElementById('login-form');
+        const btn = document.getElementById('submit-btn');
+        const errEl = document.getElementById('error-message');
+
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
-            const btn = document.getElementById('submit-btn');
-            const errEl = document.getElementById('error-message');
+
             errEl.style.display = 'none';
             btn.disabled = true;
-            btn.innerHTML = '<span>Logging in...</span><i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.innerHTML = '<span>Verifying...</span><i class="fa-solid fa-spinner fa-spin"></i>';
+
             try {
                 const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
                 if (error) throw error;
-                sessionStorage.setItem('vellum_login_time', Date.now().toString());
-                showToast('Login successful!', 'success');
-                setTimeout(() => window.location.href = '/dashboard', 500);
+
+                if (data.session) {
+                    sessionStorage.setItem('vellum_session', JSON.stringify(data.session));
+                    sessionStorage.setItem('vellum_login_time', Date.now().toString());
+                }
+
+                showToast('Welcome back!', 'success');
+                setTimeout(() => window.location.href = '/dashboard', 800);
+
             } catch (err) {
-                errEl.textContent = err.message;
+                console.error('Login error:', err);
+                let msg = err.message || 'Failed to connect. Please check your internet.';
+                if (msg.includes('fetch')) msg = 'Network error: Could not reach Supabase.';
+
+                errEl.textContent = msg;
                 errEl.style.display = 'block';
                 btn.disabled = false;
                 btn.innerHTML = '<span>Log In</span><i class="fa-solid fa-arrow-right"></i>';
