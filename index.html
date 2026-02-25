@@ -1,50 +1,83 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vellum | Minimal Markdown Editor</title>
-    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSAzQzMuODk1NDMgMyAzIDMuODk1NDMgMyA1VjE5QzMwMjAuMTA0NiAzIDIwLjEwNDYgMjEgMTlWNUMyMSAzLjg5NTQzIDIwLjEwNDYgMyAxOSAzSDVaIiBmaWxsPSIjM0I4MkY2Ii8+PHBhdGggZD0iTTcgOEgxNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik03IDEySDE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTcgMTZIMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxOC41IiBjeT0iMTQuNSIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==" type="image/svg+xml">
+    <title>Vellum</title>
+    <link rel="icon"
+        href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSAzQzMuODk1NDMgMyAzIDMuODk1NDMgMyA1VjE5QzMwMjAuMTA0NiAzIDIwLjEwNDYgMjEgMTlWNUMyMSAzLjg5NTQzIDIwLjEwNDYgMyAxOSAzSDVaIiBmaWxsPSIjM0I4MkY2Ii8+PHBhdGggZD0iTTcgOEgxNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik03IDEySDE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTcgMTZIMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNMTYgMTZMMTkgMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxOC41IiBjeT0iMTQuNSIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg=="
+        type="image/svg+xml">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#141415" media="(prefers-color-scheme: dark)">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome 6 (Free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="/styles.css">
-
+    <!-- Markdown Rendering & Security Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-light">
+
+    <!-- Code Highlight Themes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-light" disabled>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
 
     <script src="/js/route-guard.js"></script>
     <script src="/js/auth-guard.js"></script>
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('vellum_theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-        })();
-    </script>
 </head>
+
 <body>
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-top">
-            <div class="brand-text">V</div>
+            <div class="brand-icon">
+                <i class="fas fa-laptop-code"></i>
+            </div>
         </div>
+
         <div class="tool-group">
-            <div class="tool-btn" id="searchBtn" data-tooltip="Search">S</div>
-            <div class="tool-btn" id="exportBtn" data-tooltip="Export">E</div>
-            <div class="tool-btn" id="shareBtn" data-tooltip="Share">H</div>
-            <div class="tool-btn" id="deleteBtn" data-tooltip="Delete">D</div>
+            <div class="tool-btn" id="searchBtn" data-tooltip="Search">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="tool-btn" id="exportBtn" data-tooltip="Export">
+                <i class="fas fa-download"></i>
+            </div>
+            <div class="tool-btn" id="shareBtn" data-tooltip="Share">
+                <i class="fas fa-share-alt"></i>
+            </div>
+            <div class="tool-btn" id="deleteBtn" data-tooltip="Delete">
+                <i class="fas fa-trash-alt"></i>
+            </div>
+
             <div class="divider"></div>
-            <div class="tool-btn active" id="editorOnlyBtn" data-tooltip="Editor Only">W</div>
-            <div class="tool-btn" id="splitViewBtn" data-tooltip="Split View">B</div>
-            <div class="tool-btn" id="previewOnlyBtn" data-tooltip="Preview Only">V</div>
+
+            <div class="tool-btn active" id="editorOnlyBtn" data-tooltip="Editor Only">
+                <i class="fas fa-pen-to-square"></i>
+            </div>
+            <div class="tool-btn" id="splitViewBtn" data-tooltip="Split View">
+                <i class="fas fa-columns"></i>
+            </div>
+            <div class="tool-btn" id="previewOnlyBtn" data-tooltip="Preview Only">
+                <i class="fas fa-eye"></i>
+            </div>
+
             <div class="divider"></div>
         </div>
+
         <div class="bottom-actions">
-            <div class="tool-btn" id="themeToggle" data-tooltip="Theme">M</div>
-            <div class="tool-btn" id="focusBtn" data-tooltip="Zen">Z</div>
-            <div class="tool-btn" id="userProfileBtn" data-tooltip="User">U</div>
+            <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
+                <i class="fas fa-moon" id="themeIcon"></i>
+            </div>
+            <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode">
+                <i class="fas fa-expand"></i>
+            </div>
+            <div class="tool-btn" id="userProfileBtn" data-tooltip="User Profile">
+                <i class="fas fa-user-circle"></i>
+            </div>
         </div>
     </nav>
 
@@ -55,20 +88,43 @@
                 <div class="font-selector-wrapper">
                     <button class="font-selector-btn" id="fontSelectorBtn">
                         <span class="current-font-preview" id="currentFont">Fredoka</span>
+                        <i class="fas fa-chevron-down" id="fontCaret"></i>
                     </button>
                     <div class="font-dropdown" id="fontDropdown">
-                        <div class="font-option active" data-font="Fredoka"><span>Fredoka</span></div>
-                        <div class="font-option" data-font="Kalam"><span>Kalam</span></div>
-                        <div class="font-option" data-font="Playpen Sans"><span>Playpen Sans</span></div>
-                        <div class="font-option" data-font="Patrick Hand"><span>Patrick Hand</span></div>
-                        <div class="font-option" data-font="Baloo 2"><span>Baloo 2</span></div>
-                        <div class="font-option" data-font="Comic Neue"><span>Comic Neue</span></div>
-                        <div class="font-option" data-font="Comic Sans MS"><span>Comic Sans MS</span></div>
+                        <div class="font-option active" data-font="Fredoka">
+                            <span>Fredoka</span>
+                            <i class="fas fa-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Kalam">
+                            <span>Kalam</span>
+                            <i class="fas fa-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Playpen Sans">
+                            <span>Playpen Sans</span>
+                            <i class="fas fa-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Patrick Hand">
+                            <span>Patrick Hand</span>
+                            <i class="fas fa-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Baloo 2">
+                            <span>Baloo 2</span>
+                            <i class="fas fa-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Comic Neue">
+                            <span>Comic Neue</span>
+                            <i class="fas fa-check check-icon"></i>
+                        </div>
+                        <div class="font-option" data-font="Comic Sans MS">
+                            <span>Comic Sans MS</span>
+                            <i class="fas fa-check check-icon"></i>
+                        </div>
                     </div>
                 </div>
-                <button class="action-btn" id="addNoteBtn" title="New Note">New</button>
-                <button class="action-btn" id="pinBtn" title="Pin">Pin</button>
-                <button class="action-btn" id="manageFoldersBtn" title="Manage Folders">Folders</button>
+                <button class="action-btn" id="addNoteBtn" title="New Note"><i class="fas fa-plus"></i></button>
+                <button class="action-btn" id="pinBtn" title="Pin"><i class="fas fa-thumbtack"></i></button>
+                <button class="action-btn" id="manageFoldersBtn" title="Manage Folders"><i
+                        class="fas fa-folder"></i></button>
             </div>
         </header>
     </div>
@@ -78,31 +134,55 @@
             <div class="editor-pane" id="editorPane">
                 <textarea class="writing-canvas" id="writingCanvas" placeholder="Start typing markdown here..."></textarea>
             </div>
-            <div class="resizer" id="resizer"><div class="resizer-handle"></div></div>
+            <div class="resizer" id="resizer">
+                <div class="resizer-handle"></div>
+            </div>
             <div class="preview-pane" id="previewPane">
                 <div class="preview-canvas markdown-body" id="previewCanvas"></div>
             </div>
         </div>
         <div id="emptyState" class="empty-folder-message hidden">
-            <h3>No notes yet</h3>
+            <div class="empty-folder-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </div>
+            <h3><i class="fas fa-file-alt" style="color: #a78bfa; margin-right: 10px; opacity: 0.5;"></i>No notes yet</h3>
             <p>Create your first note to get started.</p>
-            <button class="create-note-btn" id="createNoteFromEmpty">Create New Note</button>
+            <button class="create-note-btn" id="createNoteFromEmpty">+ Create New Note</button>
         </div>
     </main>
 
-    <div class="restore-pill" id="restoreBtn"><span>Exit Focus</span></div>
-    <div class="context-menu" id="noteContextMenu">
-        <div class="context-menu-item" id="ctxRename">Rename</div>
-        <div class="context-menu-item" id="ctxPin">Pin Note</div>
-        <div class="divider-h"></div>
-        <div class="context-menu-item" id="moveToFolderItem">Move to...</div>
-        <div class="divider-h"></div>
-        <div class="context-menu-item delete-item" id="ctxDelete">Delete</div>
+    <div class="formatting-indicator" id="formattingIndicator"></div>
+    <div class="restore-pill" id="restoreBtn">
+        <i class="fas fa-compress-alt"></i>
+        <span>Exit Focus</span>
     </div>
+
+    <!-- Context Menu for Notes (sidebar chips) -->
+    <div class="context-menu" id="noteContextMenu">
+        <div class="context-menu-item" id="ctxRename">
+            <i class="fas fa-pencil-alt"></i> Rename
+        </div>
+        <div class="context-menu-item" id="ctxPin">
+            <i class="fas fa-thumbtack"></i> Pin Note
+        </div>
+        <div class="divider-h"></div>
+        <div class="context-menu-item" id="moveToFolderItem">
+            <i class="fas fa-folder-open"></i> Move to...
+        </div>
+        <div class="divider-h"></div>
+        <div class="context-menu-item delete-item" id="ctxDelete">
+            <i class="fas fa-trash-alt"></i> Delete
+        </div>
+    </div>
+
+    <!-- Modal Container -->
     <div id="modal-container"></div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script type="module" src="/js/core.js"></script>
-    <script type="module" src="/js/app-editor.js"></script>
+    <script type="module" src="/app-core.js"></script>
+    <script type="module" src="/app-editor.js"></script>
 </body>
+
 </html>

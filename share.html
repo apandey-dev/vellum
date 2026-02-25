@@ -1,85 +1,455 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vellum - Shared Note</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
+    <!-- Markdown Rendering & Security Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-light">
+
+    <!-- Code Highlight Themes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-light" disabled>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
 
     <script src="/js/route-guard.js"></script>
+
     <style>
-        :root { --bg-canvas: #f2f4f7; --bg-panel: #ffffff; --text-primary: #101828; --text-secondary: #667085; --border-color: #eaecf0; --accent-color: #000000; }
-        [data-theme="dark"] { --bg-canvas: #09090b; --bg-panel: #141415; --text-primary: #ffffff; --text-secondary: #888888; --border-color: #2a2a2a; --accent-color: #3b82f6; }
-        body { background-color: var(--bg-canvas); color: var(--text-primary); font-family: 'Fredoka', sans-serif; display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
-        .share-header { height: 70px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; position: fixed; top: 0; left: 0; right: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
-        .brand { font-weight: 700; font-size: 20px; }
-        .action-btn { height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-primary); font-family: inherit; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
-        .action-btn.primary { background-color: var(--text-primary); color: var(--bg-canvas); border-color: var(--text-primary); }
-        .content-wrapper { margin-top: 100px; margin-bottom: 60px; display: flex; justify-content: center; padding: 0 20px; }
-        .paper-container { width: 100%; max-width: 800px; }
-        .note-title { font-size: 36px; font-weight: 700; margin-bottom: 30px; line-height: 1.2; }
-        .note-content { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 50px; min-height: 500px; font-size: 18px; line-height: 1.6; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05); }
-        .state-msg { text-align: center; margin-top: 100px; font-size: 20px; color: var(--text-secondary); }
-        @media print { .share-header { display: none !important; } .content-wrapper { margin: 0; padding: 0; } .note-content { border: none; box-shadow: none; padding: 0; } }
+        /* Shared variables from styles.css for consistency */
+        :root {
+            /* Light Mode Default */
+            --bg-canvas: #f2f4f7;
+            --bg-panel: #ffffff;
+            --text-primary: #101828;
+            --text-secondary: #667085;
+            --border-color: #eaecf0;
+            --accent-color: #000000;
+            --grid-color: #e4e7ec;
+
+            /* Colors matching editor */
+            --color-red: #ef4444;
+            --color-blue: #3b82f6;
+            --color-green: #10b981;
+            --color-yellow: #f59e0b;
+            --color-purple: #8b5cf6;
+            --color-pink: #ec4899;
+        }
+
+        [data-theme="dark"] {
+            --bg-canvas: #09090b;
+            --bg-panel: #141415;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --border-color: #2a2a2a;
+            --accent-color: #3b82f6;
+            --grid-color: #1f1f22;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: 'Fredoka', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Top Bar */
+        .share-header {
+            height: 70px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .action-btn {
+            height: 40px;
+            padding: 0 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: var(--border-color);
+        }
+
+        .action-btn.primary {
+            background-color: var(--text-primary);
+            color: var(--bg-canvas);
+            border-color: var(--text-primary);
+        }
+
+        .theme-btn {
+            width: 40px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        /* Main Content */
+        .content-wrapper {
+            margin-top: 100px;
+            margin-bottom: 60px;
+            display: flex;
+            justify-content: center;
+            padding: 0 20px;
+            width: 100%;
+        }
+
+        .paper-container {
+            width: 100%;
+            max-width: 800px; /* Readable width */
+        }
+
+        .note-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            line-height: 1.2;
+        }
+
+        .note-content {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 50px;
+            min-height: 500px;
+            font-size: 18px;
+            line-height: 1.6;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        /* --- MARKDOWN STYLES FOR CONSISTENCY --- */
+        .markdown-body h1, .markdown-body h2, .markdown-body h3,
+        .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+            color: var(--text-primary);
+        }
+
+        .markdown-body h1 { font-size: 2em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        .markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        .markdown-body h3 { font-size: 1.25em; }
+
+        .markdown-body p { margin-bottom: 16px; }
+        .markdown-body strong { font-weight: 600; }
+        .markdown-body em { font-style: italic; }
+
+        .markdown-body blockquote {
+            padding: 0 1em;
+            color: var(--text-secondary);
+            border-left: 0.25em solid var(--accent-color);
+            margin: 0 0 16px 0;
+            background: rgba(128, 128, 128, 0.05);
+            border-radius: 4px;
+        }
+
+        .markdown-body ul, .markdown-body ol {
+            padding-left: 2em;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body code {
+            padding: 0.2em 0.4em;
+            font-size: 85%;
+            background-color: rgba(128, 128, 128, 0.15);
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .markdown-body pre {
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+            background-color: var(--bg-canvas);
+            border-radius: 10px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+            font-size: 100%;
+            border-radius: 0;
+        }
+
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body table th, .markdown-body table td {
+            padding: 6px 13px;
+            border: 1px solid var(--border-color);
+        }
+
+        .markdown-body hr {
+            height: 2px;
+            background: var(--border-color);
+            border: none;
+            margin: 24px 0;
+        }
+
+        .markdown-body * {
+            max-width: 100%;
+        }
+
+        .hljs {
+            display: block;
+            overflow-x: auto;
+            padding: 0.5em;
+            background: transparent !important;
+        }
+
+        /* Error/Loading State */
+        .state-msg {
+            text-align: center;
+            margin-top: 100px;
+            font-size: 20px;
+            color: var(--text-secondary);
+        }
+
+
+        /* --- PRINT STYLES (Infinite Page) --- */
+        @media print {
+            /* Hide UI */
+            .share-header, .header-actions {
+                display: none !important;
+            }
+
+            /* Main Layout Reset */
+            html, body {
+                margin: 0;
+                padding: 0;
+                background: white !important;
+                color: black !important;
+                height: auto;
+                min-height: 100vh;
+                overflow: visible;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                width: 100%;
+            }
+
+            .content-wrapper {
+                margin: 0;
+                padding: 0;
+                display: block;
+                width: 100%;
+                max-width: none;
+            }
+
+            .paper-container {
+                width: 100%;
+                max-width: none;
+                margin: 0;
+                box-shadow: none;
+            }
+
+            .note-title {
+                padding: 20px 40px 0 40px; /* Padding for print */
+                margin-bottom: 20px;
+                color: black !important;
+            }
+
+            .note-content {
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+                padding: 0 40px 40px 40px; /* Padding for print */
+                min-height: 0;
+                background: white !important;
+                color: black !important;
+            }
+
+            /* Infinite Page Logic injected by JS via @page */
+        }
     </style>
+    <!-- Placeholder for dynamic print styles -->
+    <style id="dynamic-print-style"></style>
 </head>
+
 <body>
+
     <header class="share-header">
-        <div class="brand">Vellum</div>
+        <div class="header-left">
+            <div class="brand">Vellum</div>
+        </div>
         <div class="header-actions">
-            <button class="action-btn" id="themeToggle">Theme</button>
-            <button class="action-btn primary" id="printBtn">Print / PDF</button>
+            <button class="action-btn theme-btn" id="themeToggle" title="Toggle Theme">
+                <i class="ph ph-sun"></i>
+            </button>
+            <button class="action-btn primary" id="printBtn">
+                <i class="ph ph-printer"></i> Print / PDF
+            </button>
         </div>
     </header>
+
     <div id="app" class="content-wrapper"><div class="state-msg">Loading note...</div></div>
 
+    <template id="noteTemplate">
+        <div class="paper-container">
+            <h1 class="note-title" id="displayTitle">Untitled Note</h1>
+            <div class="note-content markdown-body" id="displayContent"></div>
+        </div>
+    </template>
+
     <script type="module">
-        import { share } from '/js/share.js';
+        import { supabase } from '/js/supabase-client.js';
         import { MarkdownEngine } from '/js/markdown-engine.js';
 
+        const template = document.getElementById('noteTemplate');
+        const app = document.getElementById('app');
+        const themeToggle = document.getElementById('themeToggle');
+        const printBtn = document.getElementById('printBtn');
+        const html = document.documentElement;
+        const dynamicStyle = document.getElementById('dynamic-print-style');
+
+        // 1. Theme Logic
+        function updateHljsTheme() {
+            const theme = html.getAttribute('data-theme') || 'light';
+            const lightLink = document.getElementById('hljs-light');
+            const darkLink = document.getElementById('hljs-dark');
+
+            if (theme === 'dark') {
+                lightLink.disabled = true;
+                darkLink.disabled = false;
+            } else {
+                lightLink.disabled = false;
+                darkLink.disabled = true;
+            }
+        }
+
+        function toggleTheme() {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+
+            const icon = themeToggle.querySelector('i');
+            if (next === 'dark') {
+                icon.className = 'ph ph-moon';
+            } else {
+                icon.className = 'ph ph-sun';
+            }
+            updateHljsTheme();
+        }
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // 2. Load Note
         async function loadNote() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const publicId = urlParams.get('share') || window.location.pathname.split('/').pop();
+            const pathParts = window.location.pathname.split('/');
+            // Expected path /share/ID
+            const publicId = pathParts[pathParts.length - 1];
 
             if (!publicId || publicId === 'share') {
-                document.getElementById('app').innerHTML = '<div class="state-msg">No note ID specified.</div>';
+                app.innerHTML = '<div class="state-msg">No note ID specified.</div>';
                 return;
             }
 
-            const note = share.getPublicNote(publicId);
-            if (!note) {
-                document.getElementById('app').innerHTML = '<div class="state-msg">This link has expired or is no longer available.</div>';
-                return;
+            try {
+                // Call the RPC function
+                const { data, error } = await supabase.rpc('get_public_note', { p_public_id: publicId });
+
+                if (error || !data || data.length === 0) {
+                    app.innerHTML = '<div class="state-msg">This link has expired or is no longer available.</div>';
+                    return;
+                }
+
+                const note = data[0];
+
+                // Render
+                app.innerHTML = '';
+                const clone = template.content.cloneNode(true);
+
+                clone.getElementById('displayTitle').textContent = note.title;
+                clone.getElementById('displayContent').innerHTML = MarkdownEngine.render(note.content);
+
+                app.appendChild(clone);
+
+            } catch (e) {
+                console.error(e);
+                app.innerHTML = '<div class="state-msg">Error loading note.</div>';
             }
-
-            document.getElementById('app').innerHTML = `
-                <div class="paper-container">
-                    <h1 class="note-title">${note.title}</h1>
-                    <div class="note-content markdown-body">${MarkdownEngine.render(note.content)}</div>
-                </div>`;
         }
 
-        const html = document.documentElement;
-        const themeToggle = document.getElementById('themeToggle');
-        function updateTheme(theme) {
-            html.setAttribute('data-theme', theme);
-            document.getElementById('hljs-light').disabled = (theme === 'dark');
-            document.getElementById('hljs-dark').disabled = (theme === 'light');
-            localStorage.setItem('vellum_theme', theme);
-        }
-        themeToggle.addEventListener('click', () => updateTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
-        document.getElementById('printBtn').addEventListener('click', () => window.print());
+        // 3. Smart "Infinity" Print
+        printBtn.addEventListener('click', () => {
+            const bodyHeight = document.body.scrollHeight;
+            const heightMm = Math.ceil(bodyHeight * 0.264583) + 20;
+            dynamicStyle.textContent = `@page { size: 210mm ${heightMm}mm; margin: 0; }`;
+            window.print();
+        });
 
-        updateTheme(localStorage.getItem('vellum_theme') || 'light');
+        // Initialize
         loadNote();
+
+        // Theme init
+        const savedTheme = localStorage.getItem('vellum_theme') || 'light';
+        html.setAttribute('data-theme', savedTheme);
+        const icon = themeToggle.querySelector('i');
+        if (savedTheme === 'dark') {
+            icon.className = 'ph ph-moon';
+        } else {
+            icon.className = 'ph ph-sun';
+        }
+        updateHljsTheme();
+
     </script>
 </body>
+
 </html>

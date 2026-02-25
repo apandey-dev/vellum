@@ -1,39 +1,38 @@
-/**
- * js/auth-guard.js
- * Enforces authentication and session timeout (localStorage version).
- */
+// js/auth-guard.js
+
 (function() {
     const path = window.location.pathname;
-    const search = window.location.search;
     const publicPages = ['/login', '/signup', '/error'];
 
-    // Allow share links to be public
-    if (search.includes('share=')) return;
+    // Allow share pages to be public
+    if (path.startsWith('/share/')) return;
 
-    const sessionStr = sessionStorage.getItem('vellum_session');
+    const user = localStorage.getItem('vellum_user');
+    const loginTime = sessionStorage.getItem('vellum_login_time');
+
+    if (!publicPages.includes(path) && path !== '/dashboard' && path !== '/') {
+         // Not a public page, but not explicitly the dashboard?
+         // route-guard handles unknown paths.
+    }
 
     if (!publicPages.includes(path)) {
-        // Protected page
-        if (!sessionStr) {
+        if (!user || !loginTime) {
             window.location.href = '/login';
             return;
         }
 
-        const session = JSON.parse(sessionStr);
         // 2-hour session check
-        if (Date.now() > session.expiresAt) {
-            sessionStorage.removeItem('vellum_session');
+        if (Date.now() - parseInt(loginTime) > 7200000) {
+            sessionStorage.clear();
+            localStorage.removeItem('vellum_user');
             window.location.href = '/login';
             return;
         }
     } else {
-        // Public page (login/signup)
-        if (sessionStr) {
-            const session = JSON.parse(sessionStr);
-            if (Date.now() < session.expiresAt) {
-                if (path === '/login' || path === '/signup') {
-                    window.location.href = '/dashboard';
-                }
+        // If on login/signup but already logged in and session valid
+        if (user && loginTime && (Date.now() - parseInt(loginTime) < 7200000)) {
+            if (path === '/login' || path === '/signup') {
+                window.location.href = '/dashboard';
             }
         }
     }

@@ -1,12 +1,14 @@
 /**
- * js/app-editor.js
- * Entry point for the Vellum Editor UI features.
+ * app-editor.js
+ * Entry point for the Vellum Editor.
+ * Orchestrates modules and handles high-level events.
  */
 
-import { writingCanvas, saveCurrentNote } from './core.js';
-import { EditorUI } from './editor-ui.js';
-import { TextareaEnhancer } from './textarea-enhancer.js';
+import { writingCanvas, saveCurrentNote } from './app-core.js';
+import { EditorUI } from './js/editor-ui.js';
+import { TextareaEnhancer } from './js/textarea-enhancer.js';
 
+// Minimal font mapping
 const fontMap = {
     'Fredoka': "'Fredoka', sans-serif",
     'Kalam': "'Kalam', cursive",
@@ -17,26 +19,47 @@ const fontMap = {
     'Comic Sans MS': "'Comic Sans MS', cursive, sans-serif"
 };
 
+/**
+ * UI Updates
+ */
 function updateFontDisplay() {
     const currentFont = localStorage.getItem('vellum_current_font') || 'Fredoka';
     const fontValue = fontMap[currentFont];
-    if (writingCanvas) writingCanvas.style.fontFamily = fontValue;
+
+    if (writingCanvas) {
+        writingCanvas.style.fontFamily = fontValue;
+    }
+
     const previewCanvas = document.getElementById('previewCanvas');
-    if (previewCanvas) previewCanvas.style.fontFamily = fontValue;
+    if (previewCanvas) {
+        previewCanvas.style.fontFamily = fontValue;
+    }
+
     const currentFontSpan = document.getElementById('currentFont');
-    if (currentFontSpan) currentFontSpan.textContent = currentFont;
-    document.querySelectorAll('.font-option').forEach(opt => {
-        opt.classList.toggle('active', opt.dataset.font === currentFont);
+    if (currentFontSpan) {
+        currentFontSpan.textContent = currentFont;
+    }
+
+    const fontOptions = document.querySelectorAll('.font-option');
+    fontOptions.forEach(opt => {
+        opt.classList.remove('active');
+        if (opt.dataset.font === currentFont) opt.classList.add('active');
     });
 }
 
+/**
+ * Event Listeners
+ */
 function attachEventListeners() {
+    // Selection/Focus changes
     writingCanvas.addEventListener('click', updateFontDisplay);
     writingCanvas.addEventListener('keyup', updateFontDisplay);
     writingCanvas.addEventListener('focus', updateFontDisplay);
 
+    // Font Selector UI
     const fontSelectorBtn = document.getElementById('fontSelectorBtn');
     const fontDropdown = document.getElementById('fontDropdown');
+    const fontOptions = document.querySelectorAll('.font-option');
 
     if (fontSelectorBtn) {
         fontSelectorBtn.addEventListener('click', (e) => {
@@ -53,7 +76,7 @@ function attachEventListeners() {
         }
     });
 
-    fontDropdown?.addEventListener('click', (e) => {
+    fontDropdown.addEventListener('click', (e) => {
         const option = e.target.closest('.font-option');
         if (option) {
             const selectedFont = option.dataset.font;
@@ -66,12 +89,16 @@ function attachEventListeners() {
     });
 }
 
+/**
+ * Initialization
+ */
 function initEditor() {
     updateFontDisplay();
     attachEventListeners();
-    EditorUI.init();
+
+    // Initialize Textarea features
     TextareaEnhancer.init(writingCanvas);
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initEditor);
-else initEditor();
+// Start the editor
+initEditor();
