@@ -7,8 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Kalam:wght@300;400;700&family=Playpen+Sans:wght@100;200;300;400;500;600;700;800&family=Patrick+Hand&family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
@@ -36,8 +34,8 @@
     <header class="share-header">
         <div class="brand">Vellum</div>
         <div class="header-actions">
-            <button class="action-btn" id="themeToggle"><i class="fas fa-moon"></i></button>
-            <button class="action-btn primary" id="printBtn"><i class="fas fa-print"></i> Print / PDF</button>
+            <button class="action-btn" id="themeToggle">Theme</button>
+            <button class="action-btn primary" id="printBtn">Print / PDF</button>
         </div>
     </header>
     <div id="app" class="content-wrapper"><div class="state-msg">Loading note...</div></div>
@@ -74,7 +72,6 @@
         const themeToggle = document.getElementById('themeToggle');
         function updateTheme(theme) {
             html.setAttribute('data-theme', theme);
-            themeToggle.querySelector('i').className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
             document.getElementById('hljs-light').disabled = (theme === 'dark');
             document.getElementById('hljs-dark').disabled = (theme === 'light');
             localStorage.setItem('vellum_theme', theme);

@@ -99,8 +99,8 @@ class VellumCore {
     }
 
     updateThemeIcon(theme) {
-        const icon = document.getElementById('themeIcon');
-        if (icon) icon.className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+        const btn = document.getElementById('themeToggle');
+        if (btn) btn.textContent = theme === 'light' ? 'M' : 'S';
     }
 
     async loadFolders() {
@@ -213,7 +213,7 @@ class VellumCore {
         sortedNotes.forEach(note => {
             const noteEl = document.createElement('div');
             noteEl.className = `chip ${this.currentNoteId === note.id ? 'active' : ''} ${note.is_pinned ? 'pinned' : ''}`;
-            noteEl.innerHTML = `<div class="chip-content"><i class="fa-solid ${note.is_pinned ? 'fa-thumbtack' : 'fa-file-lines'}"></i><span>${note.title || 'Untitled'}</span></div>`;
+            noteEl.innerHTML = `<div class="chip-content"><span>${note.title || 'Untitled'}</span></div>`;
             noteEl.onclick = () => this.selectNote(note.id);
             noteEl.oncontextmenu = (e) => this.handleNoteContextMenu(e, note.id);
             noteChips.appendChild(noteEl);
@@ -264,7 +264,7 @@ class VellumCore {
             const note = this.notes.find(n => n.id === id);
             const pinItem = document.getElementById('ctxPin');
             if (pinItem && note) {
-                pinItem.innerHTML = note.is_pinned ? '<i class="fas fa-thumbtack"></i> Unpin Note' : '<i class="fas fa-thumbtack"></i> Pin Note';
+                pinItem.innerHTML = note.is_pinned ? 'Unpin Note' : 'Pin Note';
             }
         }
     }
@@ -302,14 +302,14 @@ class VellumCore {
 
         const allNotesEl = document.createElement('div');
         allNotesEl.className = 'folder-chip all-notes-chip';
-        allNotesEl.innerHTML = `<span class="folder-chip-name"><i class="fas fa-list"></i> All Notes</span>`;
+        allNotesEl.innerHTML = `<span class="folder-chip-name">All Notes</span>`;
         allNotesEl.onclick = () => { this.currentFolderId = null; modalManager.close(); this.renderNotes(); };
         grid.appendChild(allNotesEl);
 
         this.folders.forEach(folder => {
             const el = document.createElement('div');
             el.className = 'folder-chip';
-            el.innerHTML = `<span class="folder-chip-name">${folder.name}</span><div class="delete-btn"><i class="fas fa-times"></i></div>`;
+            el.innerHTML = `<span class="folder-chip-name">${folder.name}</span><div class="delete-btn">X</div>`;
             el.onclick = () => { this.currentFolderId = folder.id; modalManager.close(); this.renderNotes(); };
             el.querySelector('.delete-btn').onclick = (e) => { e.stopPropagation(); this.deleteFolder(folder.id); };
             grid.appendChild(el);
