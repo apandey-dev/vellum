@@ -30,26 +30,4 @@ export async function restoreSession() {
     }
 }
 
-/**
- * Checks if the Supabase server is reachable.
- */
-export async function checkConnectivity() {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
-            method: 'GET',
-            headers: { 'apikey': SUPABASE_ANON_KEY },
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-        return response.ok || response.status === 401; // 401 is fine, means we reached it but didn't auth
-    } catch (e) {
-        console.error('Connectivity check failed:', e);
-        return false;
-    }
-}
-
 window.supabaseClient = supabase;

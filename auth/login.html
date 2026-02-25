@@ -43,22 +43,8 @@
         </div>
     </div>
     <script type="module">
-        import { supabase, checkConnectivity } from '/js/supabase-client.js';
+        import { supabase } from '/js/supabase-client.js';
         import { showToast } from '/js/utils.js';
-
-        // Check connectivity on load
-        async function initAuth() {
-            const isOnline = await checkConnectivity();
-            if (!isOnline) {
-                const err = document.getElementById('error-message');
-                err.textContent = 'Server Unreachable: Please check your internet or VPN.';
-                err.style.display = 'block';
-                err.style.background = '#fffbeb';
-                err.style.borderColor = '#fef3c7';
-                err.style.color = '#92400e';
-            }
-        }
-        initAuth();
 
         const loginForm = document.getElementById('login-form');
         const btn = document.getElementById('submit-btn');
