@@ -70,7 +70,7 @@ async function fetchInitialData() {
         const { data: noteData, error: noteError } = await supabase
             .from('notes')
             .select('*')
-            .order('updated_at', { ascending: false });
+            .order('order_index', { ascending: true });
 
         if (noteError) throw noteError;
         notes = noteData;
@@ -220,10 +220,10 @@ async function deleteFolder(folderId) {
     }
 
     folders = folders.filter(f => f.id !== folderId);
-    // Notes associated with this folder are handled by SET NULL in DB
-    notes.forEach(n => {
-        if (n.folder_id === folderId) n.folder_id = null;
-    });
+
+    // Notes associated with this folder are DELETED by ON DELETE CASCADE in DB
+    // We update local state to reflect this immediately
+    notes = notes.filter(n => n.folder_id !== folderId);
 
     if (activeFolderId === folderId) {
         activeFolderId = null;
@@ -303,7 +303,11 @@ function renderNoteChips() {
         return;
     }
 
-    folderNotes.sort((a, b) => (b.is_pinned === true) - (a.is_pinned === true));
+    // Sort by pinned status first, then by user-defined order_index
+    folderNotes.sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0);
+        return (a.order_index || 0) - (b.order_index || 0);
+    });
 
     folderNotes.forEach(note => {
         const chip = document.createElement('div');
