@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MindJournal Notes</title>
+    <!-- Dynamic SEO meta tags will be injected by router.js -->
+
     <link rel="icon"
         href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNSAzQzMuODk1NDMgMyAzIDMuODk1NDMgMyA1VjE5QzMwMjAuMTA0NiAzIDIwLjEwNDYgMjEgMTlWNUMyMSAzLjg5NTQzIDIwLjEwNDYgMyAxOSAzSDVaIiBmaWxsPSIjM0I4MkY2Ii8+PHBhdGggZD0iTTcgOEgxNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxwYXRoIGQ9Ik03IDEySDE3IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTcgMTZIMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48cGF0aCBkPSJNMTYgMTZMMTkgMTMiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48Y2lyY2xlIGN4PSIxOC41IiBjeT0iMTQuNSIgcj0iMS41IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg=="
         type="image/svg+xml">
@@ -18,355 +20,409 @@
     <!-- Font Awesome 6 (Free) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
-    <nav class="sidebar" id="sidebar">
-        <div class="icon-circle">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" aria-hidden="true">
-                <path
-                    d="m438-413 212-212-43-42-169.33 170L353-582l-43 42 128 127ZM40-120v-60h880v60H40Zm100-120q-24 0-42-18t-18-42v-480q0-24 18-42t42-18h680q24 0 42 18t18 42v480q0 24-18 42t-42 18H140Zm0-60h680v-480H140v480Zm0 0v-480 480Z" />
-            </svg>
-        </div>
-        <div class="tool-group">
-            <div class="tool-btn" id="searchBtn" data-tooltip="Search">
-                <i class="fas fa-search"></i>
-            </div>
-            <div class="tool-btn" id="exportBtn" data-tooltip="Export">
-                <i class="fas fa-download"></i>
-            </div>
-            <div class="tool-btn" id="shareBtn" data-tooltip="Share">
-                <i class="fas fa-share-alt"></i>
-            </div>
-            <div class="tool-btn" id="deleteBtn" data-tooltip="Delete">
-                <i class="fas fa-trash-alt"></i>
-            </div>
 
-            <div class="divider"></div>
-            <div class="bottom-actions">
-                <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
-                    <i class="fas fa-sun" id="themeIcon"></i>
-                </div>
-                <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode">
-                    <i class="fas fa-expand-alt"></i>
-                </div>
+    <!-- ==================== VIEW: LOADING ==================== -->
+    <div id="view-loading" class="app-view">
+        <div style="font-size: 1.2rem; color: var(--text-secondary);">Loading MindJournal...</div>
+    </div>
+
+    <!-- ==================== VIEW: LOGIN ==================== -->
+    <div id="view-login" class="app-view hidden">
+        <div class="auth-box">
+            <h2 class="auth-title">Welcome Back</h2>
+            <div id="login-error" class="error-msg"></div>
+            <form id="login-form" onsubmit="window.handleLogin(event)">
+                <input type="email" id="login-email" class="auth-input" placeholder="Email" required>
+                <input type="password" id="login-password" class="auth-input" placeholder="Password" required>
+                <button type="submit" class="auth-btn">Log In</button>
+            </form>
+            <a href="/signup" class="auth-link">Create an account</a>
+        </div>
+    </div>
+
+    <!-- ==================== VIEW: SIGNUP ==================== -->
+    <div id="view-signup" class="app-view hidden">
+        <div class="auth-box">
+            <h2 class="auth-title">Create Account</h2>
+            <div id="signup-error" class="error-msg"></div>
+            <div id="signup-success" class="success-msg"></div>
+            <form id="signup-form" onsubmit="window.handleSignup(event)">
+                <input type="text" id="signup-name" class="auth-input" placeholder="Full Name" required>
+                <input type="email" id="signup-email" class="auth-input" placeholder="Email" required>
+                <input type="password" id="signup-password" class="auth-input" placeholder="Password" required>
+                <button type="submit" class="auth-btn">Sign Up</button>
+            </form>
+            <a href="/login" class="auth-link">Already have an account? Log In</a>
+        </div>
+    </div>
+
+    <!-- ==================== VIEW: PUBLIC NOTE ==================== -->
+    <div id="view-public" class="app-view hidden">
+        <div class="public-note-container">
+            <h1 class="public-note-title" id="public-note-title"></h1>
+            <div class="public-note-content" id="public-note-content"></div>
+            <div style="margin-top: 40px; text-align: center;">
+                <a href="/" style="color: var(--accent-color); text-decoration: none; font-weight: 500;">
+                    Create your own MindJournal
+                </a>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <div class="top-bar-wrapper" id="topBar">
-        <header class="glass-header">
-            <div class="chips" id="noteChips"></div>
-            <div class="header-actions">
-                <div class="font-selector-wrapper">
-                    <button class="font-selector-btn" id="fontSelectorBtn">
-                        <span class="current-font-preview" id="currentFont">Fredoka</span>
-                        <i class="fas fa-chevron-down" id="fontCaret"></i>
-                    </button>
-                    <div class="font-dropdown" id="fontDropdown">
-                        <div class="font-option active" data-font="Fredoka">
-                            <span>Fredoka</span>
-                            <i class="fas fa-check check-icon"></i>
-                        </div>
-                        <div class="font-option" data-font="Kalam">
-                            <span>Kalam</span>
-                            <i class="fas fa-check check-icon"></i>
-                        </div>
-                        <div class="font-option" data-font="Playpen Sans">
-                            <span>Playpen Sans</span>
-                            <i class="fas fa-check check-icon"></i>
-                        </div>
-                        <div class="font-option" data-font="Patrick Hand">
-                            <span>Patrick Hand</span>
-                            <i class="fas fa-check check-icon"></i>
-                        </div>
-                        <div class="font-option" data-font="Baloo 2">
-                            <span>Baloo 2</span>
-                            <i class="fas fa-check check-icon"></i>
-                        </div>
-                        <div class="font-option" data-font="Comic Neue">
-                            <span>Comic Neue</span>
-                            <i class="fas fa-check check-icon"></i>
-                        </div>
-                        <div class="font-option" data-font="Comic Sans MS">
-                            <span>Comic Sans MS</span>
-                            <i class="fas fa-check check-icon"></i>
+    <!-- User Profile Modal -->
+    <div class="form-modal" id="profileModal">
+        <div class="form-box profile-box">
+            <h3>Your Profile</h3>
+            <div class="profile-info-grid">
+                <div class="profile-avatar-large" id="modalAvatar">U</div>
+                <div class="profile-details">
+                    <h4 id="profileName">Loading...</h4>
+                    <p id="profileEmail">user@example.com</p>
+                    <span class="status-badge" id="profileStatus">Active</span>
+                </div>
+            </div>
+            <div class="divider-h"></div>
+            <div class="profile-meta">
+                <small>Member since: <span id="profileDate">...</span></small>
+            </div>
+            <div class="form-actions" style="justify-content: space-between;">
+                <button class="form-btn secondary" id="closeProfileModal">Close</button>
+                <button class="form-btn logout-btn" id="modalLogoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Log Out
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== VIEW: DASHBOARD ==================== -->
+    <div id="view-dashboard" class="app-view hidden">
+        <nav class="sidebar" id="sidebar">
+            <div class="icon-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" aria-hidden="true">
+                    <path
+                        d="m438-413 212-212-43-42-169.33 170L353-582l-43 42 128 127ZM40-120v-60h880v60H40Zm100-120q-24 0-42-18t-18-42v-480q0-24 18-42t42-18h680q24 0 42 18t18 42v480q0 24-18 42t-42 18H140Zm0-60h680v-480H140v480Zm0 0v-480 480Z" />
+                </svg>
+            </div>
+            <div class="tool-group">
+                <div class="tool-btn" id="searchBtn" data-tooltip="Search">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="tool-btn" id="exportBtn" data-tooltip="Export">
+                    <i class="fas fa-download"></i>
+                </div>
+                <div class="tool-btn" id="shareBtn" data-tooltip="Share">
+                    <i class="fas fa-share-alt"></i>
+                </div>
+                <div class="tool-btn" id="deleteBtn" data-tooltip="Delete">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+
+                <div class="divider"></div>
+                <div class="bottom-actions">
+                    <div class="tool-btn" id="themeToggle" data-tooltip="Switch Theme">
+                        <i class="fas fa-sun" id="themeIcon"></i>
+                    </div>
+                    <div class="tool-btn" id="focusBtn" data-tooltip="Zen Mode">
+                        <i class="fas fa-expand-alt"></i>
+                    </div>
+                <div class="profile-btn" id="profileBtn" data-tooltip="Profile">
+                    <div class="avatar-circle" id="userAvatar">U</div>
+                </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="top-bar-wrapper" id="topBar">
+            <header class="glass-header">
+                <div class="chips" id="noteChips"></div>
+                <div class="header-actions">
+                    <div class="font-selector-wrapper">
+                        <button class="font-selector-btn" id="fontSelectorBtn">
+                            <span class="current-font-preview" id="currentFont">Fredoka</span>
+                            <i class="fas fa-chevron-down" id="fontCaret"></i>
+                        </button>
+                        <div class="font-dropdown" id="fontDropdown">
+                            <div class="font-option active" data-font="Fredoka">
+                                <span>Fredoka</span>
+                                <i class="fas fa-check check-icon"></i>
+                            </div>
+                            <div class="font-option" data-font="Kalam">
+                                <span>Kalam</span>
+                                <i class="fas fa-check check-icon"></i>
+                            </div>
+                            <div class="font-option" data-font="Playpen Sans">
+                                <span>Playpen Sans</span>
+                                <i class="fas fa-check check-icon"></i>
+                            </div>
+                            <div class="font-option" data-font="Patrick Hand">
+                                <span>Patrick Hand</span>
+                                <i class="fas fa-check check-icon"></i>
+                            </div>
+                            <div class="font-option" data-font="Baloo 2">
+                                <span>Baloo 2</span>
+                                <i class="fas fa-check check-icon"></i>
+                            </div>
+                            <div class="font-option" data-font="Comic Neue">
+                                <span>Comic Neue</span>
+                                <i class="fas fa-check check-icon"></i>
+                            </div>
+                            <div class="font-option" data-font="Comic Sans MS">
+                                <span>Comic Sans MS</span>
+                                <i class="fas fa-check check-icon"></i>
+                            </div>
                         </div>
                     </div>
+                    <button class="action-btn" id="addNoteBtn" title="New Note"><i class="fas fa-plus"></i></button>
+                    <button class="action-btn" id="pinBtn" title="Pin"><i class="fas fa-thumbtack"></i></button>
+                    <button class="action-btn" id="manageFoldersBtn" title="Manage Folders"><i
+                            class="fas fa-folder"></i></button>
                 </div>
-                <button class="action-btn" id="addNoteBtn" title="New Note"><i class="fas fa-plus"></i></button>
-                <button class="action-btn" id="pinBtn" title="Pin"><i class="fas fa-thumbtack"></i></button>
-                <button class="action-btn" id="manageFoldersBtn" title="Manage Folders"><i
-                        class="fas fa-folder"></i></button>
+            </header>
+        </div>
+
+        <main class="workspace">
+            <div class="writing-canvas" id="writingCanvas" contenteditable="true"></div>
+        </main>
+
+        <div class="formatting-indicator" id="formattingIndicator"></div>
+        <div class="restore-pill" id="restoreBtn">
+            <i class="fas fa-compress-alt"></i>
+            <span>Exit Focus</span>
+        </div>
+
+        <!-- Context Menu for Notes (sidebar chips) -->
+        <div class="context-menu" id="noteContextMenu">
+            <div class="context-menu-item" id="ctxRename">
+                <i class="fas fa-pencil-alt"></i> Rename
             </div>
-        </header>
-    </div>
-
-    <main class="workspace">
-        <div class="writing-canvas" id="writingCanvas" contenteditable="true"></div>
-    </main>
-
-    <div class="formatting-indicator" id="formattingIndicator"></div>
-    <div class="restore-pill" id="restoreBtn">
-        <i class="fas fa-compress-alt"></i>
-        <span>Exit Focus</span>
-    </div>
-
-    <!-- Context Menu for Notes (sidebar chips) -->
-    <div class="context-menu" id="noteContextMenu">
-        <div class="context-menu-item" id="ctxRename">
-            <i class="fas fa-pencil-alt"></i> Rename
-        </div>
-        <div class="context-menu-item" id="ctxPin">
-            <i class="fas fa-thumbtack"></i> Pin Note
-        </div>
-        <div class="divider-h"></div>
-        <div class="context-menu-item" id="moveToFolderItem">
-            <i class="fas fa-folder-open"></i> Move to...
-        </div>
-        <div class="divider-h"></div>
-        <div class="context-menu-item delete-item" id="ctxDelete">
-            <i class="fas fa-trash-alt"></i> Delete
-        </div>
-    </div>
-
-    <!-- Editor Context Menu -->
-    <div class="context-menu" id="editorContextMenu">
-        <div class="context-menu-item" data-action="heading1">
-            <i class="fas fa-heading"></i> Heading 1
-        </div>
-        <div class="context-menu-item" data-action="heading2">
-            <i class="fas fa-heading"></i> Heading 2
-        </div>
-        <div class="divider-h"></div>
-        <div class="context-menu-item" data-action="bulletList">
-            <i class="fas fa-list-ul"></i> Bullet List
-        </div>
-        <div class="context-menu-item" data-action="checkbox">
-            <i class="fas fa-check-square"></i> Checkbox
-        </div>
-        <div class="context-menu-item" data-action="blockquote">
-            <i class="fas fa-quote-right"></i> Blockquote
-        </div>
-        <div class="divider-h"></div>
-        <div class="context-menu-item has-submenu" id="colorSubmenuTrigger">
-            <i class="fas fa-palette"></i> Apply Color
-            <i class="fas fa-chevron-right" style="margin-left: auto;"></i>
-        </div>
-        <div class="context-menu-submenu" id="colorSubmenu">
-            <div class="context-menu-item" data-color="red">Red</div>
-            <div class="context-menu-item" data-color="blue">Blue</div>
-            <div class="context-menu-item" data-color="green">Green</div>
-            <div class="context-menu-item" data-color="orange">Orange</div>
-            <div class="context-menu-item" data-color="purple">Purple</div>
-            <div class="context-menu-item" data-color="brown">Brown</div>
-        </div>
-    </div>
-
-    <!-- Confirm Delete Modal -->
-    <div class="confirm-modal" id="confirmModal">
-        <div class="confirm-box">
-            <h3>Delete Note?</h3>
-            <p>This will permanently delete the current note. This action cannot be undone.</p>
-            <div class="confirm-actions">
-                <button class="confirm-btn cancel" id="cancelDeleteBtn">Cancel</button>
-                <button class="confirm-btn delete" id="confirmDeleteBtn">Delete</button>
+            <div class="context-menu-item" id="ctxPin">
+                <i class="fas fa-thumbtack"></i> Pin Note
+            </div>
+            <div class="divider-h"></div>
+            <div class="context-menu-item" id="moveToFolderItem">
+                <i class="fas fa-folder-open"></i> Move to...
+            </div>
+            <div class="divider-h"></div>
+            <div class="context-menu-item delete-item" id="ctxDelete">
+                <i class="fas fa-trash-alt"></i> Delete
             </div>
         </div>
-    </div>
 
-    <!-- Rename Modal -->
-    <div class="form-modal" id="renameNoteModal">
-        <div class="form-box">
-            <h3>Rename Note</h3>
-            <div class="form-group">
-                <label>New Name</label>
-                <input type="text" id="renameNoteInput" placeholder="Enter new note name...">
-            </div>
-            <div class="form-actions">
-                <button class="form-btn secondary" id="cancelRenameBtn">Cancel</button>
-                <button class="form-btn primary" id="confirmRenameBtn">Save</button>
+        <!-- Confirm Delete Modal -->
+        <div class="confirm-modal" id="confirmModal">
+            <div class="confirm-box">
+                <h3>Delete Note?</h3>
+                <p>This will permanently delete the current note. This action cannot be undone.</p>
+                <div class="confirm-actions">
+                    <button class="confirm-btn cancel" id="cancelDeleteBtn">Cancel</button>
+                    <button class="confirm-btn delete" id="confirmDeleteBtn">Delete</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- New Note Modal -->
-    <div class="form-modal" id="newNoteModal">
-        <div class="form-box">
-            <h3>Create New Note</h3>
-            <div class="form-group">
-                <label>Note Name</label>
-                <input type="text" id="newNoteName" placeholder="Enter note name...">
+        <!-- Rename Modal -->
+        <div class="form-modal" id="renameNoteModal">
+            <div class="form-box">
+                <h3>Rename Note</h3>
+                <div class="form-group">
+                    <label>New Name</label>
+                    <input type="text" id="renameNoteInput" placeholder="Enter new note name...">
+                </div>
+                <div class="form-actions">
+                    <button class="form-btn secondary" id="cancelRenameBtn">Cancel</button>
+                    <button class="form-btn primary" id="confirmRenameBtn">Save</button>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Folder</label>
-                <div class="custom-select" id="folderSelectWrapper">
-                    <div class="select-trigger" id="folderSelectTrigger">
-                        <span id="selectedFolderName">General</span>
-                        <i class="fas fa-chevron-down"></i>
+        </div>
+
+        <!-- New Note Modal -->
+        <div class="form-modal" id="newNoteModal">
+            <div class="form-box">
+                <h3>Create New Note</h3>
+                <div class="form-group">
+                    <label>Note Name</label>
+                    <input type="text" id="newNoteName" placeholder="Enter note name...">
+                </div>
+                <div class="form-group">
+                    <label>Folder</label>
+                    <div class="custom-select" id="folderSelectWrapper">
+                        <div class="select-trigger" id="folderSelectTrigger">
+                            <span id="selectedFolderName">General</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="select-options" id="folderSelectOptions"></div>
                     </div>
-                    <div class="select-options" id="folderSelectOptions"></div>
+                </div>
+                <div class="form-actions">
+                    <button class="form-btn secondary" id="cancelNewNote">Cancel</button>
+                    <button class="form-btn primary" id="createNewNote">Create</button>
                 </div>
             </div>
-            <div class="form-actions">
-                <button class="form-btn secondary" id="cancelNewNote">Cancel</button>
-                <button class="form-btn primary" id="createNewNote">Create</button>
-            </div>
         </div>
-    </div>
 
-    <!-- Manage Folders Modal -->
-    <div class="form-modal" id="manageFoldersModal">
-        <div class="form-box">
-            <h3>Manage Folders</h3>
-            <div class="form-group">
-                <label>Create New Folder</label>
-                <input type="text" id="newFolderName" placeholder="Folder name...">
-            </div>
-            <button class="form-btn primary" id="createFolderBtn">Create Folder</button>
-            <div class="folder-list" id="folderList"></div>
-            <div class="form-actions">
-                <button class="form-btn secondary" id="closeFoldersModal">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Confirm Folder Delete Modal -->
-    <div class="confirm-modal" id="confirmFolderDeleteModal">
-        <div class="confirm-box">
-            <div class="confirm-icon">
-                <i class="fas fa-folder-minus"></i>
-            </div>
-            <h3 id="folderDeleteTitle">Delete Folder?</h3>
-            <p id="folderDeleteMessage">This folder will be deleted.</p>
-            <div class="confirm-actions">
-                <button class="confirm-btn cancel" id="cancelFolderDelete">Cancel</button>
-                <button class="confirm-btn delete" id="confirmFolderDelete">Delete</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Share Modal -->
-    <div class="form-modal" id="shareModal">
-        <div class="form-box share-box">
-            <h3>Share Note</h3>
-            <p class="share-subtitle">Control who can view this note</p>
-            <div class="share-toggle-wrapper">
-                <div class="share-toggle" id="shareToggle">
-                    <div class="toggle-option active" data-value="private">Private</div>
-                    <div class="toggle-option" data-value="public">Public</div>
-                    <div class="toggle-slider"></div>
+        <!-- Manage Folders Modal -->
+        <div class="form-modal" id="manageFoldersModal">
+            <div class="form-box">
+                <h3>Manage Folders</h3>
+                <div class="form-group">
+                    <label>Create New Folder</label>
+                    <input type="text" id="newFolderName" placeholder="Folder name...">
+                </div>
+                <button class="form-btn primary" id="createFolderBtn">Create Folder</button>
+                <div class="folder-list" id="folderList"></div>
+                <div class="form-actions">
+                    <button class="form-btn secondary" id="closeFoldersModal">Close</button>
                 </div>
             </div>
-            <div class="share-link-section" id="shareLinkSection">
-                <label>Public Link</label>
-                <div class="link-input-wrapper">
-                    <input type="text" id="shareLinkInput" readonly
-                        value="https://apandey-mindjournal.vercel.app/share...">
-                    <button class="copy-btn" id="copyLinkBtn" data-tooltip="Copy">
-                        <i class="fas fa-copy"></i>
-                    </button>
+        </div>
+
+        <!-- Confirm Folder Delete Modal -->
+        <div class="confirm-modal" id="confirmFolderDeleteModal">
+            <div class="confirm-box">
+                <div class="confirm-icon">
+                    <i class="fas fa-folder-minus"></i>
                 </div>
-                <p class="share-info"><i class="fas fa-info-circle"></i> Anyone with this link can view this note.</p>
-            </div>
-            <div class="share-private-msg" id="sharePrivateMsg">
-                <i class="fas fa-lock"></i>
-                <p>This note is restricted to you only.</p>
-            </div>
-            <div class="form-actions">
-                <button class="form-btn secondary" id="closeShareModal">Close</button>
+                <h3 id="folderDeleteTitle">Delete Folder?</h3>
+                <p id="folderDeleteMessage">This folder will be deleted.</p>
+                <div class="confirm-actions">
+                    <button class="confirm-btn cancel" id="cancelFolderDelete">Cancel</button>
+                    <button class="confirm-btn delete" id="confirmFolderDelete">Delete</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Export Modal -->
-    <div class="form-modal" id="exportModal">
-        <div class="form-box export-box">
-            <h3><i class="fas fa-download" style="margin-right: 8px;"></i> Export Note</h3>
-            <div class="form-group">
-                <label>File Name</label>
-                <input type="text" id="exportFileName" placeholder="Enter file name..." value="note">
-            </div>
-            <div class="export-options-grid">
-                <div class="export-card" data-format="pdf">
-                    <div class="export-card-icon pdf">
-                        <i class="fas fa-file-pdf"></i>
+        <!-- Share Modal -->
+        <div class="form-modal" id="shareModal">
+            <div class="form-box share-box">
+                <h3>Share Note</h3>
+                <p class="share-subtitle">Control who can view this note</p>
+                <div class="share-toggle-wrapper">
+                    <div class="share-toggle" id="shareToggle">
+                        <div class="toggle-option active" data-value="private">Private</div>
+                        <div class="toggle-option" data-value="public">Public</div>
+                        <div class="toggle-slider"></div>
                     </div>
-                    <h4>PDF</h4>
-                    <p>High-quality document</p>
                 </div>
-                <div class="export-card" data-format="markdown">
-                    <div class="export-card-icon markdown">
-                        <i class="fas fa-file-alt"></i>
+                <div class="share-link-section" id="shareLinkSection">
+                    <label>Public Link</label>
+                    <div class="link-input-wrapper">
+                        <input type="text" id="shareLinkInput" readonly
+                            value="https://apandey-mindjournal.vercel.app/public/...">
+                        <button class="copy-btn" id="copyLinkBtn" data-tooltip="Copy">
+                            <i class="fas fa-copy"></i>
+                        </button>
                     </div>
-                    <h4>Markdown</h4>
-                    <p>.md format</p>
+                    <p class="share-info"><i class="fas fa-info-circle"></i> Anyone with this link can view this note.</p>
                 </div>
-                <div class="export-card" data-format="text">
-                    <div class="export-card-icon text">
-                        <i class="fas fa-file"></i>
-                    </div>
-                    <h4>Text</h4>
-                    <p>Plain text file</p>
+                <div class="share-private-msg" id="sharePrivateMsg">
+                    <i class="fas fa-lock"></i>
+                    <p>This note is restricted to you only.</p>
+                </div>
+                <div class="form-actions">
+                    <button class="form-btn secondary" id="closeShareModal">Close</button>
                 </div>
             </div>
-            <div class="form-actions export-actions">
-                <button class="form-btn secondary" id="closeExportModal">Cancel</button>
-                <button class="form-btn primary" id="exportConfirmBtn" disabled>Export</button>
+        </div>
+
+        <!-- Export Modal -->
+        <div class="form-modal" id="exportModal">
+            <div class="form-box export-box">
+                <h3><i class="fas fa-download" style="margin-right: 8px;"></i> Export Note</h3>
+                <div class="form-group">
+                    <label>File Name</label>
+                    <input type="text" id="exportFileName" placeholder="Enter file name..." value="note">
+                </div>
+                <div class="export-options-grid">
+                    <div class="export-card" data-format="pdf">
+                        <div class="export-card-icon pdf">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <h4>PDF</h4>
+                        <p>High-quality document</p>
+                    </div>
+                    <div class="export-card" data-format="markdown">
+                        <div class="export-card-icon markdown">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <h4>Markdown</h4>
+                        <p>.md format</p>
+                    </div>
+                    <div class="export-card" data-format="text">
+                        <div class="export-card-icon text">
+                            <i class="fas fa-file"></i>
+                        </div>
+                        <h4>Text</h4>
+                        <p>Plain text file</p>
+                    </div>
+                </div>
+                <div class="form-actions export-actions">
+                    <button class="form-btn secondary" id="closeExportModal">Cancel</button>
+                    <button class="form-btn primary" id="exportConfirmBtn" disabled>Export</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Modal -->
+        <div class="form-modal" id="searchModal">
+            <div class="form-box search-box">
+                <h3><i class="fas fa-search" style="margin-right: 8px;"></i> Search Notes</h3>
+                <div class="form-group">
+                    <input type="text" id="searchInput" placeholder="Type to search notes..." autocomplete="off">
+                </div>
+                <div class="search-results" id="searchResults">
+                    <div class="search-placeholder">Start typing to search...</div>
+                </div>
+                <div class="form-actions">
+                    <button class="form-btn secondary" id="closeSearchModal">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Move Note Modal -->
+        <div class="form-modal" id="moveNoteModal">
+            <div class="form-box">
+                <h3>Move Note</h3>
+                <p class="move-note-name" id="moveNoteName"></p>
+                <p class="current-folder" id="moveCurrentFolder"></p>
+                <div class="form-group">
+                    <label>Select Folder</label>
+                    <div class="custom-select" id="moveFolderSelectWrapper">
+                        <div class="select-trigger" id="moveFolderSelectTrigger">
+                            <span id="moveSelectedFolderName">Choose folder</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="select-options" id="moveFolderSelectOptions"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Or create new folder</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="moveNewFolderName" placeholder="New folder name...">
+                        <button class="form-btn primary" id="createAndMoveBtn" style="white-space: nowrap;">Create &
+                            Move</button>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="form-btn secondary" id="cancelMoveBtn">Cancel</button>
+                    <button class="form-btn primary" id="confirmMoveBtn" disabled>Move</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Search Modal -->
-    <div class="form-modal" id="searchModal">
-        <div class="form-box search-box">
-            <h3><i class="fas fa-search" style="margin-right: 8px;"></i> Search Notes</h3>
-            <div class="form-group">
-                <input type="text" id="searchInput" placeholder="Type to search notes..." autocomplete="off">
-            </div>
-            <div class="search-results" id="searchResults">
-                <div class="search-placeholder">Start typing to search...</div>
-            </div>
-            <div class="form-actions">
-                <button class="form-btn secondary" id="closeSearchModal">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Move Note Modal -->
-    <div class="form-modal" id="moveNoteModal">
-        <div class="form-box">
-            <h3>Move Note</h3>
-            <p class="move-note-name" id="moveNoteName"></p>
-            <p class="current-folder" id="moveCurrentFolder"></p>
-            <div class="form-group">
-                <label>Select Folder</label>
-                <div class="custom-select" id="moveFolderSelectWrapper">
-                    <div class="select-trigger" id="moveFolderSelectTrigger">
-                        <span id="moveSelectedFolderName">Choose folder</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="select-options" id="moveFolderSelectOptions"></div>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Or create new folder</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="moveNewFolderName" placeholder="New folder name...">
-                    <button class="form-btn primary" id="createAndMoveBtn" style="white-space: nowrap;">Create &
-                        Move</button>
-                </div>
-            </div>
-            <div class="form-actions">
-                <button class="form-btn secondary" id="cancelMoveBtn">Cancel</button>
-                <button class="form-btn primary" id="confirmMoveBtn" disabled>Move</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Config and Core -->
+    <script src="config.js"></script>
+    <script src="router.js"></script>
     <script src="app-core.js"></script>
     <script src="app-editor.js"></script>
 </body>

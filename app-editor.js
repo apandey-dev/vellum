@@ -1,767 +1,156 @@
 // ========================================
-// mindJournal - EDITOR & FORMATTING (Rebuilt)
+// mindJournal - ENHANCED EDITOR
 // ========================================
 
-// --- Dependencies ---
-// Uses writingCanvas, pushToUndo, saveCurrentNote, showFormattingIndicator from app-core.js
-// Also relies on global notes array, activeNoteId, etc.
-
-// --- CONFIG ---
-const formattingConfig = {
-    fonts: {
-        'Fredoka': "'Fredoka', sans-serif",
-        'Kalam': "'Kalam', cursive",
-        'Playpen Sans': "'Playpen Sans', cursive",
-        'Patrick Hand': "'Patrick Hand', cursive",
-        'Baloo 2': "'Baloo 2', cursive",
-        'Comic Neue': "'Comic Neue', cursive",
-        'Comic Sans MS': "'Comic Sans MS', cursive, sans-serif"
+// --- CONFIGURATION ---
+const editorConfig = {
+    shortcuts: {
+        'b': 'bold',
+        'i': 'italic',
+        'u': 'underline',
+        'k': 'createLink' // Ctrl+K is usually link
     }
 };
 
-let savedCursorRange = null;
-let activeDropdown = null;
-let isProcessing = false; // Prevent recursive event triggering
+const canvas = document.getElementById('writingCanvas');
 
-// --- CURSOR LOGIC ---
-function saveCursorRange() {
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-        savedCursorRange = selection.getRangeAt(0).cloneRange();
-        return savedCursorRange;
-    }
-    return null;
-}
-function restoreCursorRange() {
-    if (savedCursorRange) {
-        try {
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(savedCursorRange);
-            writingCanvas.focus();
-            return true;
-        } catch (e) {
-            console.error('Cursor restore failed:', e);
-            return false;
-        }
-    }
-    return false;
-}
-function clearSavedCursorRange() { savedCursorRange = null; }
+// --- SHORTCUT HANDLER ---
+canvas.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
 
-// --- Get the top-level block (direct child of writingCanvas) containing node ---
-function getLineBlock(node) {
-    while (node && node.parentElement !== writingCanvas && node !== writingCanvas) {
-        node = node.parentElement;
-    }
-    return node === writingCanvas ? null : node;
-}
-
-// --- Convert a block to a new element, preserving content ---
-function convertBlockTo(newTagName, lineBlock, preserveContent = true, className = '') {
-    if (!lineBlock) return null;
-    const newEl = document.createElement(newTagName);
-    if (className) newEl.className = className;
-
-    // Move all children / text content
-    if (lineBlock.nodeType === 3) { // text node
-        newEl.textContent = lineBlock.textContent;
-    } else {
-        while (lineBlock.firstChild) newEl.appendChild(lineBlock.firstChild);
-    }
-
-    // Ensure empty block is focusable
-    if (!newEl.textContent.trim() && newEl.children.length === 0) {
-        newEl.innerHTML = '&#8203;';
-    }
-
-    lineBlock.replaceWith(newEl);
-    return newEl;
-}
-
-// --- Unwrap a special block to a normal paragraph (div) ---
-function unwrapBlock(lineBlock) {
-    if (!lineBlock) return null;
-    const newDiv = document.createElement('div');
-    if (lineBlock.nodeType === 3) {
-        newDiv.textContent = lineBlock.textContent;
-    } else {
-        while (lineBlock.firstChild) newDiv.appendChild(lineBlock.firstChild);
-    }
-    if (!newDiv.textContent.trim() && newDiv.children.length === 0) {
-        newDiv.innerHTML = '<br>';
-    }
-    lineBlock.replaceWith(newDiv);
-    return newDiv;
-}
-
-// --- Restore cursor after DOM mutation ---
-function setCursorAtEnd(element) {
-    const range = document.createRange();
-    const sel = window.getSelection();
-    if (element.nodeType === 3) {
-        range.setStart(element, element.length);
-        range.collapse(true);
-    } else {
-        if (element.lastChild) {
-            range.setStartAfter(element.lastChild);
-        } else {
-            range.selectNodeContents(element);
-        }
-        range.collapse(false);
-    }
-    sel.removeAllRanges();
-    sel.addRange(range);
-    writingCanvas.focus();
-}
-
-// --- Inline color handler ---
-function applyColorAtCursor(colorName) {
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    const range = sel.getRangeAt(0);
-    if (!range.collapsed) {
-        // Wrap selection with color span
-        const span = document.createElement('span');
-        span.style.color = colorName;
-        range.surroundContents(span);
-        setCursorAtEnd(span);
-    } else {
-        // Insert color span at cursor
-        const span = document.createElement('span');
-        span.style.color = colorName;
-        span.innerHTML = '&#8203;'; // zero-width space
-        range.insertNode(span);
-        setCursorAtEnd(span.firstChild);
-    }
-    saveCurrentNote();
-}
-
-// --- Transform current line based on typed pattern (called from input) ---
-function handleInlineShortcuts(e) {
-    if (isProcessing) return;
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    const range = sel.getRangeAt(0);
-    const node = range.startContainer;
-    if (node.nodeType !== 3) return; // only text nodes
-
-    const text = node.textContent;
-    const offset = range.startOffset;
-    const lineBlock = getLineBlock(node);
-    if (!lineBlock) return;
-
-    // Helper to check if cursor is at start of line (ignoring leading whitespace)
-    const textBeforeCursor = text.slice(0, offset);
-    // We only care if the *pattern* is at the end of textBeforeCursor, 
-    // AND if the things before the pattern are just whitespace.
-
-    function isSimulationOfStart(pattern) {
-        // pattern e.g. "## "
-        if (!textBeforeCursor.endsWith(pattern)) return false;
-        const prefix = textBeforeCursor.slice(0, -pattern.length);
-        return /^\s*$/.test(prefix);
-    }
-
-    // 1. Headings
-    if (isSimulationOfStart('## ')) {
-        e.preventDefault();
-        isProcessing = true;
-        pushToUndo();
-        // Calculate where the pattern starts
-        const matchLength = 3;
-        const patternStart = offset - matchLength;
-        range.setStart(node, patternStart);
-        range.setEnd(node, offset);
-        range.deleteContents();
-        const newBlock = convertBlockTo('h2', lineBlock);
-        setCursorAtEnd(newBlock);
-        saveCurrentNote();
-        isProcessing = false;
-        return;
-    }
-    if (isSimulationOfStart('### ')) {
-        e.preventDefault();
-        isProcessing = true;
-        pushToUndo();
-        const matchLength = 4;
-        const patternStart = offset - matchLength;
-        range.setStart(node, patternStart);
-        range.setEnd(node, offset);
-        range.deleteContents();
-        const newBlock = convertBlockTo('h3', lineBlock);
-        setCursorAtEnd(newBlock);
-        saveCurrentNote();
-        isProcessing = false;
-        return;
-    }
-
-    // 2. Bullet list
-    if (isSimulationOfStart('* ')) {
-        e.preventDefault();
-        isProcessing = true;
-        pushToUndo();
-        const matchLength = 2;
-        range.setStart(node, offset - matchLength);
-        range.setEnd(node, offset);
-        range.deleteContents();
-
-        const ul = document.createElement('ul');
-        const li = document.createElement('li');
-        if (lineBlock.nodeType === 3) {
-            li.textContent = lineBlock.textContent;
-        } else {
-            while (lineBlock.firstChild) li.appendChild(lineBlock.firstChild);
-        }
-        if (!li.textContent.trim()) li.innerHTML = '&#8203;';
-        ul.appendChild(li);
-        lineBlock.replaceWith(ul);
-        setCursorAtEnd(li);
-        saveCurrentNote();
-        isProcessing = false;
-        return;
-    }
-
-    // 3. Checkbox
-    if (isSimulationOfStart('[] ')) {
-        e.preventDefault();
-        isProcessing = true;
-        pushToUndo();
-        const matchLength = 3;
-        range.setStart(node, offset - matchLength);
-        range.setEnd(node, offset);
-        range.deleteContents();
-
-        const taskDiv = document.createElement('div');
-        taskDiv.className = 'task-item';
-
-        const label = document.createElement('label');
-        label.className = 'custom-checkbox-wrapper';
-        label.contentEditable = 'false';
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.addEventListener('click', function () {
-            this.closest('.task-item').classList.toggle('completed');
-            saveCurrentNote();
-        });
-
-        const checkmark = document.createElement('span');
-        checkmark.className = 'checkmark';
-
-        label.appendChild(checkbox);
-        label.appendChild(checkmark);
-
-        const contentSpan = document.createElement('span');
-        contentSpan.style.flex = '1';
-        if (lineBlock.nodeType === 3) {
-            contentSpan.textContent = lineBlock.textContent;
-        } else {
-            while (lineBlock.firstChild) contentSpan.appendChild(lineBlock.firstChild);
-        }
-        if (!contentSpan.textContent.trim()) contentSpan.innerHTML = '&#8203;';
-
-        taskDiv.appendChild(label);
-        taskDiv.appendChild(contentSpan);
-        lineBlock.replaceWith(taskDiv);
-        setCursorAtEnd(contentSpan);
-        saveCurrentNote();
-        isProcessing = false;
-        return;
-    }
-
-    // 4. Blockquote
-    if (isSimulationOfStart('> ')) {
-        e.preventDefault();
-        isProcessing = true;
-        pushToUndo();
-        const matchLength = 2;
-        range.setStart(node, offset - matchLength);
-        range.setEnd(node, offset);
-        range.deleteContents();
-        const newBlock = convertBlockTo('blockquote', lineBlock);
-        setCursorAtEnd(newBlock);
-        saveCurrentNote();
-        isProcessing = false;
-        return;
-    }
-
-    // 5. Horizontal rule (---) – must be the whole line
-    if (isSimulationOfStart('---') && offset === text.length) {
-        e.preventDefault();
-        isProcessing = true;
-        pushToUndo();
-        const hr = document.createElement('hr');
-        hr.className = 'horizontal-line';
-        const p = document.createElement('div');
-        p.innerHTML = '<br>';
-        lineBlock.replaceWith(hr);
-        hr.after(p);
-        setCursorAtEnd(p);
-        saveCurrentNote();
-        isProcessing = false;
-        return;
-    }
-
-    // 6. Inline color (@color.)
-    if (e.data === '.') {
-        const match = textBeforeCursor.match(/@([a-zA-Z]+)\.$/);
-        if (match) {
+        // 1. Standard Formatting
+        if (editorConfig.shortcuts[key]) {
             e.preventDefault();
-            isProcessing = true;
-            pushToUndo();
-            const colorName = match[1];
-            const start = offset - match[0].length;
-            range.setStart(node, start);
-            range.setEnd(node, offset);
-            range.deleteContents();
-
-            const span = document.createElement('span');
-            span.style.color = colorName;
-            span.innerHTML = '&#8203;';
-            range.insertNode(span);
-            setCursorAtEnd(span.firstChild);
-            saveCurrentNote();
-            isProcessing = false;
+            if (key === 'k') {
+                const url = prompt('Enter link URL:');
+                if (url) document.execCommand('createLink', false, url);
+            } else {
+                document.execCommand(editorConfig.shortcuts[key], false, null);
+            }
+            // Trigger Save
+            if (window.saveCurrentNote) window.saveCurrentNote();
+            return;
         }
+
+        // 2. Headings (Ctrl+Alt+1, etc. or just Markdown style)
+        // Leaving Markdown style as primary (handled by input event below)
     }
-}
 
-// --- Backspace handler (unwrap at start) ---
-function handleBackspace(e) {
-    if (e.key !== 'Backspace' || isProcessing) return;
-    const sel = window.getSelection();
-    if (!sel.rangeCount || !sel.isCollapsed) return;
-    const range = sel.getRangeAt(0);
-    const node = range.startContainer;
-    if (range.startOffset !== 0) return; // not at start
+    // 3. Tab Indentation
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        document.execCommand('insertHTML', false, '&#009');
+    }
+});
 
-    const lineBlock = getLineBlock(node);
-    if (!lineBlock) return;
+// --- MARKDOWN TRIGGERS ---
+canvas.addEventListener('input', (e) => {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
 
-    const isSpecial = lineBlock.tagName === 'H2' || lineBlock.tagName === 'H3' ||
-        lineBlock.tagName === 'LI' || lineBlock.tagName === 'BLOCKQUOTE' ||
-        lineBlock.classList.contains('task-item');
+    const anchorNode = selection.anchorNode;
+    // Only process text nodes
+    if (anchorNode.nodeType !== 3) return;
 
-    if (!isSpecial) return;
+    const text = anchorNode.textContent;
 
-    e.preventDefault();
-    isProcessing = true;
-    pushToUndo();
+    // HEADING 1 (# )
+    if (text.endsWith('# ') && text.trim() === '#') {
+        convertBlock('H1', anchorNode);
+    }
+    // HEADING 2 (## )
+    else if (text.endsWith('## ') && text.trim() === '##') {
+        convertBlock('H2', anchorNode);
+    }
+    // BULLET LIST (* )
+    else if (text.endsWith('* ') && text.trim() === '*') {
+        convertBlock('UL', anchorNode);
+    }
+    // CODE BLOCK (``` )
+    else if (text.endsWith('``` ') && text.trim() === '```') {
+        convertBlock('PRE', anchorNode);
+    }
 
-    // For list items, need to handle list structure
-    if (lineBlock.tagName === 'LI') {
-        const parentUl = lineBlock.parentNode;
-        if (parentUl.children.length === 1) {
-            // Only one item, replace whole ul with div
-            const newDiv = document.createElement('div');
-            while (lineBlock.firstChild) newDiv.appendChild(lineBlock.firstChild);
-            parentUl.replaceWith(newDiv);
-            setCursorAtEnd(newDiv);
-        } else {
-            // More than one item, split the list
-            const index = Array.from(parentUl.children).indexOf(lineBlock);
-            const before = Array.from(parentUl.children).slice(0, index);
-            const after = Array.from(parentUl.children).slice(index + 1);
+    // Save on input
+    // debounce handled in app-core
+});
 
-            const newDiv = document.createElement('div');
-            while (lineBlock.firstChild) newDiv.appendChild(lineBlock.firstChild);
+function convertBlock(tagName, textNode) {
+    const range = document.createRange();
+    range.selectNodeContents(textNode);
+    // Delete the trigger text (e.g. "# ")
+    textNode.textContent = '';
 
-            // Replace the current li with newDiv, then reinsert remaining lists
-            const fragment = document.createDocumentFragment();
-            if (before.length) {
-                const ulBefore = document.createElement('ul');
-                before.forEach(li => ulBefore.appendChild(li));
-                fragment.appendChild(ulBefore);
-            }
-            fragment.appendChild(newDiv);
-            if (after.length) {
-                const ulAfter = document.createElement('ul');
-                after.forEach(li => ulAfter.appendChild(li));
-                fragment.appendChild(ulAfter);
-            }
-            parentUl.replaceWith(fragment);
-            setCursorAtEnd(newDiv);
-        }
-    } else if (lineBlock.classList.contains('task-item')) {
-        // Handle Task Item Backspace directly
-        // Purpose: Cleanly convert to regular text without residual styles
+    const parentBlock = textNode.parentElement;
 
-        // 1. Remove the checkbox UI
-        const checkboxWrapper = lineBlock.querySelector('.custom-checkbox-wrapper');
-        if (checkboxWrapper) checkboxWrapper.remove();
-
-        // 2. Remove class to strip styling (margins/flex)
-        lineBlock.classList.remove('task-item');
-        lineBlock.classList.remove('completed');
-
-        // 3. Ensure it's just a div (unwrapBlock might be overkill if we just strip classes)
-        // If unwrapBlock does more (like handling tag changes), we can use it, but stripping usually works for DIVs
-        if (lineBlock.tagName !== 'DIV') {
-            const newDiv = unwrapBlock(lineBlock);
-            setCursorAtEnd(newDiv);
-        } else {
-            // It's already a DIV, just stripped of class. Ensure cursor is at start? 
-            // Backspace at start usually implies merging with previous if not special, 
-            // but here we are converting special to normal. Cursor should stay at start of content.
-            // But logic says: "removal process". 
-            // If I backspace at start of "[ ] Text", I expect "Text". 
-
-            // Ensure lineBlock is clean
-            if (!lineBlock.textContent.trim()) lineBlock.innerHTML = '<br>'; // Handle empty case
-
-            // We need to place cursor at start of text
-            const range = document.createRange();
-            range.selectNodeContents(lineBlock);
-            range.collapse(true); // Start
-            const sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-        }
+    // Create new element
+    let newEl;
+    if (tagName === 'UL') {
+        newEl = document.createElement('ul');
+        const li = document.createElement('li');
+        li.innerHTML = '<br>'; // Placeholder for cursor
+        newEl.appendChild(li);
+    } else if (tagName === 'PRE') {
+        newEl = document.createElement('pre');
+        newEl.className = 'code-block';
+        newEl.innerHTML = '<br>';
     } else {
-        // Non-list special blocks
-        const newDiv = unwrapBlock(lineBlock);
-        setCursorAtEnd(newDiv);
+        newEl = document.createElement(tagName);
+        newEl.innerHTML = '<br>';
     }
-    saveCurrentNote();
-    isProcessing = false;
+
+    // Replace
+    if (parentBlock.tagName === 'DIV' && parentBlock.id === 'writingCanvas') {
+        // Direct child text node? Wrap it
+        // This is tricky in contentEditable.
+        // Simplified: Insert new block, remove text node
+        range.insertNode(newEl);
+    } else {
+        parentBlock.replaceWith(newEl);
+    }
+
+    // Set Cursor
+    const sel = window.getSelection();
+    const newRange = document.createRange();
+    if (tagName === 'UL') {
+        newRange.setStart(newEl.firstChild, 0);
+    } else {
+        newRange.setStart(newEl, 0);
+    }
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
 }
 
-// --- Enter key handler (create new line in lists/tasks) ---
-function handleEnter(e) {
-    if (e.key !== 'Enter' || isProcessing) return;
+// --- FONT SIZE SELECTOR (New Requirement) ---
+// We need to inject this into the UI via app-core or assume static HTML exists.
+// Assuming we can add a listener if the element exists.
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if we need to build the selector UI dynamically?
+    // The user asked for "Font selector dropdown" and "Font size selector".
+    // Current HTML has font selector. Let's add size selector if missing or hook existing.
+
+    const sizeSelector = document.getElementById('fontSizeSelector'); // Hypothetical ID
+    if (sizeSelector) {
+        sizeSelector.addEventListener('change', (e) => {
+            const size = e.target.value;
+            document.execCommand('fontSize', false, '7'); // 1-7 legacy
+            // Modern approach: CSS var on selected element?
+            // For Vanilla execCommand, we are limited.
+            // Better: Apply span with font-size style.
+            applyStyleToSelection('fontSize', size + 'px');
+        });
+    }
+});
+
+function applyStyleToSelection(style, value) {
     const sel = window.getSelection();
     if (!sel.rangeCount) return;
-    const node = sel.anchorNode;
-    const lineBlock = getLineBlock(node);
-    if (!lineBlock) return;
 
-    if (lineBlock.tagName === 'LI') {
-        e.preventDefault();
-        isProcessing = true;
-        pushToUndo();
+    const span = document.createElement('span');
+    span.style[style] = value;
 
-        // Check if empty (escape list)
-        const text = lineBlock.textContent.trim();
-        if (!text) {
-            // Convert to paragraph
-            const newP = document.createElement('div');
-            newP.innerHTML = '<br>';
-
-            const parentUl = lineBlock.parentNode;
-            if (parentUl.children.length === 1) {
-                parentUl.replaceWith(newP);
-            } else {
-                // Split list logic similar to backspace but for Enter
-                // Or simpler: insert newP after UL?
-                // Standard behavior: break the list.
-                const index = Array.from(parentUl.children).indexOf(lineBlock);
-                const after = Array.from(parentUl.children).slice(index + 1);
-
-                const fragment = document.createDocumentFragment();
-                fragment.appendChild(newP);
-                if (after.length) {
-                    const ulAfter = document.createElement('ul');
-                    after.forEach(li => ulAfter.appendChild(li));
-                    fragment.appendChild(ulAfter);
-                }
-
-                // Remove current LI
-                lineBlock.remove();
-
-                // Insert after parentUl
-                parentUl.parentNode.insertBefore(fragment, parentUl.nextSibling);
-            }
-            setCursorAtEnd(newP);
-        } else {
-            const newLi = document.createElement('li');
-            newLi.innerHTML = '&#8203;';
-            lineBlock.parentNode.insertBefore(newLi, lineBlock.nextSibling);
-            setCursorAtEnd(newLi);
-        }
-        saveCurrentNote();
-        isProcessing = false;
-    } else if (lineBlock.classList.contains('task-item')) {
-        e.preventDefault();
-        isProcessing = true;
-        pushToUndo();
-
-        // Always exit list on Enter (User preference)
-        const newP = document.createElement('div');
-        newP.innerHTML = '<br>';
-
-        // Insert new line after current task
-        lineBlock.parentNode.insertBefore(newP, lineBlock.nextSibling);
-        setCursorAtEnd(newP);
-
-        saveCurrentNote();
-        isProcessing = false;
-    } else if (lineBlock.tagName === 'H2' || lineBlock.tagName === 'H3' || lineBlock.tagName === 'BLOCKQUOTE') {
-        e.preventDefault();
-        isProcessing = true;
-        pushToUndo();
-
-        const newP = document.createElement('div');
-        newP.innerHTML = '<br>';
-        lineBlock.parentNode.insertBefore(newP, lineBlock.nextSibling);
-        setCursorAtEnd(newP);
-        saveCurrentNote();
-        isProcessing = false;
-    }
+    const range = sel.getRangeAt(0);
+    range.surroundContents(span);
 }
-
-// --- Editor Context Menu ---
-const editorContextMenu = document.getElementById('editorContextMenu');
-const colorSubmenuTrigger = document.getElementById('colorSubmenuTrigger');
-const colorSubmenu = document.getElementById('colorSubmenu');
-
-writingCanvas.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    // Hide any other context menus
-    document.getElementById('noteContextMenu').classList.remove('show');
-    editorContextMenu.classList.remove('show');
-
-    // Position near cursor
-    const x = Math.min(e.pageX, window.innerWidth - 250);
-    const y = Math.min(e.pageY, window.innerHeight - 300);
-    editorContextMenu.style.left = x + 'px';
-    editorContextMenu.style.top = y + 'px';
-    editorContextMenu.classList.add('show');
-});
-
-// Hide when clicking outside
-document.addEventListener('click', (e) => {
-    if (!editorContextMenu.contains(e.target) && e.target !== writingCanvas) {
-        editorContextMenu.classList.remove('show');
-    }
-});
-
-// Submenu positioning
-colorSubmenuTrigger.addEventListener('mouseenter', () => {
-    const rect = colorSubmenuTrigger.getBoundingClientRect();
-    colorSubmenu.style.left = rect.width + 'px';
-    colorSubmenu.style.top = '0';
-});
-
-// Context menu actions
-editorContextMenu.addEventListener('click', (e) => {
-    const target = e.target.closest('.context-menu-item');
-    if (!target || target.classList.contains('has-submenu')) return;
-
-    const action = target.dataset.action;
-    const color = target.dataset.color;
-    if (!action && !color) return;
-
-    e.preventDefault();
-    editorContextMenu.classList.remove('show');
-
-    // Get current line block
-    const sel = window.getSelection();
-    let lineBlock = null;
-    if (sel.rangeCount) {
-        lineBlock = getLineBlock(sel.anchorNode);
-    }
-    if (!lineBlock) {
-        // If no selection, use first child? fallback: create new line at end
-        lineBlock = document.createElement('div');
-        writingCanvas.appendChild(lineBlock);
-    }
-
-    pushToUndo();
-
-    if (action === 'heading1') {
-        const newEl = convertBlockTo('h2', lineBlock); // using h2 for heading1
-        setCursorAtEnd(newEl);
-    } else if (action === 'heading2') {
-        const newEl = convertBlockTo('h3', lineBlock);
-        setCursorAtEnd(newEl);
-    } else if (action === 'bulletList') {
-        const ul = document.createElement('ul');
-        const li = document.createElement('li');
-        if (lineBlock.nodeType === 3) {
-            li.textContent = lineBlock.textContent;
-        } else {
-            while (lineBlock.firstChild) li.appendChild(lineBlock.firstChild);
-        }
-        if (!li.textContent.trim()) li.innerHTML = '&#8203;';
-        ul.appendChild(li);
-        lineBlock.replaceWith(ul);
-        setCursorAtEnd(li);
-    } else if (action === 'checkbox') {
-        const taskDiv = document.createElement('div');
-        taskDiv.className = 'task-item';
-        taskDiv.innerHTML = `
-            <label class="custom-checkbox-wrapper" contenteditable="false">
-                <input type="checkbox">
-                <span class="checkmark"></span>
-            </label>
-            <span style="flex:1;">&#8203;</span>
-        `;
-        const cb = taskDiv.querySelector('input');
-        cb.addEventListener('click', function () {
-            this.closest('.task-item').classList.toggle('completed');
-            saveCurrentNote();
-        });
-        // Move content if any
-        const contentSpan = taskDiv.querySelector('span:last-child');
-        if (lineBlock.nodeType === 3) {
-            contentSpan.textContent = lineBlock.textContent;
-        } else {
-            while (lineBlock.firstChild) contentSpan.appendChild(lineBlock.firstChild);
-        }
-        if (!contentSpan.textContent.trim()) contentSpan.innerHTML = '&#8203;';
-        lineBlock.replaceWith(taskDiv);
-        setCursorAtEnd(contentSpan);
-    } else if (action === 'blockquote') {
-        const newEl = convertBlockTo('blockquote', lineBlock);
-        setCursorAtEnd(newEl);
-    } else if (color) {
-        applyColorAtCursor(color);
-    }
-
-    saveCurrentNote();
-    showFormattingIndicator('Applied', 'success');
-});
-
-// --- FONT SELECTOR LOGIC (using execCommand) ---
-const fontSelectorBtn = document.getElementById('fontSelectorBtn');
-const fontDropdown = document.getElementById('fontDropdown');
-const fontOptions = document.querySelectorAll('.font-option');
-const currentFontSpan = document.getElementById('currentFont');
-
-fontSelectorBtn.addEventListener('mousedown', saveCursorRange);
-fontSelectorBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    fontSelectorBtn.classList.toggle('active');
-    fontDropdown.classList.toggle('active');
-});
-document.addEventListener('click', (e) => {
-    if (!fontSelectorBtn.contains(e.target) && !fontDropdown.contains(e.target)) {
-        fontSelectorBtn.classList.remove('active');
-        fontDropdown.classList.remove('active');
-        clearSavedCursorRange();
-    }
-});
-fontOptions.forEach(option => {
-    option.addEventListener('click', () => {
-        const selectedFont = option.dataset.font;
-        fontOptions.forEach(opt => opt.classList.remove('active'));
-        option.classList.add('active');
-        currentFontSpan.textContent = selectedFont;
-        applyFontAtCursor(selectedFont);
-        fontSelectorBtn.classList.remove('active');
-        fontDropdown.classList.remove('active');
-        clearSavedCursorRange();
-    });
-});
-
-function getCurrentFont() {
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return 'Fredoka';
-    let node = selection.getRangeAt(0).startContainer;
-    if (node.nodeType === 3) node = node.parentElement;
-    while (node && node !== writingCanvas) {
-        const computed = window.getComputedStyle(node).fontFamily;
-        for (const [name, fam] of Object.entries(formattingConfig.fonts)) {
-            if (computed.includes(name.replace(/\s+/g, ''))) return name;
-        }
-        node = node.parentElement;
-    }
-    return 'Fredoka';
-}
-function updateFontDisplay() {
-    const current = getCurrentFont();
-    currentFontSpan.textContent = current;
-    fontOptions.forEach(opt => {
-        opt.classList.remove('active');
-        if (opt.dataset.font === current) opt.classList.add('active');
-    });
-}
-function applyFontAtCursor(fontName) {
-    if (savedCursorRange) restoreCursorRange();
-    else writingCanvas.focus();
-    document.execCommand('fontName', false, fontName);
-    saveCurrentNote();
-}
-
-// --- PASTE SANITIZATION ---
-writingCanvas.addEventListener('paste', (e) => {
-    e.preventDefault();
-    const clipboardData = e.clipboardData || window.clipboardData;
-    if (!clipboardData) return;
-
-    let text = clipboardData.getData('text/plain');
-    if (text) {
-        const selection = window.getSelection();
-        if (!selection.rangeCount) return;
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-
-        const lines = text.split(/\r\n|\r|\n/);
-        let html = '';
-        for (let i = 0; i < lines.length; i++) {
-            let line = escapeHtml(lines[i]);
-            // Preserve leading whitespace for code indentation
-            line = line.replace(/^ +/g, (match) => '&nbsp;'.repeat(match.length));
-            html += line;
-            if (i < lines.length - 1) html += '<br>';
-        }
-        document.execCommand('insertHTML', false, html);
-        saveCurrentNote();
-        return;
-    }
-
-    let html = clipboardData.getData('text/html');
-    if (html) {
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, null, false);
-        while (walker.nextNode()) {
-            const el = walker.currentNode;
-            const attrs = el.attributes;
-            for (let i = attrs.length - 1; i >= 0; i--) {
-                const attrName = attrs[i].name;
-                if (!['href', 'src', 'alt'].includes(attrName)) {
-                    el.removeAttribute(attrName);
-                }
-            }
-            if (['SCRIPT', 'STYLE', 'META', 'LINK', 'OBJECT', 'IFRAME'].includes(el.tagName)) {
-                el.remove();
-            }
-        }
-        document.execCommand('insertHTML', false, doc.body.innerHTML);
-        saveCurrentNote();
-    }
-});
-function escapeHtml(unsafe) {
-    return unsafe.replace(/[&<>"]/g, function (m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        if (m === '"') return '&quot;';
-        return m;
-    });
-}
-
-// --- EVENTS ---
-writingCanvas.addEventListener('input', handleInlineShortcuts);
-writingCanvas.addEventListener('keydown', (e) => {
-    if (e.key === 'Backspace') handleBackspace(e);
-    if (e.key === 'Enter') handleEnter(e);
-});
-writingCanvas.addEventListener('click', () => {
-    updateFontDisplay();
-});
-writingCanvas.addEventListener('keyup', (e) => {
-    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) updateFontDisplay();
-});
-writingCanvas.addEventListener('focus', () => updateFontDisplay());
-
-// Also update font when selection changes (for cursor moves)
-document.addEventListener('selectionchange', () => {
-    if (document.activeElement === writingCanvas) {
-        updateFontDisplay();
-    }
-});
-
-// --- Ensure the font display is correct after the editor loads ---
-updateFontDisplay();
