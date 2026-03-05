@@ -4,9 +4,9 @@
  * Orchestrates modules and handles high-level events.
  */
 
-import { writingCanvas, saveCurrentNote } from './app-core.js';
-import { EditorUI } from './js/editor-ui.js';
-import { TextareaEnhancer } from './js/textarea-enhancer.js';
+import { writingCanvas, saveCurrentNote } from '/js/app.js';
+import { EditorUI } from '/js/ui/editor-ui.js';
+import { TextareaEnhancer } from '/js/ui/textarea-enhancer.js';
 
 // Minimal font mapping
 const fontMap = {

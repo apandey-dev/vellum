@@ -4,9 +4,9 @@
  */
 
 import { MarkdownEngine } from './markdown-engine.js';
-import { writingCanvas } from '../app-core.js';
+import { writingCanvas } from '/js/app.js';
 
-export const EditorUI = (function() {
+export const EditorUI = (function () {
     let editorPane, previewPane, resizer, previewCanvas;
     let editorOnlyBtn, splitViewBtn, previewOnlyBtn;
     let renderTimeout;

@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Vellum</title>
+    <title>Login - Vellum GitHub Sync</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/styles/main.css">
     <script src="/js/route-guard.js"></script>
     <style>
         body {
@@ -38,21 +38,12 @@
             color: var(--text-primary);
         }
 
-        .auth-form .form-group {
-            text-align: left;
-            margin-bottom: 20px;
-        }
-
-        .auth-form input {
-            font-family: 'Fredoka', sans-serif;
-        }
-
         .auth-btn {
             width: 100%;
             padding: 14px;
             border-radius: 12px;
             border: none;
-            background: var(--accent-color);
+            background: #24292e;
             color: white;
             font-size: 16px;
             font-weight: 600;
@@ -60,6 +51,10 @@
             font-family: 'Fredoka', sans-serif;
             transition: all 0.2s;
             margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .auth-btn:hover {
@@ -73,69 +68,168 @@
             transform: none;
         }
 
-        .auth-footer {
-            margin-top: 24px;
-            font-size: 14px;
-            color: var(--text-secondary);
+        .dev-token-container {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            text-align: left;
         }
 
-        .auth-footer a {
-            color: var(--accent-color);
-            text-decoration: none;
-            font-weight: 600;
+        .dev-token-container label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .dev-token-container input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-canvas);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #loadingOverlay.visible {
+            display: flex;
+        }
+
+        .spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--accent-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="auth-container">
-        <h2>Welcome Back</h2>
-        <form class="auth-form" id="loginForm">
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="loginEmail" placeholder="Enter your email" required>
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="loginPassword" placeholder="Enter your password" required>
-            </div>
-            <button type="submit" class="auth-btn" id="loginBtn">Login</button>
-        </form>
-        <div class="auth-footer">
-            Don't have an account? <a href="/signup">Sign Up</a>
+
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <h3 style="margin-top: 20px;">Authenticating with GitHub...</h3>
+    </div>
+
+    <div class="auth-container" id="loginBox">
+        <h2>Vellum Notes</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 30px;">Authenticate with GitHub to sync your notes to a
+            private repository.</p>
+
+        <button class="auth-btn" id="githubLoginBtn">
+            <i class="fab fa-github" style="font-size: 20px;"></i> Login with GitHub
+        </button>
+
+        <div class="dev-token-container">
+            <label>Developer: Provide Fine-Grained PAT</label>
+            <input type="password" id="devToken" placeholder="github_pat_...">
+            <button class="auth-btn" id="devLoginBtn" style="background: var(--accent-color);">Direct Login</button>
         </div>
     </div>
+
     <script type="module">
-        import { showToast } from '/js/utils.js';
+        import { showToast } from '/utils/helpers.js';
 
-        const loginForm = document.getElementById('loginForm');
-        const loginBtn = document.getElementById('loginBtn');
+        const githubLoginBtn = document.getElementById('githubLoginBtn');
+        const devLoginBtn = document.getElementById('devLoginBtn');
+        const devTokenInput = document.getElementById('devToken');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loginBox = document.getElementById('loginBox');
 
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
+        // Replace these with actual Client ID during deployment
+        const GITHUB_CLIENT_ID = 'Iv23libaBq1oEIfwW9wW'; // Placeholder format
+        const OAUTH_URL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo%20gist`;
 
-            loginBtn.disabled = true;
-            loginBtn.textContent = 'Logging in...';
-
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            const user = users.find(u => u.email === email && u.password === password);
-
-            if (!user) {
-                showToast('Invalid email or password', 'error');
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Login';
-            } else {
-                sessionStorage.setItem('currentUser', JSON.stringify(user));
-                sessionStorage.setItem('loginTime', Date.now());
-
-                showToast('Login successful!', 'success');
-                setTimeout(() => {
-                    window.location.href = '/dashboard';
-                }, 1000);
+        githubLoginBtn.addEventListener('click', () => {
+            if (GITHUB_CLIENT_ID === 'PLEASE_SET_ME') {
+                showToast('GitHub OAuth App Client ID is not configured.', 'error');
+                return;
             }
+            window.location.href = OAUTH_URL;
         });
+
+        devLoginBtn.addEventListener('click', () => {
+            const token = devTokenInput.value.trim();
+            if (!token) {
+                showToast('Please enter a valid PAT', 'error');
+                return;
+            }
+            sessionStorage.setItem('github_token', token);
+            window.location.href = '/dashboard';
+        });
+
+        // Handle OAuth callback
+        async function handleCallback() {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const errorParam = params.get('error');
+
+            if (errorParam) {
+                showToast(`Authentication failed: ${errorParam}`, 'error');
+                return;
+            }
+
+            if (code) {
+                loginBox.style.display = 'none';
+                loadingOverlay.classList.add('visible');
+
+                try {
+                    // Call our Vercel Serverless Function
+                    const response = await fetch('/api/oauth', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || data.error) {
+                        throw new Error(data.error || 'Token exchange failed');
+                    }
+
+                    sessionStorage.setItem('github_token', data.access_token);
+
+                    // Clear the query params and redirect to dashboard
+                    window.history.replaceState({}, document.title, '/login');
+                    window.location.href = '/dashboard';
+                } catch (error) {
+                    console.error(error);
+                    loadingOverlay.classList.remove('visible');
+                    loginBox.style.display = 'block';
+                    showToast(error.message, 'error');
+                }
+            }
+        }
+
+        handleCallback();
 
         // Load theme
         const savedTheme = localStorage.getItem('vellum_theme') || 'light';
