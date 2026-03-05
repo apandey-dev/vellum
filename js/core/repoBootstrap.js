@@ -25,7 +25,7 @@ export class RepoBootstrap {
     static async bootstrapRepository() {
         let exists = await this.checkRepositoryExists();
         if (!exists) {
-            console.log("Repository missing. Creating...");
+            console.debug('[RepoBootstrap] Repository missing. Creating...');
             await this.createNotesRepository();
             // Wait for GitHub to initialize the default branch (README commit)
             await new Promise(res => setTimeout(res, 2000));
@@ -36,7 +36,7 @@ export class RepoBootstrap {
         const metaInfo = await GitHubAPI.request(`/repos/${GitHubAPI.OWNER}/${GitHubAPI.REPO}/contents/${metaPath}`).catch(() => null);
 
         if (!metaInfo) {
-            console.log("Seeding initial directory structure...");
+            console.debug('[RepoBootstrap] Seeding initial directory structure...');
 
             const initialIndex = {
                 folders: {

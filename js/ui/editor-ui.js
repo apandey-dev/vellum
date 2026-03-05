@@ -19,7 +19,12 @@ export const EditorUI = (function () {
         clearTimeout(renderTimeout);
         renderTimeout = setTimeout(() => {
             const content = writingCanvas.value;
-            previewCanvas.innerHTML = MarkdownEngine.render(content);
+            const rawHtml = MarkdownEngine.render(content);
+            // DOMPurify is loaded globally from CDN in index.html
+            // Strip script injection, on* event handlers, and unsafe tags before rendering
+            previewCanvas.innerHTML = (typeof DOMPurify !== 'undefined')
+                ? DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } })
+                : rawHtml; // Fallback: render unsanitized only if DOMPurify failed to load (CDN down)
         }, 50);
     }
 
