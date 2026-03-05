@@ -197,61 +197,6 @@ export class GitHubAPI {
         return newCommitSha;
     }
 
-    static async checkRepositoryExists() {
-        if (!this.OWNER) await this.fetchUser();
-        const repo = await this.request(`/repos/${this.OWNER}/${this.REPO}`);
-        return repo !== null;
-    }
-
-    static async createNotesRepository() {
-        if (!this.OWNER) await this.fetchUser();
-        // Create as private, initialized with README to set up the default main branch
-        return await this.request(`/user/repos`, {
-            method: 'POST',
-            body: JSON.stringify({
-                name: this.REPO,
-                description: 'Vellum Notes Auto-Generated Storage',
-                private: true,
-                auto_init: true
-            })
-        });
-    }
-
-    static async bootstrapRepository() {
-        let exists = await this.checkRepositoryExists();
-        if (!exists) {
-            console.log("Repository missing. Creating...");
-            await this.createNotesRepository();
-            // Wait for GitHub to initialize the default branch (README commit)
-            await new Promise(res => setTimeout(res, 2000));
-        }
-
-        // Try reading the index file directly; if 404, we seed it.
-        const metaPath = 'metadata/index.json';
-        const metaInfo = await this.request(`/repos/${this.OWNER}/${this.REPO}/contents/${metaPath}`).catch(() => null);
-
-        if (!metaInfo) {
-            console.log("Seeding initial directory structure...");
-
-            const initialIndex = {
-                folders: {
-                    personal: { name: "Personal", notes: [] }
-                },
-                notesIndex: {},
-                lastCommitSha: null
-            };
-
-            const filesToCommit = [
-                { path: 'metadata/index.json', content: JSON.stringify(initialIndex, null, 2) },
-                { path: 'shared/shared_notes.json', content: '[]' }
-            ];
-
-            const newCommitSha = await this.commitBatch("Initialize Vellum Repository Structure", filesToCommit);
-            return newCommitSha;
-        }
-
-        return null; // Already bootstrapped
-    }
 
     // --- Delta Compare Endpoint ---
     static async compareCommits(baseSha, headSha) {

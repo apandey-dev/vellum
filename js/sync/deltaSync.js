@@ -3,11 +3,31 @@ import { GitHubAPI } from '/js/core/githubClient.js';
 import { DBStore } from '/js/storage/indexedDB.js';
 
 export class SyncEngine {
+    static isSyncing = false;
+    static syncInterval = null;
+
+    static startBackgroundSync(intervalMs = 30000) {
+        if (this.syncInterval) clearInterval(this.syncInterval);
+        this.syncInterval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                this.pullDeltaSync();
+            }
+        }, intervalMs);
+    }
+
+    static stopBackgroundSync() {
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
+    }
 
     // Triggered on page load to pull changes and patch IndexedDB
     static async pullDeltaSync() {
-        if (!navigator.onLine) return; // Skip if offline
+        if (!navigator.onLine || this.isSyncing) return; // Skip if offline or already syncing
 
+        this.isSyncing = true;
+        let hasChanges = false;
         try {
             const remoteSha = await GitHubAPI.getLatestCommit();
             if (!remoteSha) return; // empty repo
@@ -22,24 +42,29 @@ export class SyncEngine {
             if (!localSha) {
                 // Initial cold start sync
                 console.log("No local sha found. Fetching initial master files...");
-                await this.fetchEntireRepoState(remoteSha);
+                hasChanges = await this.fetchEntireRepoState(remoteSha);
             } else {
                 // Delta sync using Compare endpoint
                 console.log("New commits found on remote. Running Delta Compare...");
                 const comparison = await GitHubAPI.compareCommits(localSha, remoteSha);
 
-                if (comparison.files && comparison.files.length > 0) {
+                if (comparison && comparison.files && comparison.files.length > 0) {
                     await this.applyDeltaCommits(comparison.files);
+                    hasChanges = true;
                 }
             }
 
             await DBStore.setMeta('lastCommitSha', remoteSha);
 
             // Dispatch event to UI so the editor updates without reload
-            document.dispatchEvent(new CustomEvent('sync-completed'));
+            if (hasChanges) {
+                document.dispatchEvent(new CustomEvent('sync-completed'));
+            }
 
         } catch (e) {
             console.error("Delta Sync Failed", e);
+        } finally {
+            this.isSyncing = false;
         }
     }
 
@@ -48,39 +73,46 @@ export class SyncEngine {
         // We assume index.json holds the structural truth.
         const metaStr = await GitHubAPI.getFileContent('metadata/index.json');
         if (metaStr) {
-            const meta = JSON.parse(metaStr);
-            await DBStore.setMeta('index', meta);
-
-            // Note: Background worker could lazily fetch all actual note blobs here
-            // but for now, index is loaded. The UI lazy-loads contents or we can fetch them async.
-            document.dispatchEvent(new CustomEvent('sync-completed'));
+            try {
+                const meta = JSON.parse(metaStr);
+                await DBStore.setMeta('index', meta);
+                return true;
+            } catch (e) {
+                console.error("Failed to parse index.json from remote", e);
+                return false;
+            }
         }
+        return false;
     }
 
     // Incrementally patches the IndexedDB store with the changed files
     static async applyDeltaCommits(changedFiles) {
         for (const file of changedFiles) {
-            if (file.filename === 'metadata/index.json') {
-                if (file.status !== 'removed') {
-                    const content = await GitHubAPI.getFileContent(file.filename);
-                    if (content) {
-                        await DBStore.setMeta('index', JSON.parse(content));
+            try {
+                if (file.filename === 'metadata/index.json') {
+                    if (file.status !== 'removed') {
+                        const content = await GitHubAPI.getFileContent(file.filename);
+                        if (content) {
+                            await DBStore.setMeta('index', JSON.parse(content));
+                        }
                     }
                 }
-            }
-            else if (file.filename.startsWith('n/')) {
-                // It's a note file
-                const noteId = file.filename.split('/').pop().replace('.md', '');
-                if (file.status === 'removed') {
-                    await DBStore.deleteNote(noteId);
-                } else {
-                    const content = await GitHubAPI.getFileContent(file.filename);
-                    if (content) {
-                        const existingNote = await DBStore.getNote(noteId) || { id: noteId, _unmapped: true };
-                        existingNote.content = content;
-                        await DBStore.putNote(existingNote);
+                else if (file.filename.startsWith('notes/') || file.filename.startsWith('n/')) {
+                    // It's a note file
+                    const noteId = file.filename.split('/').pop().replace('.md', '');
+                    if (file.status === 'removed') {
+                        await DBStore.deleteNote(noteId);
+                    } else {
+                        const content = await GitHubAPI.getFileContent(file.filename);
+                        if (content) {
+                            const existingNote = await DBStore.getNote(noteId) || { id: noteId, _unmapped: true };
+                            existingNote.content = content;
+                            await DBStore.putNote(existingNote);
+                        }
                     }
                 }
+            } catch (err) {
+                console.error(`Failed to apply delta for file ${file.filename}`, err);
             }
         }
     }

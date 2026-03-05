@@ -10,6 +10,7 @@ import { MarkdownEngine } from '/js/ui/markdown-engine.js';
 import { DBStore } from '/js/storage/indexedDB.js';
 import { SyncEngine } from '/js/sync/deltaSync.js';
 import { GitHubAPI } from '/js/core/githubClient.js';
+import { RepoBootstrap } from '/js/core/repoBootstrap.js';
 
 // --- ELEMENT REFERENCES (GLOBAL) ---
 const sidebar = document.getElementById('sidebar');
@@ -74,9 +75,13 @@ async function fetchInitialData() {
         await renderNoteChips();
         await loadActiveNote();
 
-        GitHubAPI.bootstrapRepository().then(() => {
-            SyncEngine.pullDeltaSync();
-        });
+        // Step 3: Bootstrap repo and start background sync
+        RepoBootstrap.bootstrapRepository().then(async () => {
+            // Initial sync-pull on startup
+            await SyncEngine.pullDeltaSync();
+            // Then keep syncing in background every 30 seconds (only when tab is visible)
+            SyncEngine.startBackgroundSync(30000);
+        }).catch(err => console.error("Bootstrap or initial sync failed:", err));
 
     } catch (error) {
         showToast('Error loading data', 'error');
@@ -939,6 +944,26 @@ function getNotesInFolder(folderId) {
             }
         });
     };
+
+    // ==================== SYNC COMPLETED — LIGHTWEIGHT UI REFRESH ====================
+    document.addEventListener('sync-completed', async () => {
+        console.log('[SyncEngine] Remote changes detected, refreshing UI...');
+        await renderNoteChips();
+        // Reload active note content in case the remote version changed
+        await loadActiveNote();
+    });
+
+    // ==================== ONLINE / OFFLINE CONNECTIVITY ====================
+    window.addEventListener('online', () => {
+        showToast('Back online. Syncing...', 'success');
+        SyncEngine.pullDeltaSync();
+        SyncEngine.startBackgroundSync(30000);
+    });
+
+    window.addEventListener('offline', () => {
+        showToast('You are offline. Changes will sync when reconnected.', 'error');
+        SyncEngine.stopBackgroundSync();
+    });
 
     // ==================== CONFLICT RESOLUTION ====================
     document.addEventListener('conflict-detected', async () => {
