@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,6 +19,7 @@
             background-image: radial-gradient(var(--grid-color) 1px, transparent 1px);
             background-size: 24px 24px;
         }
+
         .auth-container {
             background: var(--bg-glass);
             backdrop-filter: blur(30px);
@@ -29,18 +31,22 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
+
         .auth-container h2 {
             font-size: 28px;
             margin-bottom: 30px;
             color: var(--text-primary);
         }
+
         .auth-form .form-group {
             text-align: left;
             margin-bottom: 20px;
         }
+
         .auth-form input {
             font-family: 'Fredoka', sans-serif;
         }
+
         .auth-btn {
             width: 100%;
             padding: 14px;
@@ -55,20 +61,24 @@
             transition: all 0.2s;
             margin-top: 10px;
         }
+
         .auth-btn:hover {
             opacity: 0.9;
             transform: translateY(-2px);
         }
+
         .auth-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
         }
+
         .auth-footer {
             margin-top: 24px;
             font-size: 14px;
             color: var(--text-secondary);
         }
+
         .auth-footer a {
             color: var(--accent-color);
             text-decoration: none;
@@ -76,6 +86,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="auth-container">
         <h2>Create Account</h2>
@@ -99,7 +110,6 @@
         </div>
     </div>
     <script type="module">
-        import { supabase } from '/js/supabase-client.js';
         import { showToast } from '/js/utils.js';
 
         const signupForm = document.getElementById('signupForm');
@@ -114,40 +124,28 @@
             signupBtn.disabled = true;
             signupBtn.textContent = 'Creating account...';
 
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        full_name: name
-                    }
-                }
-            });
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
 
-            if (error) {
-                showToast(error.message, 'error');
+            if (users.some(u => u.email === email)) {
+                showToast('Email already in use', 'error');
                 signupBtn.disabled = false;
                 signupBtn.textContent = 'Sign Up';
-            } else {
-                // Supabase might require email confirmation depending on settings.
-                // But the user said "Account active immediately".
-
-                if (data.session) {
-                    sessionStorage.setItem('vellum_session', JSON.stringify(data.session));
-                    sessionStorage.setItem('vellum_login_time', Date.now());
-                }
-
-                localStorage.setItem('vellum_user', JSON.stringify({
-                    name: name,
-                    email: email,
-                    id: data.user?.id
-                }));
-
-                showToast('Account created! Logging in...', 'success');
-                setTimeout(() => {
-                    window.location.href = '/dashboard';
-                }, 1500);
+                return;
             }
+
+            // Create id for the user, simple hash mimicking what auth provides
+            const newId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const newUser = { id: newId, username: name, email, password };
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+
+            sessionStorage.setItem('currentUser', JSON.stringify(newUser));
+            sessionStorage.setItem('loginTime', Date.now());
+
+            showToast('Account created! Logging in...', 'success');
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1500);
         });
 
         // Load theme
@@ -155,4 +153,5 @@
         document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
 </body>
+
 </html>

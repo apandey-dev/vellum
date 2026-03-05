@@ -2,7 +2,6 @@
 // Vellum - CORE LOGIC
 // ========================================
 
-import { supabase, restoreSession } from '/js/supabase-client.js';
 import { showToast, escapeHtml } from '/js/utils.js';
 import { modalManager } from '/js/modalManager.js';
 import { modalTemplates } from '/js/modalTemplates.js';
@@ -55,25 +54,23 @@ let activeFolderId = null; // null means 'All' or no folder filter
 let selectedExportFormat = null;
 
 
-// ==================== SUPABASE DATA OPERATIONS ====================
+// ==================== LOCAL DATA OPERATIONS ====================
 
 async function fetchInitialData() {
     try {
-        const { data: folderData, error: folderError } = await supabase
-            .from('folders')
-            .select('*')
-            .order('created_at', { ascending: true });
+        const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+        if (!currentUser) return;
+        const storedFolders = JSON.parse(localStorage.getItem('folders') || '[]');
+        const storedNotes = JSON.parse(localStorage.getItem('notes') || '[]');
 
-        if (folderError) throw folderError;
-        folders = folderData;
+        folders = storedFolders.filter(f => f.user_id === currentUser.id);
+        folders.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-        const { data: noteData, error: noteError } = await supabase
-            .from('notes')
-            .select('*')
-            .order('order_index', { ascending: true });
-
-        if (noteError) throw noteError;
-        notes = noteData;
+        notes = storedNotes.filter(n => n.user_id === currentUser.id);
+        notes.sort((a, b) => {
+            if (a.is_pinned !== b.is_pinned) return (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0);
+            return (a.order_index || 0) - (b.order_index || 0);
+        });
 
         // Reset state
         activeNoteId = null;
@@ -89,7 +86,7 @@ async function fetchInitialData() {
 
     } catch (error) {
         showToast('Error loading data', 'error');
-        console.error("Supabase load error:", error.message);
+        console.error("Local load error:", error.message);
     }
 }
 
@@ -104,42 +101,46 @@ export async function saveCurrentNote() {
         note.content = content;
         note.updated_at = new Date().toISOString();
 
-        const { error } = await supabase
-            .from('notes')
-            .update({ content: note.content, updated_at: note.updated_at })
-            .eq('id', activeNoteId);
-
-        if (error) console.error('Error saving note:', error.message);
+        try {
+            const allNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+            const index = allNotes.findIndex(n => n.id === activeNoteId);
+            if (index !== -1) {
+                allNotes[index].content = note.content;
+                allNotes[index].updated_at = note.updated_at;
+            } else {
+                allNotes.push(note);
+            }
+            localStorage.setItem('notes', JSON.stringify(allNotes));
+        } catch (error) {
+            console.error('Error saving note:', error.message);
+        }
     }
 }
 window.saveCurrentNote = saveCurrentNote;
 
 async function createNote(title, folderId = null) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    if (!currentUser) return;
 
     const newNote = {
-        user_id: user.id,
+        id: 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        user_id: currentUser.id,
         folder_id: folderId,
         title: title || 'Untitled',
         content: '',
-        is_public: false
+        is_public: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        order_index: notes.length
     };
 
-    const { data, error } = await supabase
-        .from('notes')
-        .insert([newNote])
-        .select();
-
-    if (error) {
-        showToast('Error creating note', 'error');
-        console.error(error.message);
-        return;
-    }
-
-    notes.unshift(data[0]);
-    activeNoteId = data[0].id;
+    notes.unshift(newNote);
+    activeNoteId = newNote.id;
     activeFolderId = folderId;
+
+    const allNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+    allNotes.unshift(newNote);
+    localStorage.setItem('notes', JSON.stringify(allNotes));
 
     renderNoteChips();
     loadActiveNote();
@@ -147,16 +148,6 @@ async function createNote(title, folderId = null) {
 }
 
 async function deleteNote(noteId) {
-    const { error } = await supabase
-        .from('notes')
-        .delete()
-        .eq('id', noteId);
-
-    if (error) {
-        showToast('Error deleting note', 'error');
-        return;
-    }
-
     notes = notes.filter(n => n.id !== noteId);
 
     if (activeNoteId === noteId) {
@@ -164,66 +155,70 @@ async function deleteNote(noteId) {
         activeNoteId = folderNotes.length > 0 ? folderNotes[0].id : (notes.length > 0 ? notes[0].id : null);
     }
 
+    let allNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+    allNotes = allNotes.filter(n => n.id !== noteId);
+    localStorage.setItem('notes', JSON.stringify(allNotes));
+
     renderNoteChips();
     loadActiveNote();
     showToast('Note deleted!', 'success');
 }
 
 async function renameNote(noteId, newTitle) {
-    const { error } = await supabase
-        .from('notes')
-        .update({ title: newTitle, updated_at: new Date().toISOString() })
-        .eq('id', noteId);
-
-    if (error) {
-        showToast('Error renaming note', 'error');
-        return;
+    const note = notes.find(n => n.id === noteId);
+    if (note) {
+        note.title = newTitle;
+        note.updated_at = new Date().toISOString();
     }
 
-    const note = notes.find(n => n.id === noteId);
-    if (note) note.title = newTitle;
+    const allNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+    const index = allNotes.findIndex(n => n.id === noteId);
+    if (index !== -1) {
+        allNotes[index].title = newTitle;
+        allNotes[index].updated_at = note.updated_at;
+        localStorage.setItem('notes', JSON.stringify(allNotes));
+    }
 
     renderNoteChips();
     showToast('Note renamed', 'success');
 }
 
 async function createFolder(name) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+    if (!currentUser) return;
 
-    const { data, error } = await supabase
-        .from('folders')
-        .insert([{ name, user_id: user.id }])
-        .select();
+    const newFolder = {
+        id: 'folder_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        name,
+        user_id: currentUser.id,
+        created_at: new Date().toISOString()
+    };
 
-    if (error) {
-        showToast('Error creating folder', 'error');
-        console.error(error.message);
-        return;
-    }
+    folders.push(newFolder);
 
-    folders.push(data[0]);
+    const allFolders = JSON.parse(localStorage.getItem('folders') || '[]');
+    allFolders.push(newFolder);
+    localStorage.setItem('folders', JSON.stringify(allFolders));
+
     renderFolderList();
     updateFolderDropdown();
     showToast('Folder created!', 'success');
 }
 
 async function deleteFolder(folderId) {
-    const { error } = await supabase
-        .from('folders')
-        .delete()
-        .eq('id', folderId);
-
-    if (error) {
-        showToast('Error deleting folder', 'error');
-        return;
-    }
-
     folders = folders.filter(f => f.id !== folderId);
+
+    let allFolders = JSON.parse(localStorage.getItem('folders') || '[]');
+    allFolders = allFolders.filter(f => f.id !== folderId);
+    localStorage.setItem('folders', JSON.stringify(allFolders));
 
     // Notes associated with this folder are DELETED by ON DELETE CASCADE in DB
     // We update local state to reflect this immediately
     notes = notes.filter(n => n.folder_id !== folderId);
+
+    let allNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+    allNotes = allNotes.filter(n => n.folder_id !== folderId);
+    localStorage.setItem('notes', JSON.stringify(allNotes));
 
     if (activeFolderId === folderId) {
         activeFolderId = null;
@@ -234,18 +229,19 @@ async function deleteFolder(folderId) {
 }
 
 async function moveNoteToFolder(noteId, targetFolderId) {
-    const { error } = await supabase
-        .from('notes')
-        .update({ folder_id: targetFolderId, updated_at: new Date().toISOString() })
-        .eq('id', noteId);
-
-    if (error) {
-        showToast('Error moving note', 'error');
-        return;
-    }
-
     const note = notes.find(n => n.id === noteId);
-    if (note) note.folder_id = targetFolderId;
+    if (note) {
+        note.folder_id = targetFolderId;
+        note.updated_at = new Date().toISOString();
+
+        const allNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+        const index = allNotes.findIndex(n => n.id === noteId);
+        if (index !== -1) {
+            allNotes[index].folder_id = targetFolderId;
+            allNotes[index].updated_at = note.updated_at;
+            localStorage.setItem('notes', JSON.stringify(allNotes));
+        }
+    }
 
     if (activeNoteId === noteId) {
         // If we were looking at a specific folder and the note moved out of it
@@ -269,19 +265,14 @@ async function togglePinNote(noteId) {
     updatePinButton();
     renderNoteChips();
 
-    const { error } = await supabase
-        .from('notes')
-        .update({ is_pinned: newPinnedStatus })
-        .eq('id', noteId);
-
-    if (error) {
-        note.is_pinned = !newPinnedStatus; // revert
-        updatePinButton();
-        renderNoteChips();
-        showToast('Error pinning note', 'error');
-    } else {
-        showToast(newPinnedStatus ? 'Note pinned' : 'Note unpinned', 'success');
+    const allNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+    const index = allNotes.findIndex(n => n.id === noteId);
+    if (index !== -1) {
+        allNotes[index].is_pinned = newPinnedStatus;
+        localStorage.setItem('notes', JSON.stringify(allNotes));
     }
+
+    showToast(newPinnedStatus ? 'Note pinned' : 'Note unpinned', 'success');
 }
 
 // ==================== UI RENDERING ====================
@@ -866,18 +857,21 @@ shareBtn.onclick = () => {
 
             shareToggle.onclick = async () => {
                 const newPublicStatus = !note.is_public;
-                const { data, error } = await supabase
-                    .from('notes')
-                    .update({ is_public: newPublicStatus })
-                    .eq('id', note.id)
-                    .select();
 
-                if (!error) {
-                    note.is_public = data[0].is_public;
-                    note.public_id = data[0].public_id;
-                    note.public_expires_at = data[0].public_expires_at;
-                    updateShareUI(note.id, container);
+                note.is_public = newPublicStatus;
+                if (newPublicStatus && !note.public_id) {
+                    note.public_id = 'pub_' + Math.random().toString(36).substr(2, 9);
                 }
+
+                const allNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+                const index = allNotes.findIndex(n => n.id === note.id);
+                if (index !== -1) {
+                    allNotes[index].is_public = note.is_public;
+                    allNotes[index].public_id = note.public_id;
+                    localStorage.setItem('notes', JSON.stringify(allNotes));
+                }
+
+                updateShareUI(note.id, container);
             };
 
             copyBtn.onclick = () => {
@@ -1085,24 +1079,23 @@ async function init() {
     // Initialize UI early
     EditorUI.init();
 
-    // Ensure session is restored before fetching data
-    const isRestored = await restoreSession();
-    const { data: { session } } = await supabase.auth.getSession();
+    const currentUser = sessionStorage.getItem('currentUser');
+    const loginTime = sessionStorage.getItem('loginTime');
 
-    if (!session) {
+    if (!currentUser || !loginTime || Date.now() - parseInt(loginTime) > 2 * 60 * 60 * 1000) {
         console.warn("No valid session found, redirecting to login...");
-        window.location.replace('/login');
+        sessionStorage.clear();
+        window.location.replace('/login.html');
         return;
     }
 
     await fetchInitialData();
 
-    const userData = localStorage.getItem('vellum_user');
-    if (userData) {
-        const user = JSON.parse(userData);
+    if (currentUser) {
+        const user = JSON.parse(currentUser);
         const nameEl = document.getElementById('profileName');
         const emailEl = document.getElementById('profileEmail');
-        if (nameEl) nameEl.textContent = user.name || user.email.split('@')[0];
+        if (nameEl) nameEl.textContent = user.username || user.email.split('@')[0];
         if (emailEl) emailEl.textContent = user.email;
     }
 }
@@ -1120,13 +1113,13 @@ writingCanvas.oninput = () => {
 };
 
 userProfileBtn.onclick = () => {
-    const userData = localStorage.getItem('vellum_user');
+    const userData = sessionStorage.getItem('currentUser');
     let name = 'Guest User';
     let email = 'guest@vellum.com';
 
     if (userData) {
         const user = JSON.parse(userData);
-        name = user.name || user.email.split('@')[0];
+        name = user.username || user.email.split('@')[0];
         email = user.email;
     }
 
@@ -1140,10 +1133,8 @@ userProfileBtn.onclick = () => {
             const logoutBtn = container.querySelector('#logoutBtn');
             if (logoutBtn) {
                 logoutBtn.onclick = async () => {
-                    await supabase.auth.signOut();
                     sessionStorage.clear();
-                    localStorage.removeItem('vellum_user');
-                    window.location.href = '/login';
+                    window.location.href = '/login.html';
                 };
             }
         }
