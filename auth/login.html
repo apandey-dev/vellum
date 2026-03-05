@@ -164,10 +164,11 @@
         const loadingOverlay = document.getElementById('loadingOverlay');
         const loginBox = document.getElementById('loginBox');
 
-        // Replace these with actual Client ID during deployment
+        // redirect_uri must match the Authorization Callback URL set in GitHub OAuth App settings.
+        // We always redirect back to /login so handleCallback() below can read the ?code parameter.
         const GITHUB_CLIENT_ID = 'Iv23libaBq1oEIfwW9wW'; // Placeholder format
-        const OAUTH_URL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo%20gist`;
-
+        const REDIRECT_URI = encodeURIComponent(window.location.origin + '/login');
+        const OAUTH_URL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo%20gist&redirect_uri=${REDIRECT_URI}`;
         githubLoginBtn.addEventListener('click', () => {
             if (GITHUB_CLIENT_ID === 'PLEASE_SET_ME') {
                 showToast('GitHub OAuth App Client ID is not configured.', 'error');
