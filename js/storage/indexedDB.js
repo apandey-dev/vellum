@@ -9,7 +9,15 @@ export class DBStore {
         if (this.dbInstance) return this.dbInstance;
 
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.dbVersion);
+            let request;
+            try {
+                request = indexedDB.open(this.dbName, this.dbVersion);
+            } catch (err) {
+                // IndexedDB not available (private browsing mode, storage blocked)
+                console.error('[DBStore] IndexedDB unavailable:', err);
+                document.dispatchEvent(new CustomEvent('db-error', { detail: { reason: 'unavailable' } }));
+                return reject(err);
+            }
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
@@ -32,14 +40,50 @@ export class DBStore {
 
             request.onsuccess = (event) => {
                 this.dbInstance = event.target.result;
+
+                // Detect unexpected database closures (e.g. version mismatch)
+                this.dbInstance.onversionchange = () => {
+                    this.dbInstance.close();
+                    this.dbInstance = null;
+                    document.dispatchEvent(new CustomEvent('db-error', { detail: { reason: 'version-change' } }));
+                };
+
                 resolve(this.dbInstance);
             };
 
             request.onerror = (event) => {
-                console.error("IndexedDB error:", event.target.error);
-                reject(event.target.error);
+                const err = event.target.error;
+                console.error('[DBStore] Failed to open IndexedDB:', err);
+                document.dispatchEvent(new CustomEvent('db-error', { detail: { reason: 'open-failed', error: err?.message } }));
+                reject(err);
+            };
+
+            request.onblocked = () => {
+                console.warn('[DBStore] IndexedDB open blocked — another tab may have an older version open.');
+                document.dispatchEvent(new CustomEvent('db-error', { detail: { reason: 'blocked' } }));
             };
         });
+    }
+
+    /**
+     * Recovery helper: wipes all local cached data so the app can re-sync from GitHub.
+     * Called by the db-error recovery modal.
+     */
+    static async clearAllLocalData() {
+        try {
+            if (this.dbInstance) {
+                this.dbInstance.close();
+                this.dbInstance = null;
+            }
+            await new Promise((resolve, reject) => {
+                const req = indexedDB.deleteDatabase(this.dbName);
+                req.onsuccess = resolve;
+                req.onerror = () => reject(req.error);
+            });
+            console.warn('[DBStore] Local database cleared. Reload to re-sync from GitHub.');
+        } catch (err) {
+            console.error('[DBStore] Failed to clear local database:', err);
+        }
     }
 
     // --- Key/Value Store Actions (Metadata) ---
@@ -86,6 +130,45 @@ export class DBStore {
             const request = store.put(noteObj);
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
+        });
+    }
+
+    /**
+     * Bulk-write multiple notes in a single IndexedDB transaction.
+     * Use when applying delta sync results to avoid N separate transactions.
+     */
+    static async putNotesBulk(noteObjects) {
+        if (!noteObjects.length) return;
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('notes', 'readwrite');
+            const store = tx.objectStore('notes');
+            let pending = noteObjects.length;
+            for (const note of noteObjects) {
+                const req = store.put(note);
+                req.onsuccess = () => { if (--pending === 0) resolve(); };
+                req.onerror = () => reject(req.error);
+            }
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    /**
+     * Bulk-delete multiple notes in a single IndexedDB transaction.
+     */
+    static async deleteNotesBulk(ids) {
+        if (!ids.length) return;
+        const db = await this.init();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('notes', 'readwrite');
+            const store = tx.objectStore('notes');
+            let pending = ids.length;
+            for (const id of ids) {
+                const req = store.delete(id);
+                req.onsuccess = () => { if (--pending === 0) resolve(); };
+                req.onerror = () => reject(req.error);
+            }
+            tx.onerror = () => reject(tx.error);
         });
     }
 
@@ -144,8 +227,42 @@ export class DBStore {
     }
 
     static async getAggregatedNoteById(id) {
-        const notes = await this.getAggregatedNotes();
-        return notes.find(n => n.id === id);
+        const note = await this.getNote(id);
+        if (!note) return null;
+        const meta = await this.getMeta('index') || { notesIndex: {} };
+        const indexEntry = meta.notesIndex[id] || {};
+        return {
+            ...note,
+            folder_id: indexEntry.folder || null,
+            title: indexEntry.title || note.title || 'Untitled',
+            is_pinned: indexEntry.is_pinned || false,
+            updated_at: indexEntry.updated || note.updated_at || Date.now(),
+            order_index: note.order_index || 0,
+            is_public: indexEntry.is_public || false,
+            public_id: indexEntry.public_id || null,
+            gist_id: indexEntry.gist_id || null,
+            public_url: indexEntry.public_url || null,
+        };
+    }
+
+    /**
+     * Returns a metadata-only list of notes for the sidebar.
+     * Does NOT load note content blobs — critical for 10k+ collections.
+     * UI renders chips from this; content is only loaded when a note is opened.
+     */
+    static async getAggregatedNotesLazy() {
+        const meta = await this.getMeta('index') || { notesIndex: {}, folders: {} };
+        const entries = Object.entries(meta.notesIndex || {});
+        return entries.map(([id, idx]) => ({
+            id,
+            title: idx.title || 'Untitled',
+            folder_id: idx.folder || null,
+            is_pinned: idx.is_pinned || false,
+            updated_at: idx.updated || 0,
+            order_index: idx.order_index || 0,
+            is_public: idx.is_public || false,
+            public_url: idx.public_url || null,
+        }));
     }
 
     // --- Sync Queue Actions ---

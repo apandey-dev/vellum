@@ -5,6 +5,7 @@ export class GitHubAPI {
     static get BASE_URL() { return 'https://api.github.com'; }
     static get OWNER() { return sessionStorage.getItem('github_username'); }
     static get REPO() { return 'notes-storage'; }
+    static _rateLimitPauseUntil = 0;
 
     static getToken() {
         return sessionStorage.getItem('github_token');
@@ -40,12 +41,19 @@ export class GitHubAPI {
                 throw new Error("Unauthorized");
             }
 
-            // Handle Rate Limiting
+            // Handle Rate Limiting — wait until reset time, then retry
             if (response.status === 403 || response.status === 429) {
-                const retryAfter = response.headers.get('retry-after');
-                const resetTime = response.headers.get('x-ratelimit-reset');
-                console.warn(`Rate limit hit. Retry After: ${retryAfter}, Reset: ${resetTime}`);
-                throw new Error("API Rate Limit Exceeded");
+                const retryAfterSec = parseInt(response.headers.get('retry-after') || '60', 10);
+                const resetEpoch = parseInt(response.headers.get('x-ratelimit-reset') || '0', 10) * 1000;
+                const pauseUntil = resetEpoch > Date.now() ? resetEpoch : Date.now() + retryAfterSec * 1000;
+                this._rateLimitPauseUntil = pauseUntil;
+                const waitMs = pauseUntil - Date.now();
+                console.warn(`[GitHubAPI] Rate limited. Pausing ${Math.round(waitMs / 1000)}s before retry.`);
+                if (retries > 0) {
+                    await new Promise(res => setTimeout(res, Math.min(waitMs, 60000)));
+                    return this.request(endpoint, options, retries - 1, delay * 2);
+                }
+                throw new Error('GitHub API rate limit exceeded. Please try again later.');
             }
 
             if (!response.ok) {
@@ -60,8 +68,10 @@ export class GitHubAPI {
 
             return await response.json();
         } catch (error) {
-            if (retries > 0 && !error.message.includes('401') && !error.message.includes('409') && !error.message.includes('404')) {
-                console.warn(`Retrying request to ${endpoint}... attempts left: ${retries}`);
+            // Never retry on auth or conflict errors
+            const isTerminal = error.message.includes('401') || error.message.includes('409');
+            if (retries > 0 && !isTerminal) {
+                console.warn(`[GitHubAPI] Retrying ${endpoint} (${retries} left)...`);
                 await new Promise(res => setTimeout(res, delay));
                 return this.request(endpoint, options, retries - 1, delay * 2);
             }

@@ -1,12 +1,13 @@
 // js/sync.js
 import { GitHubAPI } from '/js/core/githubClient.js';
 import { DBStore } from '/js/storage/indexedDB.js';
+import { ConflictResolver } from '/js/sync/conflictResolver.js';
 
 export class SyncEngine {
     static isSyncing = false;
     static syncInterval = null;
 
-    static startBackgroundSync(intervalMs = 30000) {
+    static startBackgroundSync(intervalMs = 60000) {
         if (this.syncInterval) clearInterval(this.syncInterval);
         this.syncInterval = setInterval(() => {
             if (document.visibilityState === 'visible') {
@@ -35,17 +36,17 @@ export class SyncEngine {
             const localSha = await DBStore.getMeta('lastCommitSha');
 
             if (localSha === remoteSha) {
-                console.log("Local cache is up to date.");
+                console.debug('[SyncEngine] Local cache is up to date.');
                 return; // Nothing to do
             }
 
             if (!localSha) {
                 // Initial cold start sync
-                console.log("No local sha found. Fetching initial master files...");
+                console.debug('[SyncEngine] No local SHA found. Running cold-start sync...');
                 hasChanges = await this.fetchEntireRepoState(remoteSha);
             } else {
                 // Delta sync using Compare endpoint
-                console.log("New commits found on remote. Running Delta Compare...");
+                console.debug('[SyncEngine] New remote commits detected. Running delta compare...');
                 const comparison = await GitHubAPI.compareCommits(localSha, remoteSha);
 
                 if (comparison && comparison.files && comparison.files.length > 0) {
@@ -86,7 +87,12 @@ export class SyncEngine {
     }
 
     // Incrementally patches the IndexedDB store with the changed files
+    // Uses bulk transactions to avoid N individual IDB writes for large delta sets
     static async applyDeltaCommits(changedFiles) {
+        const notesToWrite = [];
+        const notesToDelete = [];
+        let indexUpdated = false;
+
         for (const file of changedFiles) {
             try {
                 if (file.filename === 'metadata/index.json') {
@@ -94,20 +100,25 @@ export class SyncEngine {
                         const content = await GitHubAPI.getFileContent(file.filename);
                         if (content) {
                             await DBStore.setMeta('index', JSON.parse(content));
+                            indexUpdated = true;
                         }
                     }
                 }
                 else if (file.filename.startsWith('notes/') || file.filename.startsWith('n/')) {
-                    // It's a note file
                     const noteId = file.filename.split('/').pop().replace('.md', '');
                     if (file.status === 'removed') {
-                        await DBStore.deleteNote(noteId);
+                        notesToDelete.push(noteId);
                     } else {
                         const content = await GitHubAPI.getFileContent(file.filename);
                         if (content) {
-                            const existingNote = await DBStore.getNote(noteId) || { id: noteId, _unmapped: true };
-                            existingNote.content = content;
-                            await DBStore.putNote(existingNote);
+                            const isConflict = await ConflictResolver.checkNoteConflict(noteId, content);
+                            if (isConflict) {
+                                ConflictResolver.showNoteConflictUI(noteId);
+                            } else {
+                                const existingNote = await DBStore.getNote(noteId) || { id: noteId, _unmapped: true };
+                                existingNote.content = content;
+                                notesToWrite.push(existingNote);
+                            }
                         }
                     }
                 }
@@ -115,17 +126,32 @@ export class SyncEngine {
                 console.error(`Failed to apply delta for file ${file.filename}`, err);
             }
         }
+
+        // Apply in bulk — single transaction per batch for performance
+        if (notesToWrite.length > 0) await DBStore.putNotesBulk(notesToWrite);
+        if (notesToDelete.length > 0) await DBStore.deleteNotesBulk(notesToDelete);
     }
 
     // Pushes pending mutations stored in the IndexedDB offline queue
     static async pushSyncQueue() {
         if (!navigator.onLine) return;
 
+        // Check for conflicts before draining the queue (offline edits replayback)
+        await ConflictResolver.resolveQueuedConflicts();
+
+        // If conflicts were found, resolveQueuedConflicts returns early —
+        // queue drain is paused until the user resolves the conflict.
+        const activeConflicts = ConflictResolver.getActiveConflicts();
+        if (activeConflicts.length > 0) {
+            console.log('[SyncEngine] Pausing queue drain — unresolved conflicts:', activeConflicts.length);
+            return;
+        }
+
         try {
             const queue = await DBStore.getSyncQueue();
             if (queue.length === 0) return;
 
-            console.log(`Pushing ${queue.length} items from offline queue...`);
+            console.debug(`[SyncEngine] Pushing ${queue.length} items from offline queue...`);
 
             const filesToCommit = [];
             // De-duplicate if multiple updates happened to the same file
@@ -147,7 +173,7 @@ export class SyncEngine {
             await DBStore.setMeta('lastCommitSha', newCommitSha);
             await DBStore.clearSyncQueue();
 
-            console.log("Sync push successful.");
+            console.debug('[SyncEngine] Sync push successful.');
 
         } catch (e) {
             if (e.message.includes('409 Conflict')) {
