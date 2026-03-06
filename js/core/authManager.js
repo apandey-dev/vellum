@@ -15,7 +15,7 @@
 
     if (!publicPages.includes(path)) {
         if (!token) {
-            window.location.href = '/login.html';
+            window.location.href = '/login';
             return;
         }
         // Note: Actual token expiry / invalidation (401 Unauthorized) 

@@ -166,7 +166,7 @@
 
         // redirect_uri must match the Authorization Callback URL set in GitHub OAuth App settings.
         // We always redirect back to /login so handleCallback() below can read the ?code parameter.
-        const GITHUB_CLIENT_ID = 'Ov23lizAtG75frAflvAz'; 
+        const GITHUB_CLIENT_ID = 'Ov23lizAtG75frAflvAz';
         const REDIRECT_URI = encodeURIComponent(window.location.origin + '/login');
         const OAUTH_URL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo%20gist&redirect_uri=${REDIRECT_URI}`;
         githubLoginBtn.addEventListener('click', () => {
@@ -187,48 +187,79 @@
             window.location.href = '/dashboard';
         });
 
-        // Handle OAuth callback
+        // Human-readable messages for known GitHub OAuth error codes
+        const OAUTH_ERRORS = {
+            'bad_verification_code': 'This login session expired. Please click "Login with GitHub" again.',
+            'incorrect_client_credentials': 'OAuth app credentials are misconfigured. Contact support.',
+            'redirect_uri_mismatch': 'Redirect URL mismatch. Check GitHub OAuth App settings.',
+            'access_denied': 'You cancelled the GitHub authorization. Please try again.',
+        };
+
+        // Handle OAuth callback — runs on every page load, exits early if no ?code present
         async function handleCallback() {
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
             const errorParam = params.get('error');
 
             if (errorParam) {
-                showToast(`Authentication failed: ${errorParam}`, 'error');
+                const msg = OAUTH_ERRORS[errorParam] || `Authentication failed: ${errorParam}`;
+                showToast(msg, 'error');
                 return;
             }
 
-            if (code) {
-                loginBox.style.display = 'none';
-                loadingOverlay.classList.add('visible');
+            if (!code) return; // Normal login page load — no callback to process
 
+            console.debug('[OAuth] Code received from GitHub.');
+            loginBox.style.display = 'none';
+            loadingOverlay.classList.add('visible');
+
+            try {
+                console.debug('[OAuth] Sending code to /api/oauth...');
+                const response = await fetch('/api/oauth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+
+                let data;
                 try {
-                    // Call our Vercel Serverless Function
-                    const response = await fetch('/api/oauth', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code })
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok || data.error) {
-                        throw new Error(data.error || 'Token exchange failed');
-                    }
-
-                    sessionStorage.setItem('github_token', data.access_token);
-
-                    // Clear the query params and redirect to dashboard
-                    window.history.replaceState({}, document.title, '/login');
-                    window.location.href = '/dashboard';
-                } catch (error) {
-                    console.error(error);
-                    loadingOverlay.classList.remove('visible');
-                    loginBox.style.display = 'block';
-                    showToast(error.message, 'error');
+                    data = await response.json();
+                } catch {
+                    throw new Error('Authentication server returned an unexpected response. Please try again.');
                 }
+
+                console.debug('[OAuth] Server response received:', { ok: response.ok, hasToken: !!data.access_token, error: data.error || null });
+
+                // GitHub returns error fields even on HTTP 200 when the code is bad/expired
+                if (data.error) {
+                    const msg = OAUTH_ERRORS[data.error] || (data.error_description || data.error);
+                    throw new Error(msg);
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Server error (${response.status}). Please try again.`);
+                }
+
+                if (!data.access_token) {
+                    throw new Error('No access token returned. Check that GITHUB_CLIENT_SECRET is set correctly in Vercel environment variables.');
+                }
+
+                // ✅ Token exchange succeeded
+                sessionStorage.setItem('github_token', data.access_token);
+                console.debug('[OAuth] Token stored in sessionStorage. Redirecting to /dashboard...');
+
+                // Remove ?code from URL before navigating away
+                window.history.replaceState({}, document.title, '/login');
+                window.location.href = '/dashboard';
+
+            } catch (error) {
+                console.error('[OAuth] Token exchange failed:', error.message);
+                loadingOverlay.classList.remove('visible');
+                loginBox.style.display = 'block';
+                showToast(error.message, 'error');
             }
         }
+
 
         handleCallback();
 
