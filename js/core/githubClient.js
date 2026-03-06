@@ -14,14 +14,16 @@ export class GitHubAPI {
     static clearSession() {
         sessionStorage.removeItem('github_token');
         sessionStorage.removeItem('github_username');
-        window.location.href = '/login.html';
+        window.location.href = '/login';
     }
 
     static async request(endpoint, options = {}, retries = 3, delay = 1000) {
         const token = this.getToken();
         if (!token) {
-            this.clearSession();
-            throw new Error("No authentication token found.");
+            // Token missing — do not call clearSession() here.
+            // A missing token on first load can be a startup race condition.
+            // Only clearSession() on a confirmed 401 from the GitHub API.
+            throw new Error("No authentication token found. Please log in.");
         }
 
         const headers = {

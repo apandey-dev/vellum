@@ -3,14 +3,23 @@ import { GitHubAPI } from './githubClient.js';
 
 export class RepoBootstrap {
     static async checkRepositoryExists() {
-        if (!GitHubAPI.OWNER) await GitHubAPI.fetchUser();
+        if (!GitHubAPI.OWNER) {
+            try { await GitHubAPI.fetchUser(); } catch (e) {
+                console.warn('[RepoBootstrap] Could not resolve GitHub username:', e.message);
+            }
+        }
+        if (!GitHubAPI.OWNER) throw new Error('GitHub username unavailable — cannot check repository.');
         const repo = await GitHubAPI.request(`/repos/${GitHubAPI.OWNER}/${GitHubAPI.REPO}`).catch(() => null);
         return repo !== null;
     }
 
     static async createNotesRepository() {
-        if (!GitHubAPI.OWNER) await GitHubAPI.fetchUser();
-        // Create as private, initialized with README to set up the default main branch
+        if (!GitHubAPI.OWNER) {
+            try { await GitHubAPI.fetchUser(); } catch (e) {
+                console.warn('[RepoBootstrap] Could not resolve GitHub username:', e.message);
+            }
+        }
+        if (!GitHubAPI.OWNER) throw new Error('GitHub username unavailable — cannot create repository.');
         return await GitHubAPI.request(`/user/repos`, {
             method: 'POST',
             body: JSON.stringify({
