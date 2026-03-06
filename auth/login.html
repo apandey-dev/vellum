@@ -195,8 +195,8 @@
             'access_denied': 'You cancelled the GitHub authorization. Please try again.',
         };
 
-        // Handle OAuth callback — runs on every page load, exits early if no ?code present
-        async function handleCallback() {
+        // Handle OAuth callback — runs safely when DOM loads
+        document.addEventListener('DOMContentLoaded', async () => {
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
             const errorParam = params.get('error');
@@ -258,10 +258,7 @@
                 loginBox.style.display = 'block';
                 showToast(error.message, 'error');
             }
-        }
-
-
-        handleCallback();
+        });
 
         // Load theme
         const savedTheme = localStorage.getItem('vellum_theme') || 'light';
